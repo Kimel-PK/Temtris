@@ -26,7 +26,7 @@ kontroler2: .res 1 ; RLDUSsBA
 kontroler2poprzedni: .res 1
 zegarKontrolera1: .res 1
 zegarKontrolera2: .res 1
-;kurwo git
+
 ; zmienne sterujące
 wstrzymajCPU: .res 1
 wstrzymajNMI: .res 1
@@ -409,6 +409,9 @@ PowrotDoNMI:
     STA $2005
     STA $2005
 
+    LDA #%10010000
+    STA $2000
+
     ; ograniczenie pętli do wykonywania się co klatkę
 
     LDA #$00
@@ -602,10 +605,6 @@ NMIBrakKlocka2:
 
     JSR ObliczWskaznikDoDanychKlocka
     JSR StworzKlocek
-
-    LDA #$00
-    STA $2005
-    STA $2005
 
     LDA #<NMIBrakKlocka3
     STA wskaznikNMI
@@ -919,17 +918,6 @@ NMIAktualizacjaPlanszy: ; określ numer linii o jeden niżej niż pierwsza rozbi
     LDA temp+1
     STA int+1
 
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-
     STY tempY
 
     LDA #<NMIAnimacjaRozbijanychLinii
@@ -948,9 +936,8 @@ NMIAnimacjaRozbijanychLinii:
     LDA klatkaAnimacji
     CMP #$01
     BNE :+
+
     ; stwórz sprite, pierwszy blok czarny
-    
-    
 
 :
     CMP #$27
@@ -962,6 +949,17 @@ NMIAnimacjaRozbijanychLinii:
 
     LDA #$00
     STA klatkaAnimacji
+
+    BIT $2002
+    LDA #$3F
+    STA $2006
+    LDA #$11
+    STA $2006
+
+    LDA #$09
+    STA $2007
+    STA $2007
+    STA $2007
 
     LDA #<NMIAktualizacjaPlanszy2
     STA wskaznikNMI
@@ -978,17 +976,6 @@ NMIAnimacjaRozbijanychLinii:
 NMIAktualizacjaPlanszy2: ; przepisz wszystkie rozbijane linie
 
     LDY tempY
-
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
-    NOP
 
     ; przepisz linię z odczytu do tymczasowej
 
@@ -1387,7 +1374,7 @@ NMILadowanieKoniecGry:
     LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
     STA $2000
 
-    ; wlacz sprite i tlo
+    ; włącz sprite i tlo
     LDA #%00011110
     STA $2001
 
@@ -1858,7 +1845,7 @@ StworzKlocek:
     STA $2006
     LDA #$10
     STA $2006
-    
+
     LDA (temp), Y
     STA $2007
     INY
@@ -1903,29 +1890,23 @@ StworzNastepnyKlocek:
     TAY
 
     ; załaduj palety ($3F14)
-    ; LDA #$3F
-    ; STA $2006
-    ; LDA #$14
-    ; STA $2006
-    ; 
-    ; LDA (temp), Y
-    ; STA $2007
-    ; INY
-    ; LDA (temp), Y
-    ; STA $2007
-    ; INY
-    ; LDA (temp), Y
-    ; STA $2007
-    ; INY
-    ; LDA (temp), Y
-    ; STA $2007
-    ; INY
-
-    ; wyzeruj scrollowanie
-
-    LDA #$00
-    STA $2005
-    STA $2005
+    LDA #$3F
+    STA $2006
+    LDA #$14
+    STA $2006
+    
+    LDA (temp), Y
+    STA $2007
+    INY
+    LDA (temp), Y
+    STA $2007
+    INY
+    LDA (temp), Y
+    STA $2007
+    INY
+    LDA (temp), Y
+    STA $2007
+    INY
 
     LDA #<DaneKlockow
     STA pozycjaDanychNastepnegoKlocka
@@ -3448,7 +3429,7 @@ ZerowanieAPU:
 
 DanePalet:
     .byte $0F, $08, $17, $28, $0F, $12, $22, $32, $0F, $07, $15, $36, $0F, $EA, $DC, $F5 ; paleta tla
-    .byte $0F, $08, $17, $28, $0F, $08, $17, $28, $0F, $08, $17, $28, $0F, $08, $17, $28 ; paleta spriteow
+    .byte $0F, $08, $17, $28, $0F, $08, $17, $28, $0F, $08, $17, $28, $0F, $0F, $0F, $0F ; paleta spriteow
 
 GrafikaTloMenu:
     .incbin "grafika/Menu.nam"
