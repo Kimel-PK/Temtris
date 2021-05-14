@@ -40,6 +40,7 @@ szybkoscSpadania1: .res 1
 szybkoscSpadania2: .res 1
 poziom1: .res 1
 poziom2: .res 1
+wylaczTransferOAM: .res 1
 
 ; zmienne klocka
 kolizja: .res 1; (---ABLDP = kolizja przy obrocie w lewo, w prawo, z lewej, z dołu, z prawej)
@@ -96,6 +97,7 @@ linieTemtris2BCD: .res 4
 
 ; animacja
 klatkaAnimacji: .res 1
+blokAnimacji: .res 1
 
 ; pozostała pamięć
 pozostaloBajtow: .res 80
@@ -148,7 +150,8 @@ RESET:
 
     TXA
 
-CzyscPamiec:
+; czyść pamieć
+:
     STA $0000, X
     STA $0100, X
     STA $0300, X
@@ -160,7 +163,7 @@ CzyscPamiec:
     STA $0200, X ; pamiec kopiowana co klatke do OAM
     LDA #$00
     INX
-    BNE CzyscPamiec
+    BNE :-
 
     ; inicjalizacja ziarna
     LDA #$21
@@ -216,7 +219,7 @@ CzyscPamiec:
     LDY #$00
 
     ; wczytaj GrafikaTloMenu
-WczytajTloMenu:
+:
     LDA (int), Y
     STA $2007
     INY
@@ -226,10 +229,10 @@ WczytajTloMenu:
     BEQ :++
 :
     CPY #$00
-    BNE WczytajTloMenu
+    BNE :--
     INX
     INC int+1
-    JMP WczytajTloMenu
+    JMP :--
 
 :
 
@@ -362,9 +365,9 @@ PETLAKoniecGry:
     JMP PowrotDoPETLI
 :
 
-    LDA #<NMICzekajNaReset
+    LDA #<NMILadowanieKoniecGry
     STA wskaznikNMI
-    LDA #>NMICzekajNaReset
+    LDA #>NMILadowanieKoniecGry
     STA wskaznikNMI+1
 
     LDA #<PETLAPalenieGumy
@@ -637,9 +640,9 @@ NMIBrakKlocka3:
     LDA #>PETLAKoniecGry
     STA wskaznikPetli+1
 
-    LDA #<NMILadowanieKoniecGry
+    LDA #<NMIPalenieGumy
     STA wskaznikNMI
-    LDA #>NMILadowanieKoniecGry
+    LDA #>NMIPalenieGumy
     STA wskaznikNMI+1
 
     JMP PowrotDoNMI
@@ -885,6 +888,8 @@ NMIAktualizacjaPlanszy: ; określ numer linii o jeden niżej niż pierwsza rozbi
 
 NMIAnimacjaRozbijanychLinii:
 
+    JSR Przerwanie
+
     ; wypełnij po kolei czarnymi kwadratami linie i napisz na niej tekst
 
     INC klatkaAnimacji
@@ -893,7 +898,8 @@ NMIAnimacjaRozbijanychLinii:
     CMP #$00
     BNE :++++
 
-    JSR Przerwanie
+    LDA #$00
+    STA blokAnimacji
 
     ; wyczysc sprite
 
@@ -1028,41 +1034,84 @@ NMIAnimacjaRozbijanychLinii:
     INY
     STY $020D
 
-    JMP :++
+    JMP :++++++++++++
 
 :
 
+    JSR Przerwanie
+
     ; zmień na tekst pod spodem
 
-;     LDX #$FF
-; :
-;     INX
-;     CPX #$04
-;     BEQ :+
-; 
-;     LDA $0200
-;     CMP #$FF
-;     BEQ :-
-;     LSR
-;     LSR
-;     LSR
-;     CLC
-;     SBC #$05
-;     TAY
-;     BIT $2002
-;     LDA PozycjaLiniiWPPUH, Y
-;     STA $2007
-;     LDA PozycjaLiniiWPPUL, Y
-;     STA $2007
-; 
-;     LDA klatkaAnimacji
-;     LSR
-;     LSR
-;     TAY
-;     LDA RozbitaLiniaCheemsNapis, Y
-;     STA $2007
-; 
-; :
+    LDX #$FF
+:
+    INX
+    CPX #$04
+    BEQ :+++++++++
+
+    CPX #$00
+    BNE :+
+    LDA $0200
+    JMP :++++
+:
+    CPX #$01
+    BNE :+
+    LDA $0204
+    JMP :+++
+:
+    CPX #$02
+    BNE :+
+    LDA $0208
+    JMP :++
+:
+    LDA $020C
+:
+    CMP #$FF
+    BEQ :-----
+    LSR
+    LSR
+    LSR
+    CLC
+    SBC #$04
+
+    TAY
+
+    BIT $2002
+    LDA PozycjaLiniiWPPUH, Y
+    STA $2006
+
+    CLC
+    LDA PozycjaLiniiWPPUL, Y
+    ADC blokAnimacji
+
+    STA $2006
+
+    LDA klatkaAnimacji
+    LSR
+    LSR
+    TAY
+    LDA ileNaRazLinii
+    CMP #$01
+    BNE :+
+    LDA RozbitaLiniaCheemsNapis, Y
+:
+    CMP #$02
+    BNE :+
+    LDA RozbitaLiniaDogeNapis, Y
+:
+    CMP #$03
+    BNE :+
+    LDA RozbitaLiniaBuffDogeNapis, Y
+:
+    CMP #$04
+    BNE :+
+    LDA RozbitaLiniaTemtrisNapis, Y
+:
+
+    STA $2007
+
+    JMP :---------
+
+:
 
     ; pozycja X ++ i klatka animacji $80
 
@@ -1087,9 +1136,10 @@ NMIAnimacjaRozbijanychLinii:
     STA $0201
     STA $0205
     STA $0209
-    STA $020C
+    STA $020D
 
     INC klatkaAnimacji
+    INC blokAnimacji
 
 :
 
@@ -1200,22 +1250,33 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
     CMP #$01
     BNE :+
     JSR PoliczLinieCheems1
+    JSR PoliczLinieG1
     JMP :++++
 :
     CMP #$02
     BNE :+
     JSR PoliczLinieDoge1
+    JSR PoliczLinieG1
+    JSR PoliczLinieG1
     JMP :+++
 :
     CMP #$03
     BNE :+
     JSR PoliczLinieBuffDoge1
+    JSR PoliczLinieG1
+    JSR PoliczLinieG1
+    JSR PoliczLinieG1
     JMP :++
 :
     CMP #$04
     BNE :+
     JSR PoliczLinieTemtris1
+    JSR PoliczLinieG1
+    JSR PoliczLinieG1
+    JSR PoliczLinieG1
+    JSR PoliczLinieG1
 :
+    JSR CzyNastepnyPoziom1
 
     LDA #$00
     STA ileNaRazLinii
@@ -1333,9 +1394,9 @@ NMILadowanieKoniecGry:
     LDA #$00
     STA zapetlajMuzyke
 
-    LDA #<PETLAKoniecGry
+    LDA #<PETLAPalenieGumy
     STA wskaznikPetli
-    LDA #>PETLAKoniecGry
+    LDA #>PETLAPalenieGumy
     STA wskaznikPetli+1
 
     LDA #<NMIKoniecGry
