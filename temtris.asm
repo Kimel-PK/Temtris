@@ -28,8 +28,6 @@ zegarKontrolera1: .res 1
 zegarKontrolera2: .res 1
 
 ; zmienne sterujące
-wstrzymajCPU: .res 1
-wstrzymajNMI: .res 1
 coKlatke: .res 1
 wskaznikPetli: .res 2
 wskaznikNMI: .res 2
@@ -66,6 +64,8 @@ liczbaLinii1BCD: .res 4
 liczbaLinii2BCD: .res 4
 punkty1BCD: .res 4
 punkty2BCD: .res 4
+odczytLinii: .res 1
+zapisLinii: .res 1
 zrzutLinii: .res 10
 ileNaRazLinii: .res 1
 
@@ -261,6 +261,9 @@ WczytajTloMenu:
     LDA #$3C
     STA szybkoscSpadania1
 
+    LDA #$FF
+    STA klatkaAnimacji
+
     ; ustaw wskaźnik NMI na wartość początkową
 
     LDA #<NMIMenuGry
@@ -343,15 +346,9 @@ PETLAMenu:
 
 PETLAGra:
 
-    LDA wstrzymajCPU
-    CMP #$01
-    BEQ :+
-
     JSR ObliczPozycjeWPPU
     JSR RysujKlocek
     JSR SprawdzKolizje
-
-:
 
     JMP PowrotDoPETLI
 
@@ -365,8 +362,10 @@ PETLAKoniecGry:
     JMP PowrotDoPETLI
 :
 
-    LDA #$00
-    STA wstrzymajNMI
+    LDA #<NMICzekajNaReset
+    STA wskaznikNMI
+    LDA #>NMICzekajNaReset
+    STA wskaznikNMI+1
 
     LDA #<PETLAPalenieGumy
     STA wskaznikPetli
@@ -379,27 +378,21 @@ PETLAPalenieGumy:
 
     JMP PowrotDoPETLI
 
+Przerwanie:
+
+    NOP
+
+    RTS
+
 ; =========================================================================
 ; ================================== VBLANK ===============================
 ; =========================================================================
 
 NMI:
 
-    ; podprogramy odpalane zawsze
-
-    ; kopiuj pamięć z $0200 przez OAMDMA
-    LDA #$02
-    STA $4014
-
     ; skocz do stanu NMI
 
-    LDA wstrzymajNMI
-    CMP #$00
-    BNE :+
-
     JMP (wskaznikNMI)
-
-:
 
 PowrotDoNMI:
 
@@ -416,6 +409,10 @@ PowrotDoNMI:
 
     LDA #$00
     STA coKlatke
+
+    ; kopiuj pamięć z $0200 przez OAMDMA
+    LDA #$02
+    STA $4014
 
     RTI
 
@@ -573,8 +570,10 @@ NMILadowanieGry:
 
 NMIBrakKlocka:
 
-    LDA #$01
-    STA wstrzymajCPU
+    LDA #<PETLAPalenieGumy
+    STA wskaznikPetli
+    LDA #>PETLAPalenieGumy
+    STA wskaznikPetli+1
 
     JSR WyswietlLiczbeLinii1
     JSR WyswietlLiczbePunktow1
@@ -628,9 +627,6 @@ NMIBrakKlocka3:
 
     ; koniec gry
 
-    LDA #$01
-    STA wstrzymajNMI
-
     LDA #$4F
     STA temp
 
@@ -655,8 +651,10 @@ NMIBrakKlocka3:
     LDA #>NMISpadajacyKlocek
     STA wskaznikNMI+1
 
-    LDA #$00
-    STA wstrzymajCPU
+    LDA #<PETLAGra
+    STA wskaznikPetli
+    LDA #>PETLAGra
+    STA wskaznikPetli+1
 
     JMP PowrotDoNMI
 
@@ -822,7 +820,82 @@ NMIStawianieKlocka:
 
     JSR PostawKlocek
 
-    ; usuń spritey
+    LDA #<NMIAktualizacjaPlanszy
+    STA wskaznikNMI
+    LDA #>NMIAktualizacjaPlanszy
+    STA wskaznikNMI+1
+
+    JMP PowrotDoNMI
+
+NMIAktualizacjaPlanszy: ; określ numer linii o jeden niżej niż pierwsza rozbijana
+
+    LDA #<PETLAPalenieGumy
+    STA wskaznikPetli
+    LDA #>PETLAPalenieGumy
+    STA wskaznikPetli+1
+
+    ; sprawdź czy będzie usuwana jakaś linia
+
+    LDY #$13 ; numer linii która analizujemy
+
+    ; pozycja w PPU lewego dolnego rogu planszy - $232A
+
+    ; przesuwamy Y do miejsca rozbicia pierwszej linii - 1
+:
+
+    LDA wypelnienieLinii, Y
+    CMP #$00
+    BNE :+
+
+    LDA #<NMIBrakKlocka
+    STA wskaznikNMI
+    LDA #>NMIBrakKlocka
+    STA wskaznikNMI+1
+
+    LDA #<PETLAGra
+    STA wskaznikPetli
+    LDA #>PETLAGra
+    STA wskaznikPetli+1
+
+    JMP PowrotDoNMI
+
+:
+
+    CMP #$0A
+    BEQ :+
+
+    DEY
+    JMP :--
+
+:
+
+    ; istnieje chociaż jedna linia do rozbicia
+
+    INY
+
+    STY odczytLinii
+    STY zapisLinii
+
+    LDA #<NMIAnimacjaRozbijanychLinii
+    STA wskaznikNMI
+    LDA #>NMIAnimacjaRozbijanychLinii
+    STA wskaznikNMI+1
+
+    JMP PowrotDoNMI
+
+NMIAnimacjaRozbijanychLinii:
+
+    ; wypełnij po kolei czarnymi kwadratami linie i napisz na niej tekst
+
+    INC klatkaAnimacji
+
+    LDA klatkaAnimacji
+    CMP #$00
+    BNE :++++
+
+    JSR Przerwanie
+
+    ; wyczysc sprite
 
     LDA #$FF
     STA $0200
@@ -842,351 +915,227 @@ NMIStawianieKlocka:
     STA $020E
     STA $020F
 
-    LDA #<NMIAktualizacjaPlanszy
-    STA wskaznikNMI
-    LDA #>NMIAktualizacjaPlanszy
-    STA wskaznikNMI+1
-
-    JMP PowrotDoNMI
-
-NMIAktualizacjaPlanszy: ; określ numer linii o jeden niżej niż pierwsza rozbijana
-
-    LDA #$01
-    STA wstrzymajCPU
-
-    ; sprawdź linie do usunięcia
-
-    LDY #$13 ; numer linii która analizujemy
-
-    ; pozycja w PPU lewego dolnego rogu planszy - $232A
-
-    ; pozycja odczytu PPU
-    LDA #$23
-    STA temp
-    LDA #$2A
-    STA temp+1
-
-    ; przesuwamy Y do miejsca rozbicia pierwszej linii - 1
+    LDX #$00
+    LDY odczytLinii
 :
-
-    LDA wypelnienieLinii, Y
-    CMP #$00
-    BNE :+
-
-    LDA #<NMIBrakKlocka
-    STA wskaznikNMI
-    LDA #>NMIBrakKlocka
-    STA wskaznikNMI+1
-
-    LDA #$00
-    STA wstrzymajCPU
-
-    JMP PowrotDoNMI
-
-:
-
+    DEY
     LDA wypelnienieLinii, Y
     CMP #$0A
-    BEQ :+
+    BNE :+
 
+    STY tempY
+
+    ; stworz sprite w tym miejscu
     CLC
-    LDA temp+1
-    SBC #$1F
-    STA temp+1
-    LDA temp
-    SBC #$00
-    STA temp
+    TYA
+    ADC #$06
+    ROL
+    ROL
+    ROL
+    TAY
+    DEY
+    TYA
+    STA $0200, X
+    INX
+    LDA #$80
+    STA $0200, X
+    INX
+    LDA #%00000011
+    STA $0200, X
+    INX
+    LDA #$50
+    STA $0200, X
+    INX
+
+    LDY tempY
+
+    INC ileNaRazLinii
+
+    JMP :-
+
+:
+    CMP #$00
+    BEQ :+
 
     DEY
     JMP :--
 
 :
 
-    ; przesuwamy się na linię przed pierwszą rozbijaną
-    INY
-    CLC
-    LDA temp+1
-    ADC #$20
-    STA temp+1
-    LDA temp
-    ADC #$00
-    STA temp
-
-    ; pozycja zapisu PPU
-    LDA temp
-    STA int
-    LDA temp+1
-    STA int+1
-
-    STY tempY
-
-    LDA #<NMIAnimacjaRozbijanychLinii
-    STA wskaznikNMI
-    LDA #>NMIAnimacjaRozbijanychLinii
-    STA wskaznikNMI+1
-
     JMP PowrotDoNMI
 
-NMIAnimacjaRozbijanychLinii:
-
-    ; wypełnij po kolei czarnymi kwadratami linie i napisz na niej tekst
-
-    INC klatkaAnimacji
-
-    LDA klatkaAnimacji
-    CMP #$01
+:
+    CMP #$26
     BNE :+
+    
 
-    ; stwórz sprite, pierwszy blok czarny
+
+    JMP PowrotDoNMI
 
 :
     CMP #$27
     BNE :+
-    ; usun sprite, ostatni blok czarny
-:
-    CMP #$28
-    BNE :+
 
-    LDA #$00
+    ; koniec animacji, można poczekać chwilkę
+
+    LDA #$FF
     STA klatkaAnimacji
 
-    BIT $2002
-    LDA #$3F
-    STA $2006
-    LDA #$11
-    STA $2006
-
-    LDA #$09
-    STA $2007
-    STA $2007
-    STA $2007
+    STA $0200
+    STA $0201
+    STA $0202
+    STA $0203
+    STA $0204
+    STA $0205
+    STA $0206
+    STA $0207
+    STA $0208
+    STA $0209
+    STA $020A
+    STA $020B
+    STA $020C
+    STA $020D
+    STA $020E
+    STA $020F
 
     LDA #<NMIAktualizacjaPlanszy2
     STA wskaznikNMI
     LDA #>NMIAktualizacjaPlanszy2
     STA wskaznikNMI+1
 
+    JMP PowrotDoNMI
+
+:
+    AND #%00000011
+    CMP #%00000011
+    BEQ :+
+
+    ; klatka animacji ++
+
+    LDY $0201
+    INY
+    STY $0201
+
+    LDY $0205
+    INY
+    STY $0205
+
+    LDY $0209
+    INY
+    STY $0209
+
+    LDY $020D
+    INY
+    STY $020D
+
+    JMP :++
+
 :
 
-    ; przesuń sprite
-    ; co 8 klatka zmień blok
+    ; zmień na tekst pod spodem
+
+;     LDX #$FF
+; :
+;     INX
+;     CPX #$04
+;     BEQ :+
+; 
+;     LDA $0200
+;     CMP #$FF
+;     BEQ :-
+;     LSR
+;     LSR
+;     LSR
+;     CLC
+;     SBC #$05
+;     TAY
+;     BIT $2002
+;     LDA PozycjaLiniiWPPUH, Y
+;     STA $2007
+;     LDA PozycjaLiniiWPPUL, Y
+;     STA $2007
+; 
+;     LDA klatkaAnimacji
+;     LSR
+;     LSR
+;     TAY
+;     LDA RozbitaLiniaCheemsNapis, Y
+;     STA $2007
+; 
+; :
+
+    ; pozycja X ++ i klatka animacji $80
+
+    CLC
+    LDA $0203
+    ADC #$08
+    STA $0203
+    CLC
+    LDA $0207
+    ADC #$08
+    STA $0207
+    CLC
+    LDA $020B
+    ADC #$08
+    STA $020B
+    CLC
+    LDA $020F
+    ADC #$08
+    STA $020F
+
+    LDA #$80
+    STA $0201
+    STA $0205
+    STA $0209
+    STA $020C
+
+    INC klatkaAnimacji
+
+:
 
     JMP PowrotDoNMI
 
 NMIAktualizacjaPlanszy2: ; przepisz wszystkie rozbijane linie
 
-    LDY tempY
-
-    ; przepisz linię z odczytu do tymczasowej
-
-    BIT $2007
-    LDA temp
-    STA $2006
-    LDA temp+1
-    STA $2006
-    BIT $2007
-
-    LDX #$FF ; pozycja w odczycie linii
+    JSR PrzepiszLinie
 
 :
-    INX
-    CPX #$0A
-    BEQ :+
-    LDA $2007
-    STA zrzutLinii, X
-    JMP :-
-:
-
-    LDA wypelnienieLinii-1, Y
-    CMP #$0A
-    BNE :+
-    JSR ZmienGrafikeRozbitaGora
-:
-    LDA wypelnienieLinii+1, Y
-    CMP #$0A
-    BNE :+
-    JSR ZmienGrafikeRozbitaDol
-:
-
-    ; przepisz tymczasową na zapis
-
-    BIT $2007
-    LDA int
-    STA $2006
-    LDA int+1
-    STA $2006
-
-    LDX #$FF ; pozycja w zapisie linii
-
-:
-    INX
-    CPX #$0A
-    BEQ :+
-    LDA zrzutLinii, X
-    STA $2007
-    JMP :-
-:
-
-    DEY
+    LDY odczytLinii
 
     LDA wypelnienieLinii, Y
     CMP #$00
-    BNE :++++++
+    BNE :+
+
+    DEC odczytLinii
 
     LDA #<NMIAktualizacjaPlanszy3
     STA wskaznikNMI
     LDA #>NMIAktualizacjaPlanszy3
     STA wskaznikNMI+1
 
-    STY tempY
-
-    JMP PowrotDoNMI
-
-    ; musimy wyczyścić czarnym tyle linii ile zostało rozbitych
-
-    BIT $2007
-    LDA temp
-    STA $2006
-    LDA temp+1
-    STA $2006
-
-    LDA #$00
-    STA $2007
-    STA $2007
-    STA $2007
-    STA $2007
-    STA $2007
-    STA $2007
-    STA $2007
-    STA $2007
-    STA $2007
-    STA $2007
-
-    LDY #$14 ; pozycja odczytu
-    LDX #$14 ; pozycja zapisu
-    
-:
-    DEX
-    CPX #$FF
-    BEQ :++++
-    DEY
-
-    LDA wypelnienieLinii, Y
-    CMP #$0A
-    BNE :+
-    DEY
-:
-
-    CPY #$FF
-    BNE :+
-    LDY #$00
-    LDA #$00
-    JMP :++
-:
-    LDA wypelnienieLinii, Y
-:
-    STA wypelnienieLinii, X
-
-    JMP :----
-:
-
-    ; koniec aktualizacji
-
-    LDA #<NMIBrakKlocka
-    STA wskaznikNMI
-    LDA #>NMIBrakKlocka
-    STA wskaznikNMI+1
-
-    LDA #$00
-    STA wstrzymajCPU
-
-    STY tempY
-
     JMP PowrotDoNMI
 
 :
-
-    CLC
-    LDA temp+1
-    SBC #$1F
-    STA temp+1
-    LDA temp
-    SBC #$00
-    STA temp
-
-    CLC
-    LDA int+1
-    SBC #$1F
-    STA int+1
-    LDA int
-    SBC #$00
-    STA int
-
-:
-    LDA wypelnienieLinii, Y
     CMP #$0A
     BNE :+
 
     ; ta linia zostanie rozbita, przesuwamy odczyt wyżej
-    CLC
-    LDA temp+1
-    SBC #$1F
-    STA temp+1
-    LDA temp
-    SBC #$00
-    STA temp
-
-    DEY
-    JMP :-
+    DEC odczytLinii
+    JMP :--
 
 :
-
-    STY tempY
-
-    JMP PowrotDoNMI
-
-    ; koniec aktualizacji
-
-    LDA #$00
-    STA wstrzymajCPU
-
-    LDA #<NMIBrakKlocka
-    STA wskaznikNMI
-    LDA #>NMIBrakKlocka
-    STA wskaznikNMI+1
-
-    STY tempY
 
     JMP PowrotDoNMI
 
 NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robite, zaaktualizuj zmienną wypelnienieLinii
 
-    ; jeśli na początku są równe od razu koniec !! do zrobienia potem
-
-    ; przesuń oba na następną linię
-
-    CLC
-    LDA temp+1
-    SBC #$1F
-    STA temp+1
-    LDA temp
-    SBC #$00
-    STA temp
-
 :
-
-    CLC
-    LDA int+1
-    SBC #$1F
-    STA int+1
-    LDA int
-    SBC #$00
-    STA int
+    LDY zapisLinii
     
     BIT $2007
-    LDA int
+    LDA PozycjaLiniiWPPUH, Y
     STA $2006
-    LDA int+1
+    LDA PozycjaLiniiWPPUL, Y
     STA $2006
 
     LDA #$00
@@ -1201,20 +1150,16 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
     STA $2007
     STA $2007
     
-    LDA temp
-    CMP int
-    BNE :-
+    LDA odczytLinii
+    CMP zapisLinii
+    BEQ :+
 
-    LDA temp+1
-    CMP int+1
-    BNE :-
-
-    ; jeśli zapis z odczytem są równe zakończ pętlę
-    JMP :+
-
+    DEC zapisLinii
     JMP :-
 
 :
+
+    ; jeśli zapis z odczytem są równe zakończ pętlę
 
     ; oblicz ile linii zostało rozbitych i poprzesuwaj tablice wypelnienieLinii
 
@@ -1230,15 +1175,9 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
     BNE :+
 
     ; policz rozbitą linię
-    STX tempX
-    STY tempY
-    JSR PoliczLinieG1
 
-    JSR CzyNastepnyPoziom1
-
-    INC ileNaRazLinii
-    LDX tempX
-    LDY tempY
+    ; JSR PoliczLinieG1
+    ; JSR CzyNastepnyPoziom1
 
     JMP :-
 
@@ -1300,8 +1239,10 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
 
 :
 
-    LDA #$00
-    STA wstrzymajCPU
+    LDA #<PETLAGra
+    STA wskaznikPetli
+    LDA #>PETLAGra
+    STA wskaznikPetli+1
 
     LDA #<NMIBrakKlocka
     STA wskaznikNMI
@@ -1392,8 +1333,10 @@ NMILadowanieKoniecGry:
     LDA #$00
     STA zapetlajMuzyke
 
-    LDA #$00
-    STA wstrzymajCPU
+    LDA #<PETLAKoniecGry
+    STA wskaznikPetli
+    LDA #>PETLAKoniecGry
+    STA wskaznikPetli+1
 
     LDA #<NMIKoniecGry
     STA wskaznikNMI
@@ -2168,6 +2111,26 @@ PostawKlocek:
 
 :
 
+    ; usuń spritey
+
+    LDA #$FF
+    STA $0200
+    STA $0201
+    STA $0202
+    STA $0203
+    STA $0204
+    STA $0205
+    STA $0206
+    STA $0207
+    STA $0208
+    STA $0209
+    STA $020A
+    STA $020B
+    STA $020C
+    STA $020D
+    STA $020E
+    STA $020F
+
     RTS
 
 ; ========================== sprawdzanie kolizji ==========================
@@ -2531,6 +2494,69 @@ SkopiujMapeKolizji:
 
     CPY #$1E
     BNE :--
+
+    RTS
+
+; ========================== przepisywanie linii ==================================
+
+PrzepiszLinie:
+
+    ; przepisz linię z odczytu do tymczasowej
+
+    LDY odczytLinii
+
+    BIT $2007
+    LDA PozycjaLiniiWPPUH, Y
+    STA $2006
+    LDA PozycjaLiniiWPPUL, Y
+    STA $2006
+    BIT $2007
+
+    LDX #$FF ; pozycja w odczycie linii
+
+:
+    INX
+    CPX #$0A
+    BEQ :+
+    LDA $2007
+    STA zrzutLinii, X
+    JMP :-
+:
+
+    LDA wypelnienieLinii-1, Y
+    CMP #$0A
+    BNE :+
+    JSR ZmienGrafikeRozbitaGora
+:
+    LDA wypelnienieLinii+1, Y
+    CMP #$0A
+    BNE :+
+    JSR ZmienGrafikeRozbitaDol
+:
+
+    ; przepisz tymczasową na zapis
+
+    LDY zapisLinii
+
+    BIT $2007
+    LDA PozycjaLiniiWPPUH, Y
+    STA $2006
+    LDA PozycjaLiniiWPPUL, Y
+    STA $2006
+
+    LDX #$FF ; pozycja w zapisie linii
+
+:
+    INX
+    CPX #$0A
+    BEQ :+
+    LDA zrzutLinii, X
+    STA $2007
+    JMP :-
+:
+
+    DEC odczytLinii
+    DEC zapisLinii
 
     RTS
 
@@ -3428,8 +3454,15 @@ ZerowanieAPU:
     .byte $00, $00, $00, $00
 
 DanePalet:
-    .byte $0F, $08, $17, $28, $0F, $12, $22, $32, $0F, $07, $15, $36, $0F, $EA, $DC, $F5 ; paleta tla
-    .byte $0F, $08, $17, $28, $0F, $08, $17, $28, $0F, $08, $17, $28, $0F, $0F, $0F, $0F ; paleta spriteow
+    .byte $0F, $08, $17, $28 ; paleta tła 1
+    .byte $0F, $12, $22, $32 ; paleta tła 2
+    .byte $0F, $07, $15, $36 ; paleta tła 3
+    .byte $0F, $EA, $DC, $F5 ; paleta tła 4
+
+    .byte $0F, $08, $17, $28 ; paleta sprite'ów 1
+    .byte $0F, $08, $17, $28 ; paleta sprite'ów 2
+    .byte $0F, $08, $17, $28 ; paleta sprite'ów 3
+    .byte $0F, $1F, $1F, $1F ; paleta sprite'ów 4
 
 GrafikaTloMenu:
     .incbin "grafika/Menu.nam"
@@ -3702,6 +3735,99 @@ PaletyPoziomow:
     .byte $0F, $1C, $2C, $0F ; 14
     .byte $0F, $1A, $2A, $0F ; 15
 
+PozycjaLiniiWPPUL:
+    .byte $CA
+    .byte $EA
+    .byte $0A
+    .byte $2A
+    .byte $4A
+    .byte $6A
+    .byte $8A
+    .byte $AA
+    .byte $CA
+    .byte $EA
+    .byte $0A
+    .byte $2A
+    .byte $4A
+    .byte $6A
+    .byte $8A
+    .byte $AA
+    .byte $CA
+    .byte $EA
+    .byte $0A
+    .byte $2A
+    .byte $4A
+
+PozycjaLiniiWPPUH:
+    .byte $20
+    .byte $20
+    .byte $21
+    .byte $21
+    .byte $21
+    .byte $21
+    .byte $21
+    .byte $21
+    .byte $21
+    .byte $21
+    .byte $22
+    .byte $22
+    .byte $22
+    .byte $22
+    .byte $22
+    .byte $22
+    .byte $22
+    .byte $22
+    .byte $23
+    .byte $23
+    .byte $23
+
+RozbitaLiniaCheemsNapis:
+    .byte $00
+    .byte $EC
+    .byte $F1
+    .byte $EE
+    .byte $EE
+    .byte $F6
+    .byte $FB
+    .byte $00
+    .byte $00
+    .byte $00
+
+RozbitaLiniaDogeNapis:
+    .byte $00
+    .byte $ED
+    .byte $F8
+    .byte $F0
+    .byte $EE
+    .byte $00
+    .byte $00
+    .byte $00
+    .byte $00
+    .byte $00
+
+RozbitaLiniaBuffDogeNapis:
+    .byte $00
+    .byte $EB
+    .byte $FD
+    .byte $EF
+    .byte $EF
+    .byte $ED
+    .byte $F8
+    .byte $F0
+    .byte $EE
+    .byte $00
+
+RozbitaLiniaTemtrisNapis:
+    .byte $00
+    .byte $FC
+    .byte $EE
+    .byte $F6
+    .byte $FC
+    .byte $FA
+    .byte $F2
+    .byte $FB
+    .byte $00
+    .byte $00
 
 ; ============================= Dane Muzyki ===========================================
 
