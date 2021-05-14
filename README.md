@@ -16,9 +16,11 @@ Wersja 1.1
 - dodano animacje rozbijania linii
 
 Wersja coś się znowu odpierdala ale inaczej
+
 Tutaj też coś się odjebało to zostawiłem bo śmieszne, wystarczy rozbić jedną linię
 
 Wersja trikasy fikoły kurwa
+
 Co się z tym odjebało to ja nawet nie
 Wystarczy zrobić jedną linię i całemu programowi odpierdala
 
