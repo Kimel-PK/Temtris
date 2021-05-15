@@ -72,7 +72,7 @@ ileNaRazLinii: .res 1
 
 ; muzyka
 wlaczMuzyke: .res 1 ; -----PTN - aktywne kanały
-zapetlajMuzyke: .res 1
+odtwarzajMuzykeLosowo: .res 1
 zegarMuzykiP: .res 1
 zegarMuzykiT: .res 1
 zegarMuzykiN: .res 1
@@ -282,21 +282,42 @@ RESET:
     ; załaduj rickroll do odtwarzacza muzyki
 
     LDA #$01
-    STA zapetlajMuzyke
+    STA odtwarzajMuzykeLosowo
 
-    LDA #<NeverGonnaP
+    LDA #<NeverGonnaGiveYouUpKanalP
+    STA odtwarzanaMuzykaP
+    LDA #>NeverGonnaGiveYouUpKanalP
+    STA odtwarzanaMuzykaP+1
+
+    LDY #$00
+    LDA (odtwarzanaMuzykaP), Y
     STA wskaznikDoMuzykiP
-    LDA #>NeverGonnaP
+    INY
+    LDA (odtwarzanaMuzykaP), Y
     STA wskaznikDoMuzykiP+1
 
-    LDA #<NeverGonnaT
+    LDA #<NeverGonnaGiveYouUpKanalT
+    STA odtwarzanaMuzykaT
+    LDA #>NeverGonnaGiveYouUpKanalT
+    STA odtwarzanaMuzykaT+1
+
+    LDY #$00
+    LDA (odtwarzanaMuzykaT), Y
     STA wskaznikDoMuzykiT
-    LDA #>NeverGonnaT
+    INY
+    LDA (odtwarzanaMuzykaT), Y
     STA wskaznikDoMuzykiT+1
 
-    LDA #<NeverGonnaN
+    LDA #<NeverGonnaGiveYouUpKanalN
+    STA odtwarzanaMuzykaN
+    LDA #>NeverGonnaGiveYouUpKanalN
+    STA odtwarzanaMuzykaN+1
+
+    LDY #$00
+    LDA (odtwarzanaMuzykaN), Y
     STA wskaznikDoMuzykiN
-    LDA #>NeverGonnaN
+    INY
+    LDA (odtwarzanaMuzykaN), Y
     STA wskaznikDoMuzykiN+1
 
     LDA #%00000111
@@ -380,12 +401,6 @@ PETLAKoniecGry:
 PETLAPalenieGumy:
 
     JMP PowrotDoPETLI
-
-Przerwanie:
-
-    NOP
-
-    RTS
 
 ; =========================================================================
 ; ================================== VBLANK ===============================
@@ -586,11 +601,13 @@ NMIBrakKlocka:
     LDA numerNastepnegoKlocka1
     STA numerKlocka
 
+:
     LDA losowa
     AND #%00000111
     CMP #%00000111
     BNE :+
-    LDA #%00000000
+    JSR Losuj
+    JMP :-
 :
     STA numerNastepnegoKlocka1
 
@@ -888,8 +905,6 @@ NMIAktualizacjaPlanszy: ; określ numer linii o jeden niżej niż pierwsza rozbi
 
 NMIAnimacjaRozbijanychLinii:
 
-    JSR Przerwanie
-
     ; wypełnij po kolei czarnymi kwadratami linie i napisz na niej tekst
 
     INC klatkaAnimacji
@@ -1037,8 +1052,6 @@ NMIAnimacjaRozbijanychLinii:
     JMP :++++++++++++
 
 :
-
-    JSR Przerwanie
 
     ; zmień na tekst pod spodem
 
@@ -1392,7 +1405,7 @@ NMILadowanieKoniecGry:
     STA wlaczMuzyke
 
     LDA #$00
-    STA zapetlajMuzyke
+    STA odtwarzajMuzykeLosowo
 
     LDA #<PETLAPalenieGumy
     STA wskaznikPetli
@@ -3199,54 +3212,181 @@ CzyNastepnyPoziom1:
 ; ========================= odtwarzanie muzyki ======================
 ; ===================================================================
 
-WlaczRickRoll:
+; ściąga
 
-    LDA #<NeverGonnaP
-    STA wskaznikDoMuzykiP
-    LDA #>NeverGonnaP
-    STA wskaznikDoMuzykiP+1
+; KANAŁ 1 - PULSE
 
-    LDA #<NeverGonnaT
-    STA wskaznikDoMuzykiT
-    LDA #>NeverGonnaT
-    STA wskaznikDoMuzykiT+1
+; $4000     DDLC VVVV 	Duty (D), envelope loop / length counter halt (L), constant volume (C), volume/envelope (V)
+; $4001     EPPP NSSS 	Sweep unit: enabled (E), period (P), negate (N), shift (S)
+; $4002     TTTT TTTT 	Timer low (T)
+; $4003     LLLL LTTT 	Length counter load (L), timer high (T)
 
-    LDA #<NeverGonnaN
-    STA wskaznikDoMuzykiN
-    LDA #>NeverGonnaN
-    STA wskaznikDoMuzykiN+1
+; KANAŁ 3 - TRIANGLE
 
-    LDA #%00000111
-    STA wlaczMuzyke
+; $4008 	CRRR RRRR 	Length counter halt / linear counter control (C), linear counter load (R)
+; $4009 	---- ---- 	Unused
+; $400A 	TTTT TTTT 	Timer low (T)
+; $400B 	LLLL LTTT 	Length counter load (L), timer high (T)
 
-    RTS
+; KANAŁ 4 - NOISE
+
+; $400C 	--LC VVVV 	Envelope loop / length counter halt (L), constant volume (C), volume/envelope (V)
+; $400D     ---- ----   Unused
+; $400E 	L--- PPPP 	Loop noise (L), noise period (P)
+; $400F 	LLLL L--- 	Length counter load (L)
+
+; wydarzenia kanałów P i T
+
+; modyfikuj ustawienia
+; #%10101--- #%DDLCVVVV #%EPPPNSSS
+
+; skocz o X bajtów w tył
+; #%10111--- #%XXXXXXXX
+; X - ilość bajtów
+
+; pauza w odtwarzaniu
+; #%11101--- #%TTTTTTTT
+
+; zakończ blok
+; #%11111---
+
+; wydarzenia kanału N
+
+; modyfikuj ustawienia
+; #%-001---- #%--LCVVVV
+
+; skocz o X bajtów w tył
+; #%-010---- #%XXXXXXXX
+
+; pauza w odtwarzaniu
+; #%-011---- #%TTTTTTTT
+
+; zakończ blok
+; #%-111----
+
+; kod
 
 OdtwarzajMuzyke:
 
     LDA wlaczMuzyke
     AND #%00000100
     CMP #%00000100
-    BNE :+++++
+    BNE :+
+
+    JSR OdtwarzaczMuzykiKanalP
+
+:
+    LDA wlaczMuzyke
+    AND #%00000010
+    CMP #%00000010
+    BNE :+
+
+    JSR OdtwarzaczMuzykiKanalT
+
+:
+    LDA wlaczMuzyke
+    AND #%00000001
+    CMP #%00000001
+    BNE :+
+
+    JSR OdtwarzaczMuzykiKanalN
+
+:
+
+    RTS
+
+OdtwarzaczMuzykiKanalP:
 
     ; ================== kanał 1 - fala kwadratowa ===================
 
     LDA zegarMuzykiP
     CMP #$00
-    BNE :++++
+    BEQ :+
+    DEC zegarMuzykiP
+    RTS
+:
 
     LDY #$00
 
     LDA (wskaznikDoMuzykiP), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
     AND #%11111000
+    CMP #%11111000
+    BNE :++
+
+    ; kod końca bloku
+
+    CLC
+    LDA odtwarzanaMuzykaP
+    ADC #$02
+    STA odtwarzanaMuzykaP
+    LDA odtwarzanaMuzykaP+1
+    ADC #$00
+    STA odtwarzanaMuzykaP+1
+
+    LDY #$00
+
+    LDA (odtwarzanaMuzykaP), Y
+    AND #%11111000
+    CMP #%11111000
+    BNE :+
+
+    ; kod końca bloku, wyłącz kanał
+
+    LDA wlaczMuzyke
+    AND #%11111011
+    STA wlaczMuzyke
+
+    LDA #$00
+    STA $4000
+    STA $4001
+    STA $4002
+    STA $4003
+
+    RTS
+
+:
+
+    LDY #$00
+
+    LDA (odtwarzanaMuzykaP), Y
+    STA wskaznikDoMuzykiP
+    INY
+    LDA (odtwarzanaMuzykaP), Y
+    STA wskaznikDoMuzykiP+1
+
+    JMP :--
+
+:
+    CMP #%11101000
+    BNE :+
+
+    ; pauza w odtwarzaniu
+
+    LDA #$00
+    STA $4000
+    STA $4001
+    STA $4002
+    STA $4003
+
+    INY
+    LDA (wskaznikDoMuzykiP), Y
+    STA zegarMuzykiP
+
+    CLC
+    LDA wskaznikDoMuzykiP
+    ADC #$02
+    STA wskaznikDoMuzykiP
+    LDA wskaznikDoMuzykiP+1
+    ADC #$00
+    STA wskaznikDoMuzykiP+1
+
+    JMP :++++
+
+:
     CMP #%10101000
     BNE :+
 
     ; wykryto bajt modyfikacji - kolejne 2 bajty zmienią ustawienia kanału
-
-    ; $4000 / $4004 	DDLC VVVV 	Duty (D), envelope loop / length counter halt (L), constant volume (C), volume/envelope (V)
-    ; $4001 / $4005 	EPPP NSSS 	Sweep unit: enabled (E), period (P), negate (N), shift (S)
-    ; $4002 / $4006 	TTTT TTTT 	Timer low (T)
-    ; $4003 / $4007 	LLLL LTTT 	Length counter load (L), timer high (T)
 
     INY
     LDA (wskaznikDoMuzykiP), Y
@@ -3263,29 +3403,26 @@ OdtwarzajMuzyke:
     ADC #$00
     STA wskaznikDoMuzykiP+1
 
+    JMP :----
+
 :
-
-    CMP #%11111000
-    BNE :++
-
-    ; koniec odtwarzania kanału P
-
-    LDA zapetlajMuzyke
-    CMP #$01
+    CMP #%10111000
     BNE :+
-    JSR WlaczRickRoll
-    RTS
-:
 
-    LDA wlaczMuzyke
-    AND #%11111011
-    STA wlaczMuzyke
+    ; przewiń o X bajtów
 
-    LDA #$00
-    STA $4000
-    STA $4001
-    STA $4002
-    STA $4003
+    INY
+    LDA (wskaznikDoMuzykiP), Y
+
+    CLC
+    LDA wskaznikDoMuzykiP
+    SBC temp
+    STA wskaznikDoMuzykiP
+    LDA wskaznikDoMuzykiP+1
+    SBC #$00
+    STA wskaznikDoMuzykiP+1
+
+    JMP :-----
 
 :
 
@@ -3313,32 +3450,100 @@ OdtwarzajMuzyke:
 
     DEC zegarMuzykiP
 
+    RTS
+
+OdtwarzaczMuzykiKanalT:
+
     ; =========================== kanał 3 fala trójkątna =========================
-
-:
-
-    LDA wlaczMuzyke
-    AND #%00000010
-    CMP #%00000010
-    BNE :+++
 
     LDA zegarMuzykiT
     CMP #$00
-    BNE :++
+    BEQ :+
+    DEC zegarMuzykiT
+    RTS
+:
 
     LDY #$00
 
     LDA (wskaznikDoMuzykiT), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
     AND #%11111000
+    CMP #%11111000
+    BNE :++
+
+    ; kod końca bloku
+
+    CLC
+    LDA odtwarzanaMuzykaT
+    ADC #$02
+    STA odtwarzanaMuzykaT
+    LDA odtwarzanaMuzykaT+1
+    ADC #$00
+    STA odtwarzanaMuzykaT+1
+
+    LDY #$00
+
+    LDA (odtwarzanaMuzykaT), Y
+    AND #%11111000
+    CMP #%11111000
+    BNE :+
+
+    ; kod końca bloku, wyłącz kanał
+
+    LDA wlaczMuzyke
+    AND #%11111101
+    STA wlaczMuzyke
+
+    LDA #$00
+    STA $4008
+    STA $4009
+    STA $400A
+    STA $400B
+
+    RTS
+
+:
+
+    LDY #$00
+
+    LDA (odtwarzanaMuzykaT), Y
+    STA wskaznikDoMuzykiT
+    INY
+    LDA (odtwarzanaMuzykaT), Y
+    STA wskaznikDoMuzykiT+1
+
+    JMP :--
+
+:
+    CMP #%11101000
+    BNE :+
+
+    ; pauza w odtwarzaniu
+
+    LDA #$00
+    STA $4008
+    STA $4009
+    STA $400A
+    STA $400B
+
+    INY
+    LDA (wskaznikDoMuzykiT), Y
+    STA zegarMuzykiT
+
+    CLC
+    LDA wskaznikDoMuzykiT
+    ADC #$02
+    STA wskaznikDoMuzykiT
+    LDA wskaznikDoMuzykiT+1
+    ADC #$00
+    STA wskaznikDoMuzykiT+1
+
+    JMP :++++
+
+:
     CMP #%10101000
     BNE :+
 
     ; wykryto bajt modyfikacji - kolejne 2 bajty zmienią ustawienia kanału
-
-    ; $4008 	CRRR RRRR 	Length counter halt / linear counter control (C), linear counter load (R)
-    ; $4009 	---- ---- 	Unused
-    ; $400A 	TTTT TTTT 	Timer low (T)
-    ; $400B 	LLLL LTTT 	Length counter load (L), timer high (T) 
 
     INY
     LDA (wskaznikDoMuzykiT), Y
@@ -3351,6 +3556,27 @@ OdtwarzajMuzyke:
     LDA wskaznikDoMuzykiT+1
     ADC #$00
     STA wskaznikDoMuzykiT+1
+
+    JMP :----
+
+:
+    CMP #%10111000
+    BNE :+
+
+    ; przewiń o X bajtów
+
+    INY
+    LDA (wskaznikDoMuzykiT), Y
+
+    CLC
+    LDA wskaznikDoMuzykiT
+    SBC temp
+    STA wskaznikDoMuzykiT
+    LDA wskaznikDoMuzykiT+1
+    SBC #$00
+    STA wskaznikDoMuzykiT+1
+
+    JMP :-----
 
 :
 
@@ -3378,27 +3604,78 @@ OdtwarzajMuzyke:
 
     DEC zegarMuzykiT
 
+    RTS
+
+OdtwarzaczMuzykiKanalN:
+
     ; ========================== kanał 4 szum ==================================
-
-:
-
-    LDA wlaczMuzyke
-    AND #%00000001
-    CMP #%00000001
-    BNE :+++++
 
     LDA zegarMuzykiN
     CMP #$00
-    BNE :++++
+    BEQ :+
+    DEC zegarMuzykiN
+    RTS
+:
 
     LDY #$00
 
-    LDA (wskaznikDoMuzykiN), Y ; odczytujemy bajt i sprawdzmy czy to bajt modyfikacji ustawień
+    LDA (wskaznikDoMuzykiN), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
     AND #%01110000
-    CMP #%01110000 ; koniec ścieżki
-    BEQ :+++
-    CMP #%01000000 ; pauza w szumie
+    CMP #%01110000
+    BNE :++
+
+    ; kod końca bloku
+
+    CLC
+    LDA odtwarzanaMuzykaN
+    ADC #$02
+    STA odtwarzanaMuzykaN
+    LDA odtwarzanaMuzykaN+1
+    ADC #$00
+    STA odtwarzanaMuzykaN+1
+
+    LDY #$00
+
+    LDA (odtwarzanaMuzykaN), Y
+    AND #%11111000
+    CMP #%11111000
     BNE :+
+
+    ; kod końca bloku, wyłącz kanał
+
+    LDA wlaczMuzyke
+    AND #%11111110
+    STA wlaczMuzyke
+
+    LDA #$00
+    STA $400C
+    STA $400D
+    STA $400E
+    STA $400F
+
+    RTS
+
+:
+
+    LDY #$00
+
+    LDA (odtwarzanaMuzykaN), Y
+    STA wskaznikDoMuzykiN
+    INY
+    LDA (odtwarzanaMuzykaN), Y
+    STA wskaznikDoMuzykiN+1
+
+    JMP :--
+
+:
+    CMP #%00110000
+    BNE :+
+
+    ; pauza w odtwarzaniu
+
+    LDA #$00
+    STA $400E
+    STA $400F
 
     INY
     LDA (wskaznikDoMuzykiN), Y
@@ -3412,18 +3689,13 @@ OdtwarzajMuzyke:
     ADC #$00
     STA wskaznikDoMuzykiN+1
 
-    JMP :-
+    JMP :++++
 
 :
-    CMP #%01010000
+    CMP #%00010000
     BNE :+
 
     ; wykryto bajt modyfikacji - kolejne 2 bajty zmienią ustawienia kanału
-
-    ; $400C 	--LC VVVV 	Envelope loop / length counter halt (L), constant volume (C), volume/envelope (V)
-    ; $400D     ---- ----   Unused
-    ; $400E 	L--- PPPP 	Loop noise (L), noise period (P)
-    ; $400F 	LLLL L--- 	Length counter load (L) 
 
     INY
     LDA (wskaznikDoMuzykiN), Y
@@ -3437,16 +3709,17 @@ OdtwarzajMuzyke:
     ADC #$00
     STA wskaznikDoMuzykiN+1
 
-    JMP :--
+    JMP :----
 
 :
-    CMP #%00110000
+    CMP #%00100000
     BNE :+
 
-    ; wykryto bajt pętli - odejmij od wskaźnika
+    ; przewiń o X bajtów
 
     INY
     LDA (wskaznikDoMuzykiN), Y
+
     STA temp
 
     CLC
@@ -3457,7 +3730,7 @@ OdtwarzajMuzyke:
     SBC #$00
     STA wskaznikDoMuzykiN+1
 
-    JMP :---
+    JMP :-----
 
 :
 
@@ -3485,9 +3758,104 @@ OdtwarzajMuzyke:
 
     DEC zegarMuzykiN
 
-:
-
     RTS
+
+; :
+; 
+;     LDA zegarMuzykiN
+;     CMP #$00
+;     BNE :++++
+; 
+;     LDY #$00
+; 
+;     LDA (wskaznikDoMuzykiN), Y ; odczytujemy bajt i sprawdzmy czy to bajt modyfikacji ustawień
+;     AND #%01110000
+;     CMP #%01110000 ; koniec ścieżki
+;     BEQ :+++
+;     CMP #%01000000 ; pauza w szumie
+;     BNE :+
+; 
+;     INY
+;     LDA (wskaznikDoMuzykiN), Y
+;     STA zegarMuzykiN
+; 
+;     CLC
+;     LDA wskaznikDoMuzykiN
+;     ADC #$02
+;     STA wskaznikDoMuzykiN
+;     LDA wskaznikDoMuzykiN+1
+;     ADC #$00
+;     STA wskaznikDoMuzykiN+1
+; 
+;     JMP :-
+; 
+; :
+;     CMP #%01010000
+;     BNE :+
+; 
+;     ; wykryto bajt modyfikacji - kolejne 2 bajty zmienią ustawienia kanału
+; 
+;     INY
+;     LDA (wskaznikDoMuzykiN), Y
+;     STA $400C
+; 
+;     CLC
+;     LDA wskaznikDoMuzykiN
+;     ADC #$02
+;     STA wskaznikDoMuzykiN
+;     LDA wskaznikDoMuzykiN+1
+;     ADC #$00
+;     STA wskaznikDoMuzykiN+1
+; 
+;     JMP :--
+; 
+; :
+;     CMP #%00110000
+;     BNE :+
+; 
+;     ; wykryto bajt pętli - odejmij od wskaźnika
+; 
+;     INY
+;     LDA (wskaznikDoMuzykiN), Y
+;     STA temp
+; 
+;     CLC
+;     LDA wskaznikDoMuzykiN
+;     SBC temp
+;     STA wskaznikDoMuzykiN
+;     LDA wskaznikDoMuzykiN+1
+;     SBC #$00
+;     STA wskaznikDoMuzykiN+1
+; 
+;     JMP :---
+; 
+; :
+; 
+;     LDY #$00
+; 
+;     ; przesuń o licznik muzyki
+;     LDA (wskaznikDoMuzykiN), Y ; odczytujemy wysokość
+;     STA $400E
+;     INY
+;     LDA (wskaznikDoMuzykiN), Y ; odczytujemy długość
+;     STA $400F
+;     INY
+;     LDA (wskaznikDoMuzykiN), Y ; odczytujemy długość dla zegara
+;     STA zegarMuzykiN
+; 
+;     CLC
+;     LDA wskaznikDoMuzykiN
+;     ADC #$03
+;     STA wskaznikDoMuzykiN
+;     LDA wskaznikDoMuzykiN+1
+;     ADC #$00
+;     STA wskaznikDoMuzykiN+1
+; 
+; :
+; 
+;     DEC zegarMuzykiN
+; 
+;     RTS
 
 MuzykaWylaczWszystkieKanaly:
 
@@ -3890,7 +4258,204 @@ RozbitaLiniaTemtrisNapis:
     .byte $00
     .byte $00
 
-; ============================= Dane Muzyki ===========================================
+; ======================================================================
+; ============================= Dane Muzyki ============================
+; ======================================================================
+
+; Never Gonna Give You Up
+
+NeverGonnaGiveYouUpKanalP:
+    .byte <NGGYU_P_Wstep, >NGGYU_P_Wstep
+    .byte <NGGYU_P_Zwrotka, >NGGYU_P_Zwrotka
+
+    .byte %11111000
+
+NeverGonnaGiveYouUpKanalT:
+    .byte <NGGYU_T_Wstep, >NGGYU_T_Wstep
+
+    .byte %11111000
+
+NeverGonnaGiveYouUpKanalN:
+    .byte <NGGYU_N_Wstep, >NGGYU_N_Wstep
+    .byte <NGGYU_N_Rytm, >NGGYU_N_Rytm
+
+    .byte %11111000
+
+; ===================== NGGYU kanał P =========================
+
+NGGYU_P_Wstep:
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00111100
+    .byte %00011010, %10111000, %00001111
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %11001000, %00101101
+    .byte %00000000, %10110010, %00101101
+    .byte %00000001, %00001100, %00011110
+    .byte %00000000, %10110010, %00101101
+    .byte %00000000, %10011111, %00101101
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00011110
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %11001000, %00101101
+    .byte %00000000, %10110010, %00101101
+    .byte %00000001, %00001100, %01011010
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00001111
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %10000101, %00000111
+    .byte %00000000, %10000101, %00001000
+    .byte %00000000, %01110110, %00000111
+    .byte %00000000, %01100011, %00001000
+    .byte %00000000, %01110110, %00000111
+    .byte %00000000, %01100011, %00001000
+    .byte %00000000, %11001000, %00101101
+    .byte %00000000, %10110010, %00101101
+    .byte %00000001, %00001100, %00011110
+    .byte %00000000, %10110010, %00101101
+    .byte %00000000, %10011111, %00101101
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00011110
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %11001000, %00101101
+    .byte %00000000, %10110010, %00101101
+    .byte %00000001, %00001100, %01011010
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %01011010
+    .byte %10101000, %11111111, %00000000
+
+    .byte %11111000
+
+NGGYU_P_Zwrotka:
+    .byte %00000000, %11101110, %00001111
+    .byte %00000000, %11010100, %00000111
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00001000
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %11001000, %00000111
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00001000
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %11001000, %00000111
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00001000
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %10110010, %00001111
+    .byte %00000000, %11101110, %00000111
+    .byte %00000000, %11010100, %00001000
+    .byte %00000000, %11101110, %00111100
+    .byte %00000001, %00001100, %00011110
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00101101
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %11101110, %00000111
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00001000
+    .byte %10101000, %11111111, %00000000
+    .byte %00000000, %11101110, %00001111
+    .byte %00000000, %11010100, %00001111
+    .byte %00000000, %11001000, %00001111
+    .byte %00000000, %11101110, %00001111
+    .byte %10101000, %11110000, %00000000
+    .byte %00011010, %10111000, %00001111
+    .byte %10101000, %11111111, %00000000
+    .byte %00000001, %00001100, %00001111
+    
+    .byte %11111000
+
+; ===================== NGGYU kanał T =========================
+
+NGGYU_T_Wstep:
+    .byte %10101000, %00000000
+    .byte %00011010, %10111000, %00111100
+    .byte %00011010, %10111000, %00001111
+    .byte %10101000, %11111111
+    .byte %00000000, %01100011, %00101101
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %10000101, %00011110
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %01001111, %00101101
+    .byte %00000000, %01000010, %00000111
+    .byte %00000000, %01001010, %00001000
+    .byte %00000000, %01001111, %00000111
+    .byte %00000000, %01100011, %00001000
+    .byte %00000000, %01100011, %00101101
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %10000101, %01011010
+    .byte %10101000, %00000000
+    .byte %00011010, %10111000, %00011110
+    .byte %10101000, %11111111
+    .byte %00000000, %01000010, %00000111
+    .byte %00000000, %01001010, %00001000
+    .byte %00000000, %01001111, %00000111
+    .byte %00000000, %01100011, %00001000
+    .byte %00000000, %01100011, %00101101
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %10000101, %00011110
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %01001111, %00101101
+    .byte %00000000, %01000010, %00000111
+    .byte %00000000, %01001010, %00001000
+    .byte %00000000, %01001111, %00000111
+    .byte %00000000, %01100011, %00001000
+    .byte %00000000, %01100011, %00101101
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %10000101, %01011010
+    .byte %00000000, %01100011, %00000011
+    .byte %10101000, %00000000
+    .byte %00011010, %10111000, %00000100
+    .byte %10101000, %11111111
+    .byte %00000000, %01100011, %00000100
+    .byte %10101000, %00000000
+    .byte %00011010, %10111000, %00000100
+    .byte %10101000, %11111111
+    .byte %00000000, %01100011, %00000011
+    .byte %10101000, %00000000
+    .byte %00011010, %10111000, %00000100
+    .byte %10101000, %11111111
+    .byte %00000000, %01100011, %00000100
+    .byte %10101000, %00000000
+    .byte %00011010, %10111000, %00000100
+    .byte %10101000, %11111111
+    .byte %00000000, %01100011, %00000011
+    .byte %10101000, %00000000
+    .byte %00011010, %10111000, %00000100
+    .byte %10101000, %11111111
+
+    .byte %11111000
+
+; ===================== NGGYU kanał N =========================
+
+NGGYU_N_Wstep:
+    .byte %00010000, %01010111
+    .byte %00001110, %10000000, %00000111
+    .byte %00001000, %10000000, %00001000
+    .byte %00110000, %00000111
+    .byte %00001110, %10000000, %00001000
+    .byte %00001110, %10000000, %00000111
+    .byte %00001000, %10000000, %00001000
+    .byte %00001000, %10000000, %00000111
+    .byte %00001110, %10000000, %00001000
+    .byte %00001000, %10000000, %00000111
+    .byte %00001000, %10000000, %00001000
+
+    .byte %01110000
+
+NGGYU_N_Rytm:
+    .byte %00001110, %10000000, %00001111
+    .byte %00000001, %10000000, %00000111
+    .byte %00000010, %10000000, %00001000
+    .byte %00001000, %10000000, %00001111
+    .byte %00000010, %10000000, %00001111
+    .byte %00001110, %10000000, %00001111
+    .byte %00000001, %10000000, %00000111
+    .byte %00000010, %10000000, %00001000
+    .byte %00001000, %10000000, %00001111
+    .byte %00000010, %10000000, %00001111
+    .byte %00100000, %00011101
+
+    .byte %01110000
+
+; Never Gonna Give You Up stare dane
 
 NeverGonnaP:
 
