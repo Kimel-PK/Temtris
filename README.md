@@ -1,6 +1,13 @@
 # Temtris
 Projekt cc65 assembly dla NES
 
+## Następne zmiany: Wersja 1.3
+Planowane zmiany:
+- [ ] naprawienie kolizji
+- [ ] ulepszenie sterowania
+- [ ] losowy odtwarzacz muzyki
+- [ ] dodanie muzyki Szanty Bitwa +
+
 ## W trakcie prac: Wersja 1.2
 Planowane zmiany:
 - [x] zmiany w grafice psów
