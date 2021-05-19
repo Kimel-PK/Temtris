@@ -1,7 +1,7 @@
 # Temtris
 Projekt cc65 assembly dla NES
 
-W trakcie prac: Wersja 1.2
+## W trakcie prac: Wersja 1.2
 Planowane zmiany:
 - zmiany w grafice psów
 - wybranie palety barw wyglądającej dobrze na innych emulatorach
@@ -10,7 +10,7 @@ Planowane zmiany:
 
 ======================================================================
 
-Wersja 1.1
+###### Wersja 1.1
 - Zmiany grafiki
 - naprawiono miganie ekranu przy stawianiu kloca
 - dodano animacje rozbijania linii
