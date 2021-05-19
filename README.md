@@ -8,7 +8,7 @@ Planowane zmiany:
 - [x] optymalizacja muzyki żeby nie zajmowała 1KB pamieci
 - [x] ulepszenia odtwarzacza muzyki
 
-======================================================================
+# Wersje stabilne
 
 ## Wersja 1.1
 - Zmiany grafiki
