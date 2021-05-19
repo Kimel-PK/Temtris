@@ -1,7 +1,7 @@
 # Temtris
 Projekt cc65 assembly dla NES
 
-Sponsor projektu https://www.reddit.com/r/Rudzia/
+Sponsor projektu: https://www.reddit.com/r/Rudzia/
 
 ## Następne zmiany: Wersja 1.3
 Planowane zmiany:
