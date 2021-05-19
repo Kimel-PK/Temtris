@@ -3,10 +3,10 @@ Projekt cc65 assembly dla NES
 
 ## W trakcie prac: Wersja 1.2
 Planowane zmiany:
-- zmiany w grafice psów
+✓ zmiany w grafice psów
 - wybranie palety barw wyglądającej dobrze na innych emulatorach
-- optymalizacja muzyki żeby nie zajmowała 1KB pamieci
-- ulepszenia odtwarzacza muzyki
+✓ optymalizacja muzyki żeby nie zajmowała 1KB pamieci
+✓ ulepszenia odtwarzacza muzyki
 
 ======================================================================
 
