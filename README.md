@@ -16,7 +16,7 @@ Planowane zmiany:
 # Wersje stabilne
 ## Wersja 1.2
 Zmiany:
-- zmiany w grafice psów
+- zmiany w grafice Cheemsa
 - optymalizacja muzyki żeby nie zajmowała 1KB pamieci
 - ulepszenia techniczne odtwarzacza muzyki
 
