@@ -5,6 +5,7 @@ Sponsor projektu: https://www.reddit.com/r/Rudzia/
 
 ## Następne zmiany: Wersja 1.3
 Planowane zmiany:
+- [ ] odświeżenie wyglądu logo
 - [ ] naprawienie kolizji
 - [ ] ulepszenie sterowania
 - [ ] losowy odtwarzacz muzyki

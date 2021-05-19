@@ -3301,7 +3301,7 @@ OdtwarzaczMuzykiKanalP:
 
     INY
     LDA (odtwarzanaMuzykaP), Y ; podwójne sprawdzenie końca bloku
-    CMP $AE
+    CMP #$AE
     BNE :++
 
     ; kod końca bloku, graj następną lub wyłącz muzykę
@@ -3480,7 +3480,7 @@ OdtwarzaczMuzykiKanalT:
 
     INY
     LDA (odtwarzanaMuzykaP), Y ; podwójne sprawdzenie końca bloku
-    CMP $AE
+    CMP #$AE
     BNE :++
 
     ; kod końca bloku, wyłącz kanał
@@ -4251,10 +4251,10 @@ NeverGonnaGiveYouUpKanalP:
     .byte <NGGYU_P_Zwrotka_2, >NGGYU_P_Zwrotka_2
     .byte <NGGYU_P_I_JUST, >NGGYU_P_I_JUST
     .byte <NGGYU_P_Refren, >NGGYU_P_Refren
-    .byte <Pauza60klatek, >Pauza60klatek
+    .byte <Pauza30klatek, >Pauza30klatek
     .byte <NGGYU_P_Refren, >NGGYU_P_Refren
     .byte <Pauza60klatek, >Pauza60klatek
-    .byte <NGGYU_P_Koniec, >NGGYU_P_Koniec
+    .byte <Pauza360klatek, >Pauza360klatek
 
     .byte %11111000, $AE
 
@@ -4302,6 +4302,7 @@ NeverGonnaGiveYouUpKanalT:
     .byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
     .byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
     .byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
+    .byte <Pauza360klatek, >Pauza360klatek
 
     .byte %11111000, $AE
 
@@ -4605,13 +4606,6 @@ NGGYU_P_Przejscie_2:
     .byte %00000000, %11001000, %00010111
     .byte %00000000, %11010100, %00001111
     .byte %11101000, %00011110
-
-    .byte %11111000
-
-NGGYU_P_Koniec:
-    .byte %11101000, %00011110
-    .byte %00000010, %00011001, %00011110
-    .byte %11101000, %01111000
 
     .byte %11111000
 
