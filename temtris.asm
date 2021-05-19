@@ -104,6 +104,9 @@ pozostaloBajtow: .res 80
 
 .segment "STARTUP"
 
+Sponsor:
+    .byte $53, $70, $6F, $6E, $73, $6F, $72, $20, $70, $72, $6F, $6A, $65, $6B, $74, $75, $3A, $20, $72, $2F, $52, $75, $64, $7A, $69, $61, $20, $20, $20, $20, $20, $20
+
 ; ===================== ściąga ====================
 
 ; OAM
@@ -3214,7 +3217,7 @@ CzyNastepnyPoziom1:
 ; #%11101--- #%TTTTTTTT
 
 ; zakończ blok
-; #%11111---
+; #%11111--- (następny bit to musi być $AE)
 
 ; wydarzenia kanału N
 
@@ -3294,6 +3297,11 @@ OdtwarzaczMuzykiKanalP:
     LDA (odtwarzanaMuzykaP), Y
     AND #%11111000
     CMP #%11111000
+    BNE :++
+
+    INY
+    LDA (odtwarzanaMuzykaP), Y ; podwójne sprawdzenie końca bloku
+    CMP $AE
     BNE :++
 
     ; kod końca bloku, graj następną lub wyłącz muzykę
@@ -3470,6 +3478,11 @@ OdtwarzaczMuzykiKanalT:
     CMP #%11111000
     BNE :+
 
+    INY
+    LDA (odtwarzanaMuzykaP), Y ; podwójne sprawdzenie końca bloku
+    CMP $AE
+    BNE :++
+
     ; kod końca bloku, wyłącz kanał
 
     LDA wlaczMuzyke
@@ -3503,8 +3516,6 @@ OdtwarzaczMuzykiKanalT:
     ; pauza w odtwarzaniu
 
     LDA #$00
-    STA $4008
-    STA $4009
     STA $400A
     STA $400B
 
@@ -3805,6 +3816,9 @@ MuzykaGrajMelodie:
     RTS
 
 ; ========================== dane zewnętrzne ========================
+
+PiotrBozek:
+    .byte $50, $69, $6F, $74, $72, $20, $42, $6F, $BF, $65, $6B
 
 ZerowanieAPU:
     .byte $30, $08, $00, $00
@@ -4193,9 +4207,25 @@ RozbitaLiniaTemtrisNapis:
 ; ============================= Dane Muzyki ============================
 ; ======================================================================
 
-PauzaXklatek:
-    .byte $AE
+Pauza360klatek:
+    .byte %11101000, %11111111
+    .byte %11101000, %01101001
+    .byte %11111000
 
+Pauza60klatek:
+    .byte %11101000, %00111100
+    .byte %11111000
+
+Pauza45klatek:
+    .byte %11101000, %00101101
+    .byte %11111000
+
+Pauza30klatek:
+    .byte %11101000, %00011110
+    .byte %11111000
+
+Pauza15klatek:
+    .byte %11101000, %00001111
     .byte %11111000
 
 ; Never Gonna Give You Up
@@ -4208,31 +4238,78 @@ NeverGonnaGiveYouUpKanalP:
     .byte <NGGYU_P_Zwrotka_1, >NGGYU_P_Zwrotka_1
     .byte <NGGYU_P_I_JUST, >NGGYU_P_I_JUST
     .byte <NGGYU_P_Refren, >NGGYU_P_Refren
+    .byte <Pauza60klatek, >Pauza60klatek
     .byte <NGGYU_P_Zwrotka_2, >NGGYU_P_Zwrotka_2
     .byte <NGGYU_P_I_JUST, >NGGYU_P_I_JUST
     .byte <NGGYU_P_Refren, >NGGYU_P_Refren
+    .byte <Pauza30klatek, >Pauza30klatek
     .byte <NGGYU_P_Przejscie_1, >NGGYU_P_Przejscie_1
     .byte <NGGYU_P_Przejscie_1, >NGGYU_P_Przejscie_1
     .byte <NGGYU_P_Przejscie_2, >NGGYU_P_Przejscie_2
     .byte <NGGYU_P_Przejscie_2, >NGGYU_P_Przejscie_2
+    .byte <Pauza30klatek, >Pauza30klatek
     .byte <NGGYU_P_Zwrotka_2, >NGGYU_P_Zwrotka_2
     .byte <NGGYU_P_I_JUST, >NGGYU_P_I_JUST
     .byte <NGGYU_P_Refren, >NGGYU_P_Refren
+    .byte <Pauza60klatek, >Pauza60klatek
     .byte <NGGYU_P_Refren, >NGGYU_P_Refren
+    .byte <Pauza60klatek, >Pauza60klatek
     .byte <NGGYU_P_Koniec, >NGGYU_P_Koniec
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NeverGonnaGiveYouUpKanalT:
-    .byte <NGGYU_T_Wstep, >NGGYU_T_Wstep
+    .byte <NGGYU_T_WSTEP_1, >NGGYU_T_WSTEP_1
+    .byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
+    .byte <NGGYU_T_REFREN_2, >NGGYU_T_REFREN_2
+    .byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
+    .byte <NGGYU_T_WSTEP_2, >NGGYU_T_WSTEP_2
+    .byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+    .byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
+    .byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+    .byte <NGGYU_T_PODKLAD_1_WAR_2, >NGGYU_T_PODKLAD_1_WAR_2
+    .byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+    .byte <NGGYU_T_PODKLAD_1_WAR_3, >NGGYU_T_PODKLAD_1_WAR_3
+    .byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
+    .byte <NGGYU_T_REFREN_2, >NGGYU_T_REFREN_2
+    .byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
+    .byte <NGGYU_T_REFREN_OUTRO, >NGGYU_T_REFREN_OUTRO
+    .byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+    .byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
+    .byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+    .byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
+    .byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+    .byte <NGGYU_T_PODKLAD_1_WAR_4, >NGGYU_T_PODKLAD_1_WAR_4
+    .byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+    .byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
+    .byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+    .byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
+    .byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
+    .byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
+    .byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
+    .byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
+    .byte <Pauza360klatek, >Pauza360klatek
+    .byte <NGGYU_T_PAUZA_WSTAWKA, >NGGYU_T_PAUZA_WSTAWKA
+    .byte <Pauza360klatek, >Pauza360klatek
+    .byte <NGGYU_T_PAUZA_WSTAWKA, >NGGYU_T_PAUZA_WSTAWKA
+    .byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+    .byte <NGGYU_T_PODKLAD_1_WAR_4, >NGGYU_T_PODKLAD_1_WAR_4
+    .byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+    .byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
+    .byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+    .byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
+    .byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+    .byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
+    .byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+    .byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NeverGonnaGiveYouUpKanalN:
     .byte <NGGYU_N_Wstep, >NGGYU_N_Wstep
     .byte <NGGYU_N_Rytm, >NGGYU_N_Rytm
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 ; ===================== NGGYU kanał P =========================
 
@@ -4429,7 +4506,7 @@ NGGYU_P_Refren:
     .byte %11111000
 
 NGGYU_P_Zwrotka_2:
-    .byte %11101000, %01001011
+    .byte %11101000, %00001111
     .byte %00000000, %11010100, %00001111
     .byte %00000000, %11001000, %00001111
     .byte %00000000, %11101110, %00000111
@@ -4540,7 +4617,289 @@ NGGYU_P_Koniec:
 
 ; ===================== NGGYU kanał T =========================
 
-NGGYU_T_Wstep:
+NGGYU_T_WSTEP_1:
+    .byte %10101000, %11111111
+    .byte %11101000, %01001011
+
+    .byte %11111000
+
+NGGYU_T_WSTEP_2:
+    .byte %00000000, %10000101, %00111100
+    .byte %00000000, %01100011, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000111
+    .byte %11101000, %00001000
+
+    .byte %11111000
+    
+NGGYU_T_PODKLAD_1:
+    .byte %00000001, %11011110, %00000111
+    .byte %11101000, %00001000
+    .byte %00000001, %11011110, %00000011
+    .byte %11101000, %00000100
+    .byte %00000001, %11011110, %00001000
+    .byte %11101000, %00000111
+    .byte %00000001, %10010010, %00001000
+    .byte %00000001, %10101010, %00000111
+    .byte %11101000, %00001000
+    .byte %00000010, %00011001, %00000111
+    .byte %11101000, %00001000
+    .byte %00000001, %11011110, %00000111
+    .byte %11101000, %00010111
+    .byte %00000010, %01111111, %00000111
+    .byte %00000001, %11011110, %00000100
+    .byte %11101000, %00000100
+    .byte %00000001, %11011110, %00000111
+    .byte %11101000, %00001000
+    .byte %00000010, %00011001, %00000111
+    .byte %00000001, %11011110, %00001000
+    .byte %11101000, %00000111
+    .byte %00000001, %10010010, %00001000
+    .byte %00000001, %10101010, %00000111
+    .byte %11101000, %00001000
+    .byte %11101000, %00101101
+    .byte %00000010, %01111111, %00000111
+    .byte %00000001, %11011110, %00000100
+    .byte %11101000, %00000100
+    .byte %00000001, %11011110, %00000111
+    .byte %11101000, %00001000
+    .byte %00000010, %00011001, %00000111
+    .byte %00000001, %11011110, %00001000
+    .byte %11101000, %00000111
+    .byte %00000001, %10010010, %00001000
+    .byte %00000001, %10101010, %00000111
+    .byte %11101000, %00001000
+    .byte %00000010, %00011001, %00000111
+    .byte %11101000, %00001000
+    .byte %00000001, %11011110, %00000111
+    .byte %11101000, %00010111
+    .byte %00000001, %11011110, %00000100
+    .byte %11101000, %00000100
+    .byte %00000001, %11011110, %00000111
+
+    .byte %11111000
+    
+NGGYU_T_PODKLAD_1_WAR_1:
+    .byte %00000010, %11001110, %00000111
+    .byte %11101000, %00001000
+    .byte %00000010, %11001110, %00000100
+    .byte %11101000, %00000100
+    .byte %00000010, %11001110, %00000111
+    .byte %11101000, %00000111
+    .byte %00000010, %11001110, %00001000
+    .byte %00000010, %00011001, %00000111
+    .byte %11101000, %00010111
+    .byte %00000010, %00011001, %00000100
+    .byte %11101000, %00000100
+    .byte %00000010, %00011001, %00000111
+    .byte %11101000, %00001111
+    .byte %00000010, %01111111, %00000111
+    .byte %00000010, %00011001, %00001000
+
+    .byte %11111000
+    
+NGGYU_T_PODKLAD_1_WAR_2:
+    .byte %00000010, %11001110, %00000111
+    .byte %11101000, %00001000
+    .byte %00000000, %10011111, %00000111
+    .byte %11101000, %00001000
+    .byte %00000000, %10011111, %00001111
+    .byte %00000000, %10110010, %00000111
+    .byte %11101000, %00001000
+    .byte %00000000, %10110010, %00001111
+    .byte %00000000, %11001000, %00000111
+    .byte %11101000, %00001000
+    .byte %00000000, %11001000, %00001111
+    .byte %00000000, %11101110, %00000111
+    .byte %00000010, %00011001, %00001000
+
+    .byte %11111000
+    
+NGGYU_T_PODKLAD_1_WAR_3:
+    .byte %00000001, %11011110, %00000111
+    .byte %11101000, %00001000
+    .byte %00000010, %00011001, %00000111
+    .byte %00000001, %11011110, %00001000
+    .byte %11101000, %00000111
+    .byte %00000011, %00100110, %00001000
+    .byte %00000011, %01010110, %00000111
+    .byte %11101000, %00010111
+    .byte %00000000, %10000101, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %10000101, %00000111
+    .byte %00000000, %01110110, %00000111
+    .byte %00000000, %01100011, %00001000
+    .byte %00000000, %01110110, %00000111
+    .byte %00000000, %01100011, %00001000
+
+    .byte %11111000
+
+NGGYU_T_PODKLAD_1_WAR_4:
+    .byte %00000000, %11101110, %00000111
+    .byte %11101000, %00001000
+    .byte %00000010, %00011001, %00000111
+    .byte %00000000, %11101110, %00001000
+    .byte %11101000, %00000111
+    .byte %00000001, %10010010, %00001000
+    .byte %00000001, %00001100, %00011110
+    .byte %00000000, %10000101, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %10000101, %00000111
+    .byte %00000000, %01110110, %00000111
+    .byte %00000000, %01100011, %00001000
+    .byte %00000000, %01110110, %00000111
+    .byte %00000000, %01100011, %00001000
+
+    .byte %11111000
+
+NGGYU_T_REFREN_1:
+    .byte %00000000, %01100011, %00101101
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %10000101, %00011110
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %01001111, %00101101
+    .byte %00000000, %01000010, %00000111
+    .byte %00000000, %01001010, %00001000
+    .byte %00000000, %01001111, %00000111
+    .byte %00000000, %01100011, %00001000
+    .byte %00000000, %01100011, %00101101
+    .byte %00000000, %01011000, %00101101
+    .byte %00000000, %10000101, %00011110
+
+    .byte %11111000
+
+NGGYU_T_REFREN_2:
+    .byte %00000000, %10000101, %00111100
+    .byte %11101000, %00011110
+    .byte %00000000, %01000010, %00000111
+    .byte %00000000, %01001010, %00001000
+    .byte %00000000, %01001111, %00000111
+    .byte %00000000, %01100011, %00001000
+
+    .byte %11111000
+    
+NGGYU_T_REFREN_OUTRO:
+    .byte %00000000, %11010100, %00011110
+    .byte %00000000, %11001000, %00011110
+    .byte %00000000, %01100011, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %01100011, %00000100
+    .byte %11101000, %00000100
+    .byte %00000011, %00100110, %00000111
+
+    .byte %11111000
+
+NGGYU_T_REFREN_1_WAR_1:
+    .byte %00000000, %01100011, %00001111
+    .byte %00000000, %11001000, %00000111
+    .byte %00000000, %01100011, %00010111
+    .byte %00000000, %01101001, %00001111
+    .byte %00000000, %10110010, %00011110
+    .byte %00000001, %00001100, %00011110
+    .byte %00000000, %01100011, %00001111
+    .byte %00000000, %10110010, %00000111
+    .byte %00000000, %01101001, %00010111
+    .byte %00000000, %01110110, %00011110
+    .byte %00000000, %10011111, %00001111
+    .byte %00000000, %11001000, %00011110
+    .byte %00000000, %11001000, %00101101
+    .byte %00000000, %10110010, %00101101
+    .byte %00000001, %00001100, %00011110
+    
+    .byte %11111000
+
+NGGYU_T_REFREN_2_WAR_1:
+    .byte %00000000, %01101001, %00001111
+    .byte %00000000, %10110010, %00001111
+    .byte %00000000, %01100011, %00101101
+    .byte %00000000, %01000010, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %01000010, %00000111
+    .byte %00000000, %00111010, %00000111
+    .byte %00000000, %00110001, %00001000
+    .byte %00000000, %00111010, %00000111
+    .byte %00000000, %00110001, %00001000
+
+    .byte %11111000
+
+NGGYU_T_REFREN_OUTRO_WAR_1:
+    .byte %00000000, %01101001, %00001111
+    .byte %00000000, %11001000, %00001111
+    .byte %00000000, %01100011, %00011110
+    .byte %00000000, %00110001, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %00110001, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %00110001, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %00110001, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %00110001, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %00110001, %00000100
+    .byte %11101000, %00000100
+    .byte %00000000, %00110001, %00000011
+    .byte %11101000, %00000100
+    .byte %00000000, %00110001, %00000100
+    .byte %11101000, %00000100
+
+    .byte %11111000
+
+NGGYU_T_PRZEJSCIE:
+    .byte %00000000, %11101110, %00001111
+    .byte %11101000, %00000111
+    .byte %00000000, %11101110, %00001000
+    .byte %11101000, %00001111
+    .byte %00000000, %11101110, %00000111
+    .byte %11101000, %00001000
+    .byte %00000000, %11101110, %00000111
+    .byte %00000101, %10011101, %00001000
+    .byte %00000101, %00000000, %00000100
+    .byte %11101000, %00000100
+    .byte %00000101, %00000000, %00000111
+    .byte %00000100, %00110100, %00000111
+    .byte %00000011, %10111110, %00001000
+    .byte %11101000, %00000111
+    .byte %00000011, %10111110, %00001000
+    .byte %11101000, %00111100
+    .byte %11101000, %00000111
+    .byte %00000011, %10111110, %00000100
+    .byte %11101000, %00000100
+    .byte %00000011, %10111110, %00000100
+    .byte %11101000, %00000100
+    .byte %00000011, %10111110, %00000111
+    .byte %00000011, %00100110, %00000111
+    .byte %00000010, %11001110, %00001000
+    .byte %11101000, %00000111
+    .byte %00000010, %11001110, %00001000
+
+    .byte %11111000
+
+NGGYU_T_PAUZA_WSTAWKA:
+    .byte %00000000, %10011111, %00011110
+    .byte %11101000, %00001111
+    .byte %00000000, %10110010, %00111100
+    .byte %11101000, %00001111
 
     .byte %11111000
 
