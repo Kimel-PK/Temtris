@@ -3,24 +3,27 @@ Projekt cc65 assembly dla NES
 
 Sponsor projektu: https://www.reddit.com/r/Rudzia/
 
-## Następne zmiany: Wersja 1.3
+## Następne zmiany: Wersja 1.4
+Planowane zmiany:
+- [ ] dodanie muzyki Szanty Bitwa +
+## W trakcie prac: Wersja 1.3
 Planowane zmiany:
 - [ ] odświeżenie wyglądu logo
 - [ ] naprawienie kolizji
 - [ ] ulepszenie sterowania
 - [ ] losowy odtwarzacz muzyki
-- [ ] dodanie muzyki Szanty Bitwa +
-
-## W trakcie prac: Wersja 1.2
-Planowane zmiany:
-- [x] zmiany w grafice psów
-- [ ] wybranie palety barw wyglądającej dobrze na innych emulatorach
-- [x] optymalizacja muzyki żeby nie zajmowała 1KB pamieci
-- [x] ulepszenia odtwarzacza muzyki
 
 # Wersje stabilne
+## Wersja 1.2
+Zmiany:
+- zmiany w grafice psów
+- optymalizacja muzyki żeby nie zajmowała 1KB pamieci
+- ulepszenia techniczne odtwarzacza muzyki
 
+# Notatka
+Niektóre emulatory mogą inaczej odwzorowywać kolory niż fceux64, którym debuguje, na przykład na Nestopii Cheems jest zielonkawy chyba że zaznaczymy w opcjach wideo "boost yellow"
 ## Wersja 1.1
+Zmiany:
 - Zmiany grafiki
 - naprawiono miganie ekranu przy stawianiu kloca
 - dodano animacje rozbijania linii
