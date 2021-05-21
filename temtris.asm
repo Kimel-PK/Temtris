@@ -25,12 +25,15 @@ kontroler1poprzedni: .res 1
 kontroler2: .res 1 ; RLDUSsBA
 kontroler2poprzedni: .res 1
 zegarKontrolera1: .res 1
+zegarKontrolera1szybkosc: .res 1
+zegarKontrolera1obrot: .res 1
 zegarKontrolera2: .res 1
 
 ; zmienne sterujące
 coKlatke: .res 1
 wskaznikPetli: .res 2
 wskaznikNMI: .res 2
+wstrzymajOAMDMA: .res 1
 losowa: .res 2
 pauza: .res 1
 zegar: .res 1
@@ -40,7 +43,6 @@ szybkoscSpadania1: .res 1
 szybkoscSpadania2: .res 1
 poziom1: .res 1
 poziom2: .res 1
-wylaczTransferOAM: .res 1
 
 ; zmienne klocka
 kolizja: .res 1; (---ABLDP = kolizja przy obrocie w lewo, w prawo, z lewej, z dołu, z prawej)
@@ -100,7 +102,7 @@ klatkaAnimacji: .res 1
 blokAnimacji: .res 1
 
 ; pozostała pamięć
-pozostaloBajtow: .res 80
+pozostaloBajtow: .res 78
 
 .segment "STARTUP"
 
@@ -282,12 +284,10 @@ RESET:
     LDA #>PETLAMenu
     STA wskaznikPetli+1
 
-    ; załaduj rickroll do odtwarzacza muzyki
-
     LDA #$01
     STA odtwarzajMuzykeLosowo
 
-    JSR MuzykaGrajMelodie
+    JSR MuzykaGrajIntro
 
     LDA #%00000111
     STA wlaczMuzyke
@@ -306,15 +306,6 @@ PETLA:
     CMP #$00
     BEQ :+
     JMP PETLA
-:
-
-    INC zegar
-    INC zegarSpadania1
-    LDA zegarSpadania1
-    CMP szybkoscSpadania1 ; zegar spadania powinien zależeć od poziomu
-    BNE :+
-    LDA #$00
-    STA zegarSpadania1
 :
 
     JMP (wskaznikPetli)
@@ -338,9 +329,24 @@ PETLAMenu:
     JMP PowrotDoPETLI
 
 PETLAGra:
+   
+    INC zegar
+    INC zegarSpadania1
+    LDA zegarSpadania1
+    CMP szybkoscSpadania1
+    BNE :+
+    LDA #$00
+    STA zegarSpadania1
+:
 
     JSR ObliczPozycjeWPPU
+
+    LDA wstrzymajOAMDMA
+    CMP #$01
+    BEQ :+
     JSR RysujKlocek
+:
+
     JSR SprawdzKolizje
 
     JMP PowrotDoPETLI
@@ -543,6 +549,8 @@ NMILadowanieGry:
     LDA #%00011110
     STA $2001
 
+    JSR MuzykaGrajMelodie
+
     LDA #<NMIBrakKlocka
     STA wskaznikNMI
     LDA #>NMIBrakKlocka
@@ -593,6 +601,7 @@ NMIBrakKlocka2:
 
     JSR ObliczWskaznikDoDanychKlocka
     JSR StworzKlocek
+    JSR RysujKlocek
 
     LDA #<NMIBrakKlocka3
     STA wskaznikNMI
@@ -603,10 +612,8 @@ NMIBrakKlocka2:
 
 NMIBrakKlocka3:
 
-    JSR ObliczPozycjeWPPU ; trzeba to jakoś żeby było gotowe w trakcie klatki a nie podczas NMI
-
+    JSR ObliczPozycjeWPPU
     JSR SkopiujMapeKolizji
-
     JSR SprawdzKolizjeKoniecGry
 
     LDA kolizja
@@ -649,8 +656,6 @@ NMIBrakKlocka3:
 
 NMISpadajacyKlocek:
 
-    JSR CzytajKontroler1
-
     ; przesuń klocek w dół lub umieść
 
     LDA zegarSpadania1
@@ -664,7 +669,9 @@ NMISpadajacyKlocek:
     ; jeśli pod spodem coś jest to umieść
     ; w przeciwnym wypadku przesuń
     JSR PrzesunKlocekWDol
-    JMP :++
+    JSR SkopiujMapeKolizji
+
+    JMP PowrotDoNMI
 
 :
     
@@ -677,42 +684,157 @@ NMISpadajacyKlocek:
 
 :
 
-    ; sprawdź wejścia gracza
+    ; dekrementuj zegary kontrolera 1
+    LDA zegarKontrolera1
+    CMP #$00
+    BEQ :+
+    DEC zegarKontrolera1
+:
+    LDA zegarKontrolera1obrot
+    CMP #$00
+    BEQ :+
+    DEC zegarKontrolera1obrot
+:
+
+    JSR CzytajKontroler1
+
+    ; czy zegar kontrolera pozwala na obrót
+    LDA zegarKontrolera1obrot
+    CMP #$00
+    BNE :++
+
+    ; czy naciśnięto B
+    LDA kontroler1
+    AND #%00000010
+    CMP #%00000010
+    BNE :+
+
+    LDA #$0A
+    STA zegarKontrolera1obrot
+
+    JSR ObrocKlocekWLewo
+    JSR SkopiujMapeKolizji
+    JMP PowrotDoNMI
+
+:
+
+    ; czy naciśnięto A
+    LDA kontroler1
+    AND #%00000001
+    CMP #%00000001
+    BNE :+
+
+    LDA #$0A
+    STA zegarKontrolera1obrot
+
+    JSR ObrocKlocekWPrawo
+    JSR SkopiujMapeKolizji
+    JMP PowrotDoNMI
+
+:
+
+    ; czy puszczono A lub B
+    LDA kontroler1
+    AND #%00000011
+    CMP #%00000000
+    BNE :+
+
+    LDA #$00
+    STA zegarKontrolera1obrot
+
+:
 
     LDA zegarKontrolera1
     CMP #$00
-    BNE :+++++++
+    BNE :++++++
 
-    ; sprawdź ruch w prawo
-
+    ; czy naciśnięto R
     LDA kontroler1
     AND #%10000000
     CMP #%10000000
+    BNE :+++
+
+    LDA kontroler1poprzedni
+    AND #%10000000
+    CMP #%00000000
     BNE :+
 
-    JSR PrzesunKlocekWPrawo
-    JMP :++++++++
+    ; wciśnięto R
+    LDA #$0A
+    STA zegarKontrolera1
+    JMP :++
+
+:
+    ; przytrzymano R
+    LDA #$04
+    STA zegarKontrolera1
 
 :
 
-    ; sprawdź ruch w lewo
+    JSR PrzesunKlocekWPrawo
+    JSR SkopiujMapeKolizji
+    JMP PowrotDoNMI
 
+:
+
+    ; czy naciśnięto L
     LDA kontroler1
     AND #%01000000
     CMP #%01000000
+    BNE :++++
+
+    LDA kontroler1poprzedni
+    AND #%01000000
+    CMP #%00000000
     BNE :+
-    
-    JSR PrzesunKlocekWLewo
-    JMP :+++++++
+
+    ; wciśnięto L
+    LDA #$0A
+    STA zegarKontrolera1
+    JMP :++
+:
+
+    ; przytrzymano L
+    LDA #$04
+    STA zegarKontrolera1
 
 :
 
-    ; sprawdź ruch w dół
+    JSR PrzesunKlocekWLewo
+    JSR SkopiujMapeKolizji
+    JMP PowrotDoNMI
 
+:
+    ; duży skok podzielony na dwa małe
+    JMP :+++++
+:
+
+    ; czy naciśnięto D
     LDA kontroler1
     AND #%00100000
     CMP #%00100000
-    BNE :++
+    BNE :++++
+
+    LDA kontroler1poprzedni
+    AND #%00100000
+    CMP #%00000000
+    BNE :+
+
+    ; wciśnięto D
+    LDA #$0A
+    STA zegarKontrolera1
+    JMP :++
+:
+
+    ; przytrzymano D
+    LDA zegarKontrolera1szybkosc
+    STA zegarKontrolera1
+
+    CMP #$02
+    BEQ :+
+    DEC zegarKontrolera1szybkosc
+
+:
 
     LDA kolizja
     AND #%00000010
@@ -721,9 +843,12 @@ NMISpadajacyKlocek:
     ; jeśli pod spodem coś jest to umieść
     ; w przeciwnym wypadku przesuń
     JSR PrzesunKlocekWDol
-    JMP :++
-:
+    JSR SkopiujMapeKolizji
 
+    JMP PowrotDoNMI
+
+:
+    
     LDA #<NMIStawianieKlocka
     STA wskaznikNMI
     LDA #>NMIStawianieKlocka
@@ -733,74 +858,20 @@ NMISpadajacyKlocek:
 
 :
 
-    ; sprawdź obrót w prawo
-
+    ; czy puszczono L, R lub D
     LDA kontroler1
-    AND #%00000001
-    CMP #%00000001
-    BNE :+
-
-    JSR ObrocKlocekWPrawo
-
-:
-
-    ; sprawdź obrót w lewo
-
-    LDA kontroler1
-    AND #%00000010
-    CMP #%00000010
-    BNE :+
-
-    JSR ObrocKlocekWLewo
-
-:
-    JMP :++
-:
-    DEC zegarKontrolera1
-    JMP :++++
-:
-
-    ; obsługa zegara kontrolera 1
-
-    LDA kontroler1
-    CMP #$00
+    AND #%11100000
+    CMP #%00000000
     BNE :+
 
     LDA #$00
     STA zegarKontrolera1
+    LDA #$05
+    STA zegarKontrolera1szybkosc
 
-:
-
-    LDA zegarKontrolera1
-    CMP #$00
-    BNE :++
-
-    LDA kontroler1poprzedni
-    CMP #$00
-    BNE :+
-
-    LDA kontroler1
-    CMP #$00
-    BEQ :++
-
-    ; pierwszy raz naciśnięto przycisk
-
-    LDA #$10
-    STA zegarKontrolera1
-    JMP :++
-
-:
-    LDA kontroler1
-    CMP #$00
-    BEQ :+
-
-    ; cały czas przycisk jest naciśnięty
-    LDA #$04
-    STA zegarKontrolera1
 :
 
     JSR SkopiujMapeKolizji
-
     JMP PowrotDoNMI
 
 NMIStawianieKlocka:
@@ -808,6 +879,12 @@ NMIStawianieKlocka:
     ; klocek został postawiony
 
     JSR PostawKlocek
+
+    LDA #$00
+    STA zegarKontrolera1
+    STA zegarKontrolera1obrot
+    LDA #$05
+    STA zegarKontrolera1szybkosc
 
     LDA #<NMIAktualizacjaPlanszy
     STA wskaznikNMI
@@ -967,6 +1044,8 @@ NMIAnimacjaRozbijanychLinii:
     BNE :+
 
     ; koniec animacji, można poczekać chwilkę
+
+    JSR OdtworzDzwiekRozbijanejLinii
 
     LDA #$FF
     STA klatkaAnimacji
@@ -1365,10 +1444,7 @@ NMILadowanieKoniecGry:
     LDA #$54
     STA temp
 
-    LDA #<KoniecGryP
-    STA wskaznikDoMuzykiP
-    LDA #>KoniecGryP
-    STA wskaznikDoMuzykiP+1
+    JSR MuzykaGrajKoniecGry
 
     LDA #%00000100
     STA wlaczMuzyke
@@ -1855,9 +1931,10 @@ StworzKlocek:
     LDA #$00
     STA obrotKlocka
 
-    LDA #$00
     STA pozycjaLiniiKlocka
-    
+
+    STA wstrzymajOAMDMA
+
     RTS
 
 StworzNastepnyKlocek:
@@ -2060,6 +2137,8 @@ PostawKlocek:
 
     LDA #%01011111
     STA $4004
+    LDA #%11111111
+    STA $4005
     LDA #%00000000
     STA $4006
     LDA #%01111111
@@ -2153,6 +2232,9 @@ PostawKlocek:
     JMP :---
 
 :
+
+    LDA #$01
+    STA wstrzymajOAMDMA
 
     ; usuń spritey
 
@@ -3107,6 +3189,64 @@ WyswietlStatystki:
 
     RTS
 
+OdtworzDzwiekRozbijanejLinii:
+
+    ; odtwórz dźwięk
+    LDA ileNaRazLinii
+    CMP #$01
+    BNE :+
+
+    LDA #%11001111
+    STA $4004
+    LDA #%11010010
+    STA $4005
+    LDA #%01100011
+    STA $4006
+    LDA #%11111000
+    STA $4007
+
+    JMP :++++
+:
+    CMP #$02
+    BNE :+
+
+    LDA #%00001111
+    STA $4004
+    LDA #%11111010
+    STA $4005
+    LDA #%01100011
+    STA $4006
+    LDA #%11111001
+    STA $4007
+
+    JMP :+++
+:
+    CMP #$03
+    BNE :+
+
+    LDA #%10001111
+    STA $4004
+    LDA #%10011010
+    STA $4005
+    LDA #%11010011
+    STA $4006
+    LDA #%11111001
+    STA $4007
+
+    JMP :++
+:
+    LDA #%01001111
+    STA $4004
+    LDA #%10111010
+    STA $4005
+    LDA #%11111111
+    STA $4006
+    LDA #%11111000
+    STA $4007
+:
+
+    RTS
+
 ; ===================================================================
 ; ============================ poziomy ==============================
 ; ===================================================================
@@ -3322,10 +3462,6 @@ OdtwarzaczMuzykiKanalP:
     STA $4001
     STA $4002
     STA $4003
-    STA $4004
-    STA $4005
-    STA $4006
-    STA $4007
     STA $4008
     STA $4009
     STA $400A
@@ -3604,6 +3740,8 @@ OdtwarzaczMuzykiKanalN:
 
     ; ========================== kanał 4 szum ==================================
 
+    INC $FF
+
     LDA zegarMuzykiN
     CMP #$00
     BEQ :+
@@ -3633,6 +3771,11 @@ OdtwarzaczMuzykiKanalN:
     LDA (odtwarzanaMuzykaN), Y
     AND #%01110000
     CMP #%01110000
+    BNE :+
+
+    INY
+    LDA (odtwarzanaMuzykaN), Y
+    CMP #$AE
     BNE :+
 
     ; kod końca bloku, wyłącz kanał
@@ -3772,8 +3915,18 @@ MuzykaWylaczWszystkieKanaly:
 
 MuzykaGrajMelodie:
 
+    ; zerowanie zegarów
+
+    LDA #$00
+    STA zegarMuzykiP
+    STA zegarMuzykiT
+    STA zegarMuzykiN
+
     ; wylosuj melodię
-    ; załaduj do pamięci
+    
+    LDA losowa
+    AND #%00000001
+    CMP #$01
 
     ; załaduj Never Gonna Give You Up
 
@@ -3812,6 +3965,60 @@ MuzykaGrajMelodie:
     INY
     LDA (odtwarzanaMuzykaN), Y
     STA wskaznikDoMuzykiN+1
+
+    RTS
+
+MuzykaGrajIntro:
+
+    LDA #<IntroKanalP
+    STA odtwarzanaMuzykaP
+    LDA #>IntroKanalP
+    STA odtwarzanaMuzykaP+1
+
+    LDY #$00
+    LDA (odtwarzanaMuzykaP), Y
+    STA wskaznikDoMuzykiP
+    INY
+    LDA (odtwarzanaMuzykaP), Y
+    STA wskaznikDoMuzykiP+1
+
+    LDA #<IntroKanalT
+    STA odtwarzanaMuzykaT
+    LDA #>IntroKanalT
+    STA odtwarzanaMuzykaT+1
+
+    LDY #$00
+    LDA (odtwarzanaMuzykaT), Y
+    STA wskaznikDoMuzykiT
+    INY
+    LDA (odtwarzanaMuzykaT), Y
+    STA wskaznikDoMuzykiT+1
+
+    LDA #<IntroKanalN
+    STA odtwarzanaMuzykaN
+    LDA #>IntroKanalN
+    STA odtwarzanaMuzykaN+1
+
+    LDY #$00
+    LDA (odtwarzanaMuzykaN), Y
+    STA wskaznikDoMuzykiN
+    INY
+    LDA (odtwarzanaMuzykaN), Y
+    STA wskaznikDoMuzykiN+1
+
+    RTS
+
+MuzykaGrajKoniecGry:
+
+    LDA #<KoniecGryKanalP
+    STA odtwarzanaMuzykaP
+    LDA #>KoniecGryKanalP
+    STA odtwarzanaMuzykaP+1
+
+    LDA #<KoniecGryP
+    STA wskaznikDoMuzykiP
+    LDA #>KoniecGryP
+    STA wskaznikDoMuzykiP+1
 
     RTS
 
@@ -4228,7 +4435,21 @@ Pauza15klatek:
     .byte %11101000, %00001111
     .byte %11111000
 
-; Never Gonna Give You Up
+; ========================== Intro ==================================
+
+IntroKanalP:
+
+    .byte %11111000, $AE
+
+IntroKanalT:
+
+    .byte %11111000, $AE
+
+IntroKanalN:
+
+    .byte %11111000, $AE
+
+; ==================== Never Gonna Give You Up ==========================
 
 NeverGonnaGiveYouUpKanalP:
     .byte <NGGYU_P_Wstep_1, >NGGYU_P_Wstep_1
@@ -4929,7 +5150,111 @@ NGGYU_N_Rytm:
 
     .byte %01110000
 
+; ==================== Szanty Bitwa + ==========================
+
+SzantyBitwaKanalP:
+    .byte <SzantyBitwa_P, >SzantyBitwa_P
+
+    .byte %11111000, $AE
+
+SzantyBitwa_P:
+    .byte %00000000, %10101000, %00001111
+    .byte %00000000, %11100001, %00001111
+    .byte %00000000, %10101000, %00011110
+    .byte %00000000, %10111101, %00000111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000000, %10111101, %00011110
+    .byte %00000000, %11010100, %00010110
+    .byte %00000000, %10111101, %00000111
+    .byte %00000000, %11010100, %00001111
+    .byte %00000000, %11100001, %00001111
+    .byte %00000000, %11111101, %00011110
+    .byte %00000001, %00011100, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000000, %11100001, %00001111
+    .byte %00000001, %00011100, %00101101
+    .byte %00000000, %11111101, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000001, %00011100, %00001111
+    .byte %00000001, %00101101, %00001111
+    .byte %00000001, %00011100, %00001111
+    .byte %00000001, %00101101, %00001111
+    .byte %00000001, %00011100, %00001111
+    .byte %00000000, %11111101, %00000111
+    .byte %00000000, %11100001, %00111100
+    .byte %00000000, %10101000, %00001111
+    .byte %00000000, %11100001, %00001111
+    .byte %00000000, %10101000, %00011110
+    .byte %00000000, %10111101, %00000111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000000, %10111101, %00011110
+    .byte %00000000, %11010100, %00010110
+    .byte %00000000, %10111101, %00000111
+    .byte %00000000, %11010100, %00001111
+    .byte %00000000, %11100001, %00001111
+    .byte %00000000, %11111101, %00011110
+    .byte %00000001, %00011100, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000000, %11100001, %00001111
+    .byte %00000001, %00011100, %00101101
+    .byte %00000000, %11111101, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000001, %00011100, %00001111
+    .byte %00000001, %00101101, %00001111
+    .byte %00000001, %00011100, %00010110
+    .byte %00000001, %00011100, %00000111
+    .byte %00000001, %00011100, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000000, %11100001, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000001, %00011100, %00000111
+    .byte %00000001, %00101101, %00010110
+    .byte %00000001, %00011100, %00011110
+    .byte %00000000, %11100001, %00011110
+    .byte %00000000, %11111101, %00001111
+    .byte %00000001, %00011100, %00001111
+    .byte %00000001, %00101101, %00001111
+    .byte %00000001, %01111011, %00001111
+    .byte %00000001, %01010010, %00011110
+    .byte %00000001, %01111011, %00011110
+    .byte %00000001, %11000011, %00001111
+    .byte %00000001, %01111011, %00101101
+    .byte %00000001, %01010010, %00001111
+    .byte %00000001, %00101101, %00000111
+    .byte %00000001, %00011100, %00101101
+    .byte %00000001, %00101101, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000001, %00101101, %00001111
+    .byte %00000001, %01111011, %00001111
+    .byte %00000001, %01010010, %01111000
+    .byte %00000001, %00011100, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000000, %11100001, %00011110
+    .byte %00000000, %11111101, %00001111
+    .byte %00000001, %00011100, %00001111
+    .byte %00000001, %00101101, %00001111
+    .byte %00000001, %01111011, %00001111
+    .byte %00000001, %01010010, %00011110
+    .byte %00000001, %01111011, %00011110
+    .byte %00000001, %11000011, %00001111
+    .byte %00000001, %01111011, %00101101
+    .byte %00000001, %01010010, %00001111
+    .byte %00000001, %00101101, %00000111
+    .byte %00000001, %00011100, %00011110
+    .byte %00000001, %00101101, %00001111
+    .byte %00000000, %11111101, %00001111
+    .byte %00000001, %00101101, %00001111
+    .byte %00000001, %01111011, %00001111
+    .byte %00000001, %01010010, %01111000
+
+    .byte %11111000
+
 ; ==================== koniec gry =======================
+
+KoniecGryKanalP:
+    .byte <KoniecGryP, >KoniecGryP
+
+    .byte %11111000, $AE
 
 KoniecGryP:
     .byte %10101000, %11111111, %00000000

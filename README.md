@@ -5,13 +5,16 @@ Sponsor projektu: https://www.reddit.com/r/Rudzia/
 
 ## Następne zmiany: Wersja 1.4
 Planowane zmiany:
+- [ ] dodanie muzyki Korobieniki w menu
 - [ ] dodanie muzyki Szanty Bitwa +
+- [ ] naprawienie kolizji bardziej
+- [ ] naprawienie błędu animacji podczas rozbijania linii między którymi jest przerwa
 ## W trakcie prac: Wersja 1.3
 Planowane zmiany:
-- [ ] odświeżenie wyglądu logo
-- [ ] naprawienie kolizji
-- [ ] ulepszenie sterowania
-- [ ] losowy odtwarzacz muzyki
+- [X] odświeżenie wyglądu logo
+- [X] naprawienie kolizji
+- [X] ulepszenie sterowania
+- [X] losowy odtwarzacz muzyki
 
 # Wersje stabilne
 ## Wersja 1.2
