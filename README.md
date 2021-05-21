@@ -4,12 +4,12 @@ Projekt cc65 assembly dla NES
 Sponsor projektu: https://www.reddit.com/r/Rudzia/
 
 ## Następne zmiany: Wersja 1.5
-Planowane zmiany:
+###### Planowane zmiany:
 - [ ] ???
 
 ## W trakcie prac: Wersja 1.4
 
-Planowane zmiany:
+###### Planowane zmiany:
 - [ ] dodanie muzyki Korobieniki w menu
 - [ ] dodanie muzyki Szanty Bitwa +
 - [ ] naprawienie kolizji bardziej
@@ -18,7 +18,7 @@ Planowane zmiany:
 # Wersje stabilne
 
 ## Wersja 1.3
-Zmiany:
+###### Zmiany:
 - odświeżenie wyglądu logo
 - naprawienie kolizji
 - ulepszenie sterowania
@@ -29,7 +29,7 @@ Zmiany:
 - Odtwarzacz muzyki wybiera losowo z pośród jednej melodii, jest zaimplementowany, ale nie działa jeszcze w pełni
 
 ## Wersja 1.2
-Zmiany:
+###### Zmiany:
 - zmiany w grafice Cheemsa
 - optymalizacja muzyki żeby nie zajmowała 1KB pamieci
 - ulepszenia techniczne odtwarzacza muzyki
@@ -38,19 +38,10 @@ Zmiany:
 - Niektóre emulatory mogą inaczej odwzorowywać kolory niż fceux64, którym debuguje, na przykład na Nestopii Cheems jest zielonkawy chyba że zaznaczymy w opcjach wideo "boost yellow"
 
 ## Wersja 1.1
-Zmiany:
+###### Zmiany:
 - Zmiany grafiki
 - naprawiono miganie ekranu przy stawianiu kloca
 - dodano animacje rozbijania linii
-
-## Wersja coś się znowu odpierdala ale inaczej
-
-Tutaj też coś się odjebało to zostawiłem bo śmieszne, wystarczy rozbić jedną linię
-
-## Wersja trikasy fikoły kurwa
-
-Co się z tym odjebało to ja nawet nie
-Wystarczy zrobić jedną linię i całemu programowi odpierdala
 
 ## Wersja 1.0
 Działa jako tako ale stabilnie
@@ -66,3 +57,14 @@ rzeczy do zrobienia
 - więcej muzyki odtwarzanej losowo!
 - naprawić paletę barw cheemsa
 - jak jakiś grafik się znajdzie to można poprawić wygląd cheemsa albo bloków
+
+# Wersje niestabilne
+
+## Wersja coś się znowu odpierdala ale inaczej
+
+Tutaj też coś się odjebało to zostawiłem bo śmieszne, wystarczy rozbić jedną linię
+
+## Wersja trikasy fikoły kurwa
+
+Co się z tym odjebało to ja nawet nie
+Wystarczy zrobić jedną linię i całemu programowi odpierdala
