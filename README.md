@@ -24,7 +24,7 @@ Zmiany:
 - ulepszenie sterowania
 - losowy odtwarzacz muzyki
 
-# Notatki
+###### Notatki
 - W menu muzyka została zmieniona na pusty placeholder ale odtwarzacz wciąż próbuje ją normalnie interpretować, zbyt długie siedzenie w menu może skończyć się dziwnymi dźwiękami
 - Odtwarzacz muzyki wybiera losowo z pośród jednej melodii, jest zaimplementowany, ale nie działa jeszcze w pełni
 
@@ -34,7 +34,7 @@ Zmiany:
 - optymalizacja muzyki żeby nie zajmowała 1KB pamieci
 - ulepszenia techniczne odtwarzacza muzyki
 
-# Notatki
+###### Notatki
 - Niektóre emulatory mogą inaczej odwzorowywać kolory niż fceux64, którym debuguje, na przykład na Nestopii Cheems jest zielonkawy chyba że zaznaczymy w opcjach wideo "boost yellow"
 
 ## Wersja 1.1
