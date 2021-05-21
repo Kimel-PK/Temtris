@@ -3,28 +3,40 @@ Projekt cc65 assembly dla NES
 
 Sponsor projektu: https://www.reddit.com/r/Rudzia/
 
-## Następne zmiany: Wersja 1.4
+## Następne zmiany: Wersja 1.5
+Planowane zmiany:
+- [ ] ???
+
+## W trakcie prac: Wersja 1.4
+
 Planowane zmiany:
 - [ ] dodanie muzyki Korobieniki w menu
 - [ ] dodanie muzyki Szanty Bitwa +
 - [ ] naprawienie kolizji bardziej
 - [ ] naprawienie błędu animacji podczas rozbijania linii między którymi jest przerwa
-## W trakcie prac: Wersja 1.3
-Planowane zmiany:
-- [X] odświeżenie wyglądu logo
-- [X] naprawienie kolizji
-- [X] ulepszenie sterowania
-- [X] losowy odtwarzacz muzyki
 
 # Wersje stabilne
+
+## Wersja 1.3
+Zmiany:
+- odświeżenie wyglądu logo
+- naprawienie kolizji
+- ulepszenie sterowania
+- losowy odtwarzacz muzyki
+
+# Notatki
+- W menu muzyka została zmieniona na pusty placeholder ale odtwarzacz wciąż próbuje ją normalnie interpretować, zbyt długie siedzenie w menu może skończyć się dziwnymi dźwiękami
+- Odtwarzacz muzyki wybiera losowo z pośród jednej melodii, jest zaimplementowany, ale nie działa jeszcze w pełni
+
 ## Wersja 1.2
 Zmiany:
 - zmiany w grafice Cheemsa
 - optymalizacja muzyki żeby nie zajmowała 1KB pamieci
 - ulepszenia techniczne odtwarzacza muzyki
 
-# Notatka
-Niektóre emulatory mogą inaczej odwzorowywać kolory niż fceux64, którym debuguje, na przykład na Nestopii Cheems jest zielonkawy chyba że zaznaczymy w opcjach wideo "boost yellow"
+# Notatki
+- Niektóre emulatory mogą inaczej odwzorowywać kolory niż fceux64, którym debuguje, na przykład na Nestopii Cheems jest zielonkawy chyba że zaznaczymy w opcjach wideo "boost yellow"
+
 ## Wersja 1.1
 Zmiany:
 - Zmiany grafiki
@@ -35,12 +47,10 @@ Zmiany:
 
 Tutaj też coś się odjebało to zostawiłem bo śmieszne, wystarczy rozbić jedną linię
 
-
 ## Wersja trikasy fikoły kurwa
 
 Co się z tym odjebało to ja nawet nie
 Wystarczy zrobić jedną linię i całemu programowi odpierdala
-
 
 ## Wersja 1.0
 Działa jako tako ale stabilnie
