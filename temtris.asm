@@ -74,6 +74,7 @@ ileNaRazLinii: .res 1
 
 ; muzyka
 wlaczMuzyke: .res 1 ; -----PTN - aktywne kanały
+grajMuzykeMenu: .res 1
 odtwarzajMuzykeLosowo: .res 1
 zegarMuzykiP: .res 1
 zegarMuzykiT: .res 1
@@ -102,7 +103,7 @@ klatkaAnimacji: .res 1
 blokAnimacji: .res 1
 
 ; pozostała pamięć
-pozostaloBajtow: .res 78
+pozostaloBajtow: .res 77
 
 .segment "STARTUP"
 
@@ -286,6 +287,7 @@ RESET:
 
     LDA #$01
     STA odtwarzajMuzykeLosowo
+    STA grajMuzykeMenu
 
     JSR MuzykaGrajIntro
 
@@ -548,6 +550,9 @@ NMILadowanieGry:
     ; wlacz sprite i tlo
     LDA #%00011110
     STA $2001
+
+    LDA #$00
+    STA grajMuzykeMenu
 
     JSR MuzykaGrajMelodie
 
@@ -3420,7 +3425,7 @@ OdtwarzaczMuzykiKanalP:
     LDA (wskaznikDoMuzykiP), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
     AND #%11111000
     CMP #%11111000
-    BNE :+++
+    BNE :++++
 
     ; kod końca bloku
 
@@ -3437,19 +3442,25 @@ OdtwarzaczMuzykiKanalP:
     LDA (odtwarzanaMuzykaP), Y
     AND #%11111000
     CMP #%11111000
-    BNE :++
+    BNE :+++
 
     INY
     LDA (odtwarzanaMuzykaP), Y ; podwójne sprawdzenie końca bloku
     CMP #$AE
-    BNE :++
+    BNE :+++
 
     ; kod końca bloku, graj następną lub wyłącz muzykę
 
     LDA odtwarzajMuzykeLosowo
     CMP #$00
-    BEQ :+
+    BEQ :++
 
+    LDA grajMuzykeMenu
+    CMP #$01
+    BNE :+
+    JSR MuzykaGrajIntro
+    RTS
+:
     JSR MuzykaGrajMelodie
 
     RTS
@@ -3483,7 +3494,7 @@ OdtwarzaczMuzykiKanalP:
     LDA (odtwarzanaMuzykaP), Y
     STA wskaznikDoMuzykiP+1
 
-    JMP :---
+    JMP :----
 
 :
     CMP #%11101000
@@ -3530,7 +3541,7 @@ OdtwarzaczMuzykiKanalP:
     ADC #$00
     STA wskaznikDoMuzykiP+1
 
-    JMP :-----
+    JMP :------
 
 :
     CMP #%10111000
@@ -3549,7 +3560,7 @@ OdtwarzaczMuzykiKanalP:
     SBC #$00
     STA wskaznikDoMuzykiP+1
 
-    JMP :------
+    JMP :-------
 
 :
 
@@ -3970,9 +3981,14 @@ MuzykaGrajMelodie:
 
 MuzykaGrajIntro:
 
-    LDA #<IntroKanalP
+    LDA #$00
+    STA zegarMuzykiP
+    STA zegarMuzykiT
+    STA zegarMuzykiN
+
+    LDA #<KorobiejnikiKanalP
     STA odtwarzanaMuzykaP
-    LDA #>IntroKanalP
+    LDA #>KorobiejnikiKanalP
     STA odtwarzanaMuzykaP+1
 
     LDY #$00
@@ -3982,9 +3998,9 @@ MuzykaGrajIntro:
     LDA (odtwarzanaMuzykaP), Y
     STA wskaznikDoMuzykiP+1
 
-    LDA #<IntroKanalT
+    LDA #<KorobiejnikiKanalT
     STA odtwarzanaMuzykaT
-    LDA #>IntroKanalT
+    LDA #>KorobiejnikiKanalT
     STA odtwarzanaMuzykaT+1
 
     LDY #$00
@@ -3994,9 +4010,9 @@ MuzykaGrajIntro:
     LDA (odtwarzanaMuzykaT), Y
     STA wskaznikDoMuzykiT+1
 
-    LDA #<IntroKanalN
+    LDA #<KorobiejnikiKanalN
     STA odtwarzanaMuzykaN
-    LDA #>IntroKanalN
+    LDA #>KorobiejnikiKanalN
     STA odtwarzanaMuzykaN+1
 
     LDY #$00
@@ -4026,6 +4042,9 @@ MuzykaGrajKoniecGry:
 
 PiotrBozek:
     .byte $50, $69, $6F, $74, $72, $20, $42, $6F, $BF, $65, $6B
+
+PrzesuniecieBoMuzykaSiePsuje:
+    .byte $AE
 
 ZerowanieAPU:
     .byte $30, $08, $00, $00
@@ -4435,43 +4454,69 @@ Pauza15klatek:
     .byte %11101000, %00001111
     .byte %11111000
 
-; ========================== Intro ==================================
+; ========================== Korobiejniki ==================================
 
-IntroKanalP:
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_przejscie, >Intro_P_przejscie
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_przejscie, >Intro_P_przejscie
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_przejscie, >Intro_P_przejscie
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_przejscie, >Intro_P_przejscie
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_zwrotka, >Intro_P_zwrotka
-    .byte <Intro_P_przejscie, >Intro_P_przejscie
+KorobiejnikiKanalP:
+    .byte <Korobiejniki_P_zwrotka, >Korobiejniki_P_zwrotka
+    .byte <Korobiejniki_P_zwrotka, >Korobiejniki_P_zwrotka
+    .byte <Korobiejniki_P_przejscie, >Korobiejniki_P_przejscie
 
     .byte %11111000, $AE
 
-IntroKanalT:
-    .byte <Intro_T_inicjalizacja, >Intro_T_inicjalizacja
-    .byte <Intro_T_akord_E, >Intro_T_akord_E
-    .byte <Intro_T_akord_Am, >Intro_T_akord_Am
-    .byte <Intro_T_akord_E, >Intro_T_akord_E
-    .byte <Intro_T_akord_Am_przejscie, >Intro_T_akord_Am_przejscie
-    .byte <Intro_T_akord_Dm, >Intro_T_akord_Dm
+KorobiejnikiKanalT:
+    .byte <Korobiejniki_T_inicjalizacja, >Korobiejniki_T_inicjalizacja
+    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_E
+    .byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    .byte <Korobiejniki_T_akord_Am_przejscie, >Korobiejniki_T_akord_Am_przejscie
+    .byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
+    .byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
+    .byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
+    .byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
+    .byte <Korobiejniki_T_akord_G, >Korobiejniki_T_akord_G
+    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    ; powtórzenie
+    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_E
+    .byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    .byte <Korobiejniki_T_akord_Am_przejscie, >Korobiejniki_T_akord_Am_przejscie
+    .byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
+    .byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
+    .byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
+    .byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
+    .byte <Korobiejniki_T_akord_G, >Korobiejniki_T_akord_G
+    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+    ; przejście
+    .byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
+    .byte <Korobiejniki_T_przejscie_B, >Korobiejniki_T_przejscie_B
+    .byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
+    .byte <Korobiejniki_T_przejscie_E, >Korobiejniki_T_przejscie_E
+    .byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
+    .byte <Korobiejniki_T_przejscie_B, >Korobiejniki_T_przejscie_B
+    .byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
+    .byte <Korobiejniki_T_przejscie_E, >Korobiejniki_T_przejscie_E
 
     .byte %11111000, $AE
 
-IntroKanalN:
-    .byte <Intro_N_rytm, >Intro_N_rytm
+KorobiejnikiKanalN:
+    .byte <Korobiejniki_N_inicjalizacja, >Korobiejniki_N_inicjalizacja
+    .byte <Korobiejniki_N_rytm, >Korobiejniki_N_rytm
 
     .byte %11111000, $AE
 
-Intro_P_zwrotka:
+Korobiejniki_P_zwrotka:
     .byte %10101000, %00111111, %00000000
     .byte %00000000, %10101000, %00001100
     .byte %11101000, %00001100
@@ -4544,7 +4589,7 @@ Intro_P_zwrotka:
 
     .byte %11111000
 
-Intro_P_przejscie:
+Korobiejniki_P_przejscie:
     .byte %10101000, %11111111, %00000000
     .byte %00000000, %10101000, %00011000
     .byte %11101000, %00011000
@@ -4580,20 +4625,15 @@ Intro_P_przejscie:
     .byte %11101000, %00011000
     .byte %00000000, %01111110, %00011000
     .byte %11101000, %00011000
-    .byte %11101000, %00110000
 
     .byte %11111000
 
-Intro_T_inicjalizacja:
+Korobiejniki_T_inicjalizacja:
     .byte %10101000, %11111111
 
     .byte %11111000
 
-Intro_T_akord_E:
-    .byte %00000001, %01010010, %00001100
-    .byte %00000000, %11100001, %00001100
-    .byte %00000001, %00011100, %00001100
-    .byte %00000000, %11100001, %00001100
+Korobiejniki_T_akord_Em:
     .byte %00000001, %01010010, %00001100
     .byte %00000000, %11100001, %00001100
     .byte %00000001, %00011100, %00001100
@@ -4601,11 +4641,15 @@ Intro_T_akord_E:
 
     .byte %11111000
 
-Intro_T_akord_Am:
-    .byte %00000000, %11111101, %00001100
-    .byte %00000000, %10101000, %00001100
-    .byte %00000000, %11010100, %00001100
-    .byte %00000000, %10101000, %00001100
+Korobiejniki_T_akord_E:
+    .byte %00000001, %01010010, %00001100
+    .byte %00000000, %11100001, %00001100
+    .byte %00000001, %00001100, %00001100
+    .byte %00000000, %11100001, %00001100
+
+    .byte %11111000
+
+Korobiejniki_T_akord_Am:
     .byte %00000000, %11111101, %00001100
     .byte %00000000, %10101000, %00001100
     .byte %00000000, %11010100, %00001100
@@ -4613,11 +4657,7 @@ Intro_T_akord_Am:
 
     .byte %11111000
 
-Intro_T_akord_Am_przejscie:
-    .byte %00000000, %11111101, %00001100
-    .byte %00000000, %10101000, %00001100
-    .byte %00000000, %11010100, %00001100
-    .byte %00000000, %10101000, %00001100
+Korobiejniki_T_akord_Am_przejscie:
     .byte %00000001, %11111011, %00000110
     .byte %11101000, %00000110
     .byte %00000001, %11000011, %00000110
@@ -4629,11 +4669,7 @@ Intro_T_akord_Am_przejscie:
 
     .byte %11111000
 
-Intro_T_akord_Dm:
-    .byte %00000001, %01111011, %00001100
-    .byte %00000000, %11111101, %00001100
-    .byte %00000001, %00111111, %00001100
-    .byte %00000000, %11111101, %00001100
+Korobiejniki_T_akord_Dm:
     .byte %00000001, %01111011, %00001100
     .byte %00000000, %11111101, %00001100
     .byte %00000001, %00111111, %00001100
@@ -4641,9 +4677,77 @@ Intro_T_akord_Dm:
 
     .byte %11111000
 
-Intro_N_rytm:
+Korobiejniki_T_akord_C:
+    .byte %00000010, %00111001, %00001100
+    .byte %00000001, %01010010, %00001100
+    .byte %00000001, %10101010, %00001100
+    .byte %00000001, %01010010, %00001100
 
     .byte %11111000
+
+Korobiejniki_T_akord_G:
+    .byte %00000001, %00011100, %00001100
+    .byte %00000001, %01111011, %00001100
+    .byte %00000000, %11100001, %00001100
+    .byte %00000001, %01111011, %00001100
+    
+    .byte %11111000
+
+Korobiejniki_T_przejscie_Am:
+    .byte %00000001, %11111011, %00001100
+    .byte %00000001, %01010010, %00001100
+    .byte %00000001, %11111011, %00001100
+    .byte %00000001, %01010010, %00001100
+    .byte %00000001, %11111011, %00001100
+    .byte %00000001, %01010010, %00001100
+    .byte %00000001, %11111011, %00001100
+    .byte %00000001, %01010010, %00001100
+
+    .byte %11111000
+
+Korobiejniki_T_przejscie_B:
+    .byte %00000001, %11000011, %00001100
+    .byte %00000001, %01111011, %00001100
+    .byte %00000001, %11000011, %00001100
+    .byte %00000001, %01111011, %00001100
+    .byte %00000001, %11000011, %00001100
+    .byte %00000001, %01111011, %00001100
+    .byte %00000001, %11000011, %00001100
+    .byte %00000001, %01111011, %00001100
+
+    .byte %11111000
+
+Korobiejniki_T_przejscie_E:
+    .byte %00000010, %11001110, %00001100
+    .byte %00000001, %01010010, %00001100
+    .byte %00000010, %11001110, %00001100
+    .byte %00000001, %01010010, %00001100
+    .byte %00000010, %11001110, %00001100
+    .byte %00000001, %01010010, %00001100
+    .byte %00000010, %11001110, %00001100
+    .byte %00000001, %01010010, %00001100
+
+    .byte %11111000
+
+Korobiejniki_N_inicjalizacja:
+    .byte %00010000, %01010111
+
+    .byte %01110000
+
+Korobiejniki_N_rytm:
+    .byte %00000110, %10000000, %00001100
+    .byte %00000010, %10000000, %00000110
+    .byte %00000010, %10000000, %00000110
+    .byte %00000010, %10000000, %00001100
+    .byte %00000011, %10000000, %00001100
+    .byte %00000110, %10000000, %00001100
+    .byte %00000010, %10000000, %00000110
+    .byte %00000010, %10000000, %00000110
+    .byte %00000010, %10000000, %00001100
+    .byte %00000011, %10000000, %00001100
+    .byte %00100000, %00011101
+
+    .byte %01110000
 
 ; ==================== Never Gonna Give You Up ==========================
 
