@@ -1,61 +1,77 @@
 # Temtris
+
 Projekt cc65 assembly dla NES
 
-Sponsor projektu: https://www.reddit.com/r/Rudzia/
+Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
 ## Następne zmiany: Wersja 1.5
-###### Planowane zmiany:
+
+### 1.5 Planowane zmiany
+
 - [ ] ???
 
 ## Następne zmiany: Wersja 1.4
 
-###### Planowane zmiany:
+### 1.4 Planowane zmiany
+
 - [ ] dodanie muzyki Szanty Bitwa +
 - [ ] naprawienie kolizji bardziej
 - [ ] naprawienie błędu animacji podczas rozbijania linii między którymi jest przerwa
 
 ## W trakcie prac: Wersja 1.3.1
 
-###### Planowane zmiany:
+### 1.3.1 Planowane zmiany
+
 - [ ] dodanie muzyki Korobieniki w menu
 
 # Wersje stabilne
 
 ## Wersja 1.3
-###### Zmiany:
+
+### 1.3 Zmiany
+
 - odświeżenie wyglądu logo
 - naprawienie kolizji
 - ulepszenie sterowania
 - losowy odtwarzacz muzyki
 
-###### Notatki
+### 1.3 Notatki
+
 - W menu muzyka została zmieniona na pusty placeholder ale odtwarzacz wciąż próbuje ją normalnie interpretować, zbyt długie siedzenie w menu może skończyć się dziwnymi dźwiękami
 - Odtwarzacz muzyki wybiera losowo z pośród jednej melodii, jest zaimplementowany, ale nie działa jeszcze w pełni
 
 ## Wersja 1.2
-###### Zmiany:
+
+### 1.2 Zmiany:
+
 - zmiany w grafice Cheemsa
 - optymalizacja muzyki żeby nie zajmowała 1KB pamieci
 - ulepszenia techniczne odtwarzacza muzyki
 
-###### Notatki
+### 1.2 Notatki
+
 - Niektóre emulatory mogą inaczej odwzorowywać kolory niż fceux64, którym debuguje, na przykład na Nestopii Cheems jest zielonkawy chyba że zaznaczymy w opcjach wideo "boost yellow"
 
 ## Wersja 1.1
-###### Zmiany:
+
+### 1.1 Zmiany
+
 - Zmiany grafiki
 - naprawiono miganie ekranu przy stawianiu kloca
 - dodano animacje rozbijania linii
 
 ## Wersja 1.0
+
 Działa jako tako, ale stabilnie
 
-znane błędy:
+### 1.0 Znane błędy
+
 - da się bez problemu wpierdolić klocek w inny klocek jak obracamy go i ruszamy jednocześnie
 - rick roll powoduje problemy z rozwalaniem się linii dlatego musiałem zrobić żeby lekko rwał przy stawianiu kloca
 - jak coś się odwali i linia się nie rozbije jak powinna to amen w papieżu i reset
 
-rzeczy do zrobienia
+### 1.0 Rzeczy do zrobienia
+
 - animacja rozbijania się linii z napisami co to za linia (pojedyncza - cheems, 2x - doge, 3x - buffdoge, 4x - temtris)
 - poukładanie lepiej kodu żeby rock roll nie rwał i żeby ekran dziwnie nie migał na czarno po postawieniu kloca
 - więcej muzyki odtwarzanej losowo!
