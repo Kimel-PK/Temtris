@@ -7,13 +7,17 @@ Sponsor projektu: https://www.reddit.com/r/Rudzia/
 ###### Planowane zmiany:
 - [ ] ???
 
-## W trakcie prac: Wersja 1.4
+## Następne zmiany: Wersja 1.4
 
 ###### Planowane zmiany:
-- [ ] dodanie muzyki Korobieniki w menu
 - [ ] dodanie muzyki Szanty Bitwa +
 - [ ] naprawienie kolizji bardziej
 - [ ] naprawienie błędu animacji podczas rozbijania linii między którymi jest przerwa
+
+## W trakcie prac: Wersja 1.3.1
+
+###### Planowane zmiany:
+- [ ] dodanie muzyki Korobieniki w menu
 
 # Wersje stabilne
 
@@ -44,7 +48,7 @@ Sponsor projektu: https://www.reddit.com/r/Rudzia/
 - dodano animacje rozbijania linii
 
 ## Wersja 1.0
-Działa jako tako ale stabilnie
+Działa jako tako, ale stabilnie
 
 znane błędy:
 - da się bez problemu wpierdolić klocek w inny klocek jak obracamy go i ruszamy jednocześnie
