@@ -4,12 +4,6 @@ Projekt cc65 assembly dla NES
 
 Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
-## Następne zmiany: Wersja 1.5
-
-### 1.5 Planowane zmiany
-
-- [ ] ???
-
 ## W trakcie prac: Wersja 1.4
 
 ### 1.4 Planowane zmiany
