@@ -10,7 +10,7 @@ Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
 - [ ] ???
 
-## Następne zmiany: Wersja 1.4
+## W trakcie prac: Wersja 1.4
 
 ### 1.4 Planowane zmiany
 
@@ -18,13 +18,13 @@ Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 - [ ] naprawienie kolizji bardziej
 - [ ] naprawienie błędu animacji podczas rozbijania linii między którymi jest przerwa
 
-## W trakcie prac: Wersja 1.3.1
-
-### 1.3.1 Planowane zmiany
-
-- [ ] dodanie muzyki Korobieniki w menu
-
 # Wersje stabilne
+
+## Wersja 1.3.1
+
+### 1.3.1 Zmiany
+
+- dodanie muzyki Korobieniki w menu
 
 ## Wersja 1.3
 

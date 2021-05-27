@@ -3426,6 +3426,10 @@ OdtwarzaczMuzykiKanalP:
     AND #%11111000
     CMP #%11111000
     BNE :++++
+    INY
+    LDA (wskaznikDoMuzykiP), Y
+    CMP #$AE
+    BNE :++++
 
     ; kod końca bloku
 
@@ -3607,6 +3611,11 @@ OdtwarzaczMuzykiKanalT:
     AND #%11111000
     CMP #%11111000
     BNE :++
+    INC $FF
+    INY
+    LDA (wskaznikDoMuzykiT), Y
+    CMP #$AE
+    BNE :++
 
     ; kod końca bloku
 
@@ -3621,12 +3630,10 @@ OdtwarzaczMuzykiKanalT:
     LDY #$00
 
     LDA (odtwarzanaMuzykaT), Y
-    AND #%11111000
-    CMP #%11111000
+    CMP $FF
     BNE :+
-
     INY
-    LDA (odtwarzanaMuzykaP), Y ; podwójne sprawdzenie końca bloku
+    LDA (odtwarzanaMuzykaT), Y ; podwójne sprawdzenie końca bloku
     CMP #$AE
     BNE :++
 
@@ -3751,8 +3758,6 @@ OdtwarzaczMuzykiKanalN:
 
     ; ========================== kanał 4 szum ==================================
 
-    INC $FF
-
     LDA zegarMuzykiN
     CMP #$00
     BEQ :+
@@ -3765,6 +3770,10 @@ OdtwarzaczMuzykiKanalN:
     LDA (wskaznikDoMuzykiN), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
     AND #%01110000
     CMP #%01110000
+    BNE :++
+    INY
+    LDA (wskaznikDoMuzykiN), Y
+    CMP #$AE
     BNE :++
 
     ; kod końca bloku
@@ -4436,23 +4445,23 @@ RozbitaLiniaTemtrisNapis:
 Pauza360klatek:
     .byte %11101000, %11111111
     .byte %11101000, %01101001
-    .byte %11111000
+    .byte %11111000, $AE
 
 Pauza60klatek:
     .byte %11101000, %00111100
-    .byte %11111000
+    .byte %11111000, $AE
 
 Pauza45klatek:
     .byte %11101000, %00101101
-    .byte %11111000
+    .byte %11111000, $AE
 
 Pauza30klatek:
     .byte %11101000, %00011110
-    .byte %11111000
+    .byte %11111000, $AE
 
 Pauza15klatek:
     .byte %11101000, %00001111
-    .byte %11111000
+    .byte %11111000, $AE
 
 ; ========================== Korobiejniki ==================================
 
@@ -4465,8 +4474,8 @@ KorobiejnikiKanalP:
 
 KorobiejnikiKanalT:
     .byte <Korobiejniki_T_inicjalizacja, >Korobiejniki_T_inicjalizacja
-    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
-    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
     .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
     .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
     .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_E
@@ -4478,12 +4487,12 @@ KorobiejnikiKanalT:
     .byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
     .byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
     .byte <Korobiejniki_T_akord_G, >Korobiejniki_T_akord_G
-    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
     .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
     .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
     ; powtórzenie
-    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
-    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
     .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
     .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
     .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_E
@@ -4495,7 +4504,7 @@ KorobiejnikiKanalT:
     .byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
     .byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
     .byte <Korobiejniki_T_akord_G, >Korobiejniki_T_akord_G
-    .byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_Em
+    .byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
     .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
     .byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
     ; przejście
@@ -4508,7 +4517,7 @@ KorobiejnikiKanalT:
     .byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
     .byte <Korobiejniki_T_przejscie_E, >Korobiejniki_T_przejscie_E
 
-    .byte %11111000, $AE
+    .byte $FF, $AE
 
 KorobiejnikiKanalN:
     .byte <Korobiejniki_N_inicjalizacja, >Korobiejniki_N_inicjalizacja
@@ -4517,7 +4526,7 @@ KorobiejnikiKanalN:
     .byte %11111000, $AE
 
 Korobiejniki_P_zwrotka:
-    .byte %10101000, %00111111, %00000000
+    .byte %10101000, %11111111, %00000000
     .byte %00000000, %10101000, %00001100
     .byte %11101000, %00001100
     .byte %00000000, %11100001, %00001100
@@ -4549,8 +4558,7 @@ Korobiejniki_P_zwrotka:
     .byte %11101000, %00001100
     .byte %00000000, %11111101, %00011000
     .byte %11101000, %00011000
-
-    .byte %10101000, %10111111, %00000000
+    .byte %10101000, %11111111, %00000000
     .byte %00000000, %10111101, %00000110
     .byte %11101000, %00000110
     .byte %00000000, %10111101, %00001100
@@ -4567,10 +4575,10 @@ Korobiejniki_P_zwrotka:
     .byte %00000000, %10101000, %00001100
     .byte %11101000, %00001100
     .byte %00000000, %11010100, %00001100
-    .byte %00000000, %10101000, %00001100
-    .byte %11101000, %00001100
-    .byte %00000000, %10111101, %00001100
+    .byte %00000000, %10101000, %00010010
+    .byte %00000000, %10111101, %00000110
     .byte %00000000, %11010100, %00001100
+    .byte %11101000, %00001100
     .byte %00000000, %11100001, %00000110
     .byte %11101000, %00000110
     .byte %00000000, %11100001, %00001100
@@ -4586,8 +4594,9 @@ Korobiejniki_P_zwrotka:
     .byte %11101000, %00001100
     .byte %00000000, %11111101, %00011000
     .byte %11101000, %00011000
+    .byte %10101000, %11111111, %00000000
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_P_przejscie:
     .byte %10101000, %11111111, %00000000
@@ -4609,29 +4618,29 @@ Korobiejniki_P_przejscie:
     .byte %11101000, %00011000
     .byte %00000000, %11010100, %00011000
     .byte %11101000, %00011000
-    .byte %00000000, %10011111, %00011000
+    .byte %00000000, %10111101, %00011000
     .byte %11101000, %00011000
-    .byte %00000000, %10111101, %00001100
+    .byte %00000000, %11100001, %00001100
     .byte %11101000, %00001100
-    .byte %00000000, %10111101, %00001100
+    .byte %00000000, %11100001, %00001100
+    .byte %11101000, %00001100
+    .byte %00000000, %11010100, %00001100
     .byte %11101000, %00001100
     .byte %00000000, %10101000, %00001100
     .byte %11101000, %00001100
-    .byte %00000000, %01111110, %00001100
-    .byte %11101000, %00001100
-    .byte %00000000, %01011110, %00011000
-    .byte %11101000, %00011000
-    .byte %00000000, %01100011, %00011000
-    .byte %11101000, %00011000
     .byte %00000000, %01111110, %00011000
     .byte %11101000, %00011000
+    .byte %00000000, %10000101, %00011000
+    .byte %11101000, %00011000
+    .byte %00000000, %10101000, %00011000
+    .byte %11101000, %00011000
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_inicjalizacja:
     .byte %10101000, %11111111
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_akord_Em:
     .byte %00000001, %01010010, %00001100
@@ -4639,7 +4648,7 @@ Korobiejniki_T_akord_Em:
     .byte %00000001, %00011100, %00001100
     .byte %00000000, %11100001, %00001100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_akord_E:
     .byte %00000001, %01010010, %00001100
@@ -4647,7 +4656,7 @@ Korobiejniki_T_akord_E:
     .byte %00000001, %00001100, %00001100
     .byte %00000000, %11100001, %00001100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_akord_Am:
     .byte %00000000, %11111101, %00001100
@@ -4655,7 +4664,7 @@ Korobiejniki_T_akord_Am:
     .byte %00000000, %11010100, %00001100
     .byte %00000000, %10101000, %00001100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_akord_Am_przejscie:
     .byte %00000001, %11111011, %00000110
@@ -4667,7 +4676,7 @@ Korobiejniki_T_akord_Am_przejscie:
     .byte %00000001, %01111011, %00000110
     .byte %11101000, %00000110
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_akord_Dm:
     .byte %00000001, %01111011, %00001100
@@ -4675,7 +4684,7 @@ Korobiejniki_T_akord_Dm:
     .byte %00000001, %00111111, %00001100
     .byte %00000000, %11111101, %00001100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_akord_C:
     .byte %00000010, %00111001, %00001100
@@ -4683,7 +4692,7 @@ Korobiejniki_T_akord_C:
     .byte %00000001, %10101010, %00001100
     .byte %00000001, %01010010, %00001100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_akord_G:
     .byte %00000001, %00011100, %00001100
@@ -4691,7 +4700,7 @@ Korobiejniki_T_akord_G:
     .byte %00000000, %11100001, %00001100
     .byte %00000001, %01111011, %00001100
     
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_przejscie_Am:
     .byte %00000001, %11111011, %00001100
@@ -4703,7 +4712,7 @@ Korobiejniki_T_przejscie_Am:
     .byte %00000001, %11111011, %00001100
     .byte %00000001, %01010010, %00001100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_przejscie_B:
     .byte %00000001, %11000011, %00001100
@@ -4715,7 +4724,7 @@ Korobiejniki_T_przejscie_B:
     .byte %00000001, %11000011, %00001100
     .byte %00000001, %01111011, %00001100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_T_przejscie_E:
     .byte %00000010, %11001110, %00001100
@@ -4727,12 +4736,12 @@ Korobiejniki_T_przejscie_E:
     .byte %00000010, %11001110, %00001100
     .byte %00000001, %01010010, %00001100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 Korobiejniki_N_inicjalizacja:
     .byte %00010000, %01010111
 
-    .byte %01110000
+    .byte %01110000, $AE
 
 Korobiejniki_N_rytm:
     .byte %00000110, %10000000, %00001100
@@ -4747,7 +4756,7 @@ Korobiejniki_N_rytm:
     .byte %00000011, %10000000, %00001100
     .byte %00100000, %00011101
 
-    .byte %01110000
+    .byte %01110000, $AE
 
 ; ==================== Never Gonna Give You Up ==========================
 
@@ -4825,7 +4834,7 @@ NeverGonnaGiveYouUpKanalT:
     .byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
     .byte <Pauza360klatek, >Pauza360klatek
 
-    .byte %11111000, $AE
+    .byte $FF, $AE
 
 NeverGonnaGiveYouUpKanalN:
     .byte <NGGYU_N_Wstep, >NGGYU_N_Wstep
@@ -4839,7 +4848,7 @@ NGGYU_P_Wstep_1:
     .byte %10101000, %11111111, %00000000
     .byte %11101000, %01001011
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_P_Wstep_2:
     .byte %00000000, %11001000, %00101101
@@ -4852,7 +4861,7 @@ NGGYU_P_Wstep_2:
     .byte %00000000, %10110010, %00101101
     .byte %00000001, %00001100, %01011010
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_P_Wstep_3:
     .byte %11101000, %00001111
@@ -4863,7 +4872,7 @@ NGGYU_P_Wstep_3:
     .byte %00000000, %01110110, %00000111
     .byte %00000000, %01100011, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_P_Zwrotka_1:
     .byte %11101000, %01011010
@@ -4930,7 +4939,7 @@ NGGYU_P_Zwrotka_1:
     .byte %00000000, %10110010, %00011110
     .byte %11101000, %00011110
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_P_I_JUST:
     .byte %00000000, %11001000, %00111100
@@ -4961,7 +4970,7 @@ NGGYU_P_I_JUST:
     .byte %00000000, %10110010, %00010110
     .byte %11101000, %00010110
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_P_Refren:
     .byte %00000001, %00001100, %00000111
@@ -5025,7 +5034,7 @@ NGGYU_P_Refren:
     .byte %00000000, %10110010, %00011110
     .byte %00000000, %11001000, %00011110
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_P_Zwrotka_2:
     .byte %11101000, %00001111
@@ -5094,7 +5103,7 @@ NGGYU_P_Zwrotka_2:
     .byte %00000000, %10110010, %00010110
     .byte %11101000, %00010111
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_P_Przejscie_1:
     .byte %00000010, %00011001, %00011110
@@ -5105,7 +5114,7 @@ NGGYU_P_Przejscie_1:
     .byte %00000000, %11010100, %00001111
     .byte %11101000, %00011110
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_P_Przejscie_2:
     .byte %00000010, %00011001, %00011110
@@ -5128,7 +5137,7 @@ NGGYU_P_Przejscie_2:
     .byte %00000000, %11010100, %00001111
     .byte %11101000, %00011110
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 ; ===================== NGGYU kanał T =========================
 
@@ -5136,7 +5145,7 @@ NGGYU_T_WSTEP_1:
     .byte %10101000, %11111111
     .byte %11101000, %01001011
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_WSTEP_2:
     .byte %00000000, %10000101, %00111100
@@ -5155,7 +5164,7 @@ NGGYU_T_WSTEP_2:
     .byte %00000000, %01100011, %00000111
     .byte %11101000, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
     
 NGGYU_T_PODKLAD_1:
     .byte %00000001, %11011110, %00000111
@@ -5202,7 +5211,7 @@ NGGYU_T_PODKLAD_1:
     .byte %11101000, %00000100
     .byte %00000001, %11011110, %00000111
 
-    .byte %11111000
+    .byte %11111000, $AE
     
 NGGYU_T_PODKLAD_1_WAR_1:
     .byte %00000010, %11001110, %00000111
@@ -5221,7 +5230,7 @@ NGGYU_T_PODKLAD_1_WAR_1:
     .byte %00000010, %01111111, %00000111
     .byte %00000010, %00011001, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
     
 NGGYU_T_PODKLAD_1_WAR_2:
     .byte %00000010, %11001110, %00000111
@@ -5238,7 +5247,7 @@ NGGYU_T_PODKLAD_1_WAR_2:
     .byte %00000000, %11101110, %00000111
     .byte %00000010, %00011001, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
     
 NGGYU_T_PODKLAD_1_WAR_3:
     .byte %00000001, %11011110, %00000111
@@ -5257,7 +5266,7 @@ NGGYU_T_PODKLAD_1_WAR_3:
     .byte %00000000, %01110110, %00000111
     .byte %00000000, %01100011, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_PODKLAD_1_WAR_4:
     .byte %00000000, %11101110, %00000111
@@ -5275,7 +5284,7 @@ NGGYU_T_PODKLAD_1_WAR_4:
     .byte %00000000, %01110110, %00000111
     .byte %00000000, %01100011, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_REFREN_1:
     .byte %00000000, %01100011, %00101101
@@ -5291,7 +5300,7 @@ NGGYU_T_REFREN_1:
     .byte %00000000, %01011000, %00101101
     .byte %00000000, %10000101, %00011110
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_REFREN_2:
     .byte %00000000, %10000101, %00111100
@@ -5301,7 +5310,7 @@ NGGYU_T_REFREN_2:
     .byte %00000000, %01001111, %00000111
     .byte %00000000, %01100011, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
     
 NGGYU_T_REFREN_OUTRO:
     .byte %00000000, %11010100, %00011110
@@ -5322,7 +5331,7 @@ NGGYU_T_REFREN_OUTRO:
     .byte %11101000, %00000100
     .byte %00000011, %00100110, %00000111
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_REFREN_1_WAR_1:
     .byte %00000000, %01100011, %00001111
@@ -5341,7 +5350,7 @@ NGGYU_T_REFREN_1_WAR_1:
     .byte %00000000, %10110010, %00101101
     .byte %00000001, %00001100, %00011110
     
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_REFREN_2_WAR_1:
     .byte %00000000, %01101001, %00001111
@@ -5355,7 +5364,7 @@ NGGYU_T_REFREN_2_WAR_1:
     .byte %00000000, %00111010, %00000111
     .byte %00000000, %00110001, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_REFREN_OUTRO_WAR_1:
     .byte %00000000, %01101001, %00001111
@@ -5378,7 +5387,7 @@ NGGYU_T_REFREN_OUTRO_WAR_1:
     .byte %00000000, %00110001, %00000100
     .byte %11101000, %00000100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_PRZEJSCIE:
     .byte %00000000, %11101110, %00001111
@@ -5408,7 +5417,7 @@ NGGYU_T_PRZEJSCIE:
     .byte %11101000, %00000111
     .byte %00000010, %11001110, %00001000
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 NGGYU_T_PAUZA_WSTAWKA:
     .byte %00000000, %10011111, %00011110
@@ -5416,7 +5425,7 @@ NGGYU_T_PAUZA_WSTAWKA:
     .byte %00000000, %10110010, %00111100
     .byte %11101000, %00001111
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 ; ===================== NGGYU kanał N =========================
 
@@ -5433,7 +5442,7 @@ NGGYU_N_Wstep:
     .byte %00001000, %10000000, %00000111
     .byte %00001000, %10000000, %00001000
 
-    .byte %01110000
+    .byte %01110000, $AE
 
 NGGYU_N_Rytm:
     .byte %00001110, %10000000, %00001111
@@ -5448,7 +5457,7 @@ NGGYU_N_Rytm:
     .byte %00000010, %10000000, %00001111
     .byte %00100000, %00011101
 
-    .byte %01110000
+    .byte %01110000, $AE
 
 ; ==================== Szanty Bitwa + ==========================
 
@@ -5547,7 +5556,7 @@ SzantyBitwa_P:
     .byte %00000001, %01111011, %00001111
     .byte %00000001, %01010010, %01111000
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 ; ==================== koniec gry =======================
 
@@ -5572,7 +5581,7 @@ KoniecGryP:
     .byte %00000000, %11100001, %00000111
     .byte %00000011, %11110111, %00111100
 
-    .byte %11111000
+    .byte %11111000, $AE
 
 PrawdaOPolskimPapiezu:
 
