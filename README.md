@@ -8,6 +8,7 @@ Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
 ### 1.4 Planowane zmiany
 
+- [ ] dodanie muzyki Together Forever
 - [ ] dodanie muzyki Szanty Bitwa +
 - [ ] naprawienie kolizji bardziej
 - [ ] naprawienie błędu animacji podczas rozbijania linii między którymi jest przerwa
