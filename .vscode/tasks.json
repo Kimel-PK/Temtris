@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Kompiluj i ruchom",
+        "type": "shell",
+		"options": {    
+			"cwd": "${workspaceFolder}"
+		},
+        "command": "./kompiluj.bat",
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      }
+    ]
+}

@@ -1,4 +1,5 @@
 .segment "HEADER"
+
 .byte "NES"
 .byte $1A
 .byte $02
@@ -20,14 +21,11 @@ tempY: .res 1
 odczytWejscia: .res 1
 
 ; zmienne zarządzania wejściem
-kontroler1: .res 1 ; RLDUSsBA
-kontroler1poprzedni: .res 1
-kontroler2: .res 1 ; RLDUSsBA
-kontroler2poprzedni: .res 1
-zegarKontrolera1: .res 1
-zegarKontrolera1szybkosc: .res 1
-zegarKontrolera1obrot: .res 1
-zegarKontrolera2: .res 1
+kontroler: .res 1 ; RLDUSsBA
+kontrolerpoprzedni: .res 1
+zegarKontrolera: .res 1
+zegarKontroleraszybkosc: .res 1
+zegarKontroleraobrot: .res 1
 
 ; zmienne sterujące
 coKlatke: .res 1
@@ -35,12 +33,12 @@ wskaznikPetli: .res 2
 wskaznikNMI: .res 2
 wstrzymajOAMDMA: .res 1
 losowa: .res 2
+trybGry: .res 1
+numerGracza: .res 1
 pauza: .res 1
 zegar: .res 1
-zegarSpadania1: .res 1
-zegarSpadania2: .res 1
-szybkoscSpadania1: .res 1
-szybkoscSpadania2: .res 1
+zegarSpadania: .res 1
+szybkoscSpadania: .res 1
 poziom1: .res 1
 poziom2: .res 1
 
@@ -103,7 +101,7 @@ klatkaAnimacji: .res 1
 blokAnimacji: .res 1
 
 ; pozostała pamięć
-pozostaloBajtow: .res 77
+pozostaloBajtow: .res 80
 
 .segment "STARTUP"
 
@@ -247,14 +245,14 @@ RESET:
     STA $2005
     STA $2005
 
-    ; zaladuj sprite
-    LDA #$97
+    ; zaladuj sprite strzałki wyboru graczy
+    LDA #$A7
     STA $0200
     LDA #$00
     STA $0201
     LDA #$00
     STA $0202
-    LDA #$36
+    LDA #$26
     STA $0203
 
     ; wlacz przerwania
@@ -268,7 +266,7 @@ RESET:
     STA $2001
 
     LDA #$3C
-    STA szybkoscSpadania1
+    STA szybkoscSpadania
 
     LDA #$FF
     STA klatkaAnimacji
@@ -333,12 +331,12 @@ PETLAMenu:
 PETLAGra:
    
     INC zegar
-    INC zegarSpadania1
-    LDA zegarSpadania1
-    CMP szybkoscSpadania1
+    INC zegarSpadania
+    LDA zegarSpadania
+    CMP szybkoscSpadania
     BNE :+
     LDA #$00
-    STA zegarSpadania1
+    STA zegarSpadania
 :
 
     JSR ObliczPozycjeWPPU
@@ -376,7 +374,7 @@ PETLAKoniecGry:
     JMP PowrotDoPETLI
 
 PETLAPalenieGumy:
-
+    ; procesor nie ma nic do roboty
     JMP PowrotDoPETLI
 
 ; =========================================================================
@@ -415,9 +413,9 @@ PowrotDoNMI:
 
 NMIMenuGry:
 
-    JSR CzytajKontroler1
+    JSR CzytajKontroler
 
-    LDA kontroler1
+    LDA kontroler
     AND #%00001000
     CMP #%00001000
     BNE :+
@@ -430,39 +428,42 @@ NMIMenuGry:
     JMP PowrotDoNMI
 
 :
-    ; sprawdzanie selecta na potem
-    LDA kontroler1
+    ; naciśnij select żeby zmienić ilość graczy
+    LDA kontroler
     AND #%00000100
     CMP #%00000100
-    BNE :++
+    BNE :+++
 
-    LDA kontroler1poprzedni
+    LDA kontrolerpoprzedni
     AND #%00000100
     CMP #%00000100
     BNE :+
-    JMP :++
+    JMP :+++
 :
 
     ; naciśnięto select
+    ; wybierz tryb dla 1 gracza lub dla 2 graczy
 
-    BIT $2002
-    LDA #$3F
-    STA $2006
-    LDA #$03
-    STA $2006
+    LDA trybGry
+    CMP #$01
+    BEQ :+
     
-    LDA $2007
-    STA temp
-    INC temp
+    LDA $0200
+    CLC
+    ADC #$08
+    STA $0200
+    
+    INC trybGry
+    
+    JMP :++
+:
 
-    BIT $2002
-    LDA #$3F
-    STA $2006
-    LDA #$03
-    STA $2006
-
-    LDA temp
-    STA $2007
+    LDA $0200
+    CLC
+    SBC #$07
+    STA $0200
+    
+    DEC trybGry
 
 :
 
@@ -537,7 +538,100 @@ NMILadowanieGry:
     INC int+1
     JMP :--
 
+: ; koniec wczytywania grafiki tła gry
+
+    ; jeżeli tryb dla jednego gracza wyczyść interfejs drugiego gracza
+    LDA trybGry
+    CMP #$01
+    BEQ :++++++
+    
+    ; wybierz miejsce w PPU
+    BIT $2002
+    LDA #$20
+    STA $2006
+    LDA #$76
+    STA $2006
+    
+    ; ustaw rejestry
+    LDY #$00
+    LDX #$04
+    
+    ; czyść NAST
 :
+    STY $2007
+    DEX
+    CPX #$00
+    BNE :-
+    
+    ; wybierz miejsce w PPU
+    BIT $2002
+    LDA #$21
+    STA $2006
+    LDA #$36
+    STA $2006
+    
+    ; ustaw rejestr
+    LDX #$05
+    
+    ; czyść PUMKTY
+:
+    STY $2007
+    DEX
+    CPX #$00
+    BNE :-
+    
+    ; wybierz miejsce w PPU
+    BIT $2002
+    LDA #$21
+    STA $2006
+    LDA #$56
+    STA $2006
+    
+    ; ustaw rejestr
+    LDX #$04
+    
+    ; czyść NNNN
+:
+    STY $2007
+    DEX
+    CPX #$00
+    BNE :-
+    
+    ; wybierz miejsce w PPU
+    BIT $2002
+    LDA #$21
+    STA $2006
+    LDA #$96
+    STA $2006
+    
+    ; ustaw rejestr
+    LDX #$06
+    
+    ; czyść PUMKTY
+:
+    STY $2007
+    DEX
+    CPX #$00
+    BNE :-
+    
+    ; wybierz miejsce w PPU
+    BIT $2002
+    LDA #$21
+    STA $2006
+    LDA #$B6
+    STA $2006
+    
+    ; ustaw rejestr
+    LDX #$04
+    
+    ; czyść NNNN
+:
+    STY $2007
+    DEX
+    CPX #$00
+    BNE :-
+    
+: ; koniec czyszczenia interfejsu drugiego gracza
 
     ; wyzeruj scrollowanie
     LDA #$00
@@ -663,7 +757,7 @@ NMISpadajacyKlocek:
 
     ; przesuń klocek w dół lub umieść
 
-    LDA zegarSpadania1
+    LDA zegarSpadania
     CMP #$00
     BNE :++
 
@@ -689,33 +783,33 @@ NMISpadajacyKlocek:
 
 :
 
-    ; dekrementuj zegary kontrolera 1
-    LDA zegarKontrolera1
+    ; dekrementuj zegary kontrolera
+    LDA zegarKontrolera
     CMP #$00
     BEQ :+
-    DEC zegarKontrolera1
+    DEC zegarKontrolera
 :
-    LDA zegarKontrolera1obrot
+    LDA zegarKontroleraobrot
     CMP #$00
     BEQ :+
-    DEC zegarKontrolera1obrot
+    DEC zegarKontroleraobrot
 :
 
-    JSR CzytajKontroler1
+    JSR CzytajKontroler
 
     ; czy zegar kontrolera pozwala na obrót
-    LDA zegarKontrolera1obrot
+    LDA zegarKontroleraobrot
     CMP #$00
     BNE :++
 
     ; czy naciśnięto B
-    LDA kontroler1
+    LDA kontroler
     AND #%00000010
     CMP #%00000010
     BNE :+
 
     LDA #$0A
-    STA zegarKontrolera1obrot
+    STA zegarKontroleraobrot
 
     JSR ObrocKlocekWLewo
     JSR SkopiujMapeKolizji
@@ -724,13 +818,13 @@ NMISpadajacyKlocek:
 :
 
     ; czy naciśnięto A
-    LDA kontroler1
+    LDA kontroler
     AND #%00000001
     CMP #%00000001
     BNE :+
 
     LDA #$0A
-    STA zegarKontrolera1obrot
+    STA zegarKontroleraobrot
 
     JSR ObrocKlocekWPrawo
     JSR SkopiujMapeKolizji
@@ -739,40 +833,40 @@ NMISpadajacyKlocek:
 :
 
     ; czy puszczono A lub B
-    LDA kontroler1
+    LDA kontroler
     AND #%00000011
     CMP #%00000000
     BNE :+
 
     LDA #$00
-    STA zegarKontrolera1obrot
+    STA zegarKontroleraobrot
 
 :
 
-    LDA zegarKontrolera1
+    LDA zegarKontrolera
     CMP #$00
     BNE :++++++
 
     ; czy naciśnięto R
-    LDA kontroler1
+    LDA kontroler
     AND #%10000000
     CMP #%10000000
     BNE :+++
 
-    LDA kontroler1poprzedni
+    LDA kontrolerpoprzedni
     AND #%10000000
     CMP #%00000000
     BNE :+
 
     ; wciśnięto R
     LDA #$0A
-    STA zegarKontrolera1
+    STA zegarKontrolera
     JMP :++
 
 :
     ; przytrzymano R
     LDA #$04
-    STA zegarKontrolera1
+    STA zegarKontrolera
 
 :
 
@@ -783,25 +877,25 @@ NMISpadajacyKlocek:
 :
 
     ; czy naciśnięto L
-    LDA kontroler1
+    LDA kontroler
     AND #%01000000
     CMP #%01000000
     BNE :++++
 
-    LDA kontroler1poprzedni
+    LDA kontrolerpoprzedni
     AND #%01000000
     CMP #%00000000
     BNE :+
 
     ; wciśnięto L
     LDA #$0A
-    STA zegarKontrolera1
+    STA zegarKontrolera
     JMP :++
 :
 
     ; przytrzymano L
     LDA #$04
-    STA zegarKontrolera1
+    STA zegarKontrolera
 
 :
 
@@ -815,29 +909,29 @@ NMISpadajacyKlocek:
 :
 
     ; czy naciśnięto D
-    LDA kontroler1
+    LDA kontroler
     AND #%00100000
     CMP #%00100000
     BNE :++++
 
-    LDA kontroler1poprzedni
+    LDA kontrolerpoprzedni
     AND #%00100000
     CMP #%00000000
     BNE :+
 
     ; wciśnięto D
     LDA #$0A
-    STA zegarKontrolera1
+    STA zegarKontrolera
     JMP :++
 :
 
     ; przytrzymano D
-    LDA zegarKontrolera1szybkosc
-    STA zegarKontrolera1
+    LDA zegarKontroleraszybkosc
+    STA zegarKontrolera
 
     CMP #$02
     BEQ :+
-    DEC zegarKontrolera1szybkosc
+    DEC zegarKontroleraszybkosc
 
 :
 
@@ -864,15 +958,15 @@ NMISpadajacyKlocek:
 :
 
     ; czy puszczono L, R lub D
-    LDA kontroler1
+    LDA kontroler
     AND #%11100000
     CMP #%00000000
     BNE :+
 
     LDA #$00
-    STA zegarKontrolera1
+    STA zegarKontrolera
     LDA #$05
-    STA zegarKontrolera1szybkosc
+    STA zegarKontroleraszybkosc
 
 :
 
@@ -886,10 +980,10 @@ NMIStawianieKlocka:
     JSR PostawKlocek
 
     LDA #$00
-    STA zegarKontrolera1
-    STA zegarKontrolera1obrot
+    STA zegarKontrolera
+    STA zegarKontroleraobrot
     LDA #$05
-    STA zegarKontrolera1szybkosc
+    STA zegarKontroleraszybkosc
 
     LDA #<NMIAktualizacjaPlanszy
     STA wskaznikNMI
@@ -1554,10 +1648,9 @@ NMIKoniecGry:
 
 NMICzekajNaReset:
 
-    JSR CzytajKontroler1
-    ; JSR CzytajKontroler2
+    JSR CzytajKontroler
 
-    LDA kontroler1
+    LDA kontroler
     AND #%00001000
     CMP #%00001000
     BNE :+
@@ -1565,15 +1658,6 @@ NMICzekajNaReset:
     JMP RESET
 
 :
-
-;     LDA kontroler2
-;     AND #%00001000
-;     CMP #%00001000
-;     BNE :+
-; 
-;     JMP RESET
-; 
-; :
 
     JMP PowrotDoNMI
 
@@ -1599,14 +1683,14 @@ ZerujAPU:
     RTS
 
 ; Odczyt z kontrolera 1
-CzytajKontroler1:
+CzytajKontroler:
 
-    ; skopiuj wartości do zmiennej kontroler1poprzedni
+    ; skopiuj wartości do zmiennej kontrolerpoprzedni
 
-    LDA kontroler1
-    STA kontroler1poprzedni
+    LDA kontroler
+    STA kontrolerpoprzedni
     LDA #$00
-    STA kontroler1
+    STA kontroler
 
     ; odczyt z wejścia
 
@@ -1615,69 +1699,77 @@ CzytajKontroler1:
     LDX #$00
     STX $4016
     
+    ; odczytaj odpowiedni kontroler w zależności od obecnego gracza
 :
+    LDA numerGracza
+    CMP #$01
+    BEQ :+
     LDA $4016
+    JMP :++
+:
+    LDA $4017
+:
     LSR
     ROR odczytWejscia
     INX
     CPX #$08
-    BNE :-
+    BNE :---
 
     ; Prawo
     LDA #%10000000
     AND odczytWejscia
     BEQ :+
-    ORA kontroler1
-    STA kontroler1
+    ORA kontroler
+    STA kontroler
 :
     ; Lewo
     LDA #%01000000
     AND odczytWejscia
     BEQ :+
-    ORA kontroler1
-    STA kontroler1
+    ORA kontroler
+    STA kontroler
 :
     ; Dół
     LDA #%00100000
     AND odczytWejscia
     BEQ :+
-    ORA kontroler1
-    STA kontroler1
+    ORA kontroler
+    STA kontroler
 :
     ; Góra
     LDA #%00010000
     AND odczytWejscia
     BEQ :+
-    ORA kontroler1
-    STA kontroler1
+    ORA kontroler
+    STA kontroler
 :
     ; Start
     LDA #%00001000
     AND odczytWejscia
     BEQ :+
-    ORA kontroler1
-    STA kontroler1
+    ORA kontroler
+    STA kontroler
 :
     ; Select
     LDA #%00000100
     AND odczytWejscia
     BEQ :+
-    ORA kontroler1
-    STA kontroler1
+    ORA kontroler
+    STA kontroler
 :
     ; B
     LDA #%00000010
     AND odczytWejscia
     BEQ :+
-    ORA kontroler1
-    STA kontroler1
+    ORA kontroler
+    STA kontroler
 :
     ; A
     LDA #%00000001
     AND odczytWejscia
     BEQ :+
-    ORA kontroler1
-    STA kontroler1
+    ORA kontroler
+    STA kontroler
 :
 
     RTS
@@ -1828,7 +1920,7 @@ PrzesunKlocekWDol:
     STA pozycjaKlockaY
 
     LDA #$00
-    STA zegarSpadania1
+    STA zegarSpadania
 
     INC pozycjaLiniiKlocka
 
@@ -2260,7 +2352,26 @@ PostawKlocek:
     STA $020D
     STA $020E
     STA $020F
+	
+	; jeśli tryb na dwóch graczy zmień gracza
+	
+	LDA trybGry
+	CMP #$00
+	BEQ :++
 
+	LDA numerGracza
+	CMP #$01
+	BEQ :+
+	
+	LDA #$01
+	STA numerGracza
+	
+	JMP :++
+:
+	LDA #$00
+	STA numerGracza
+:
+	
     RTS
 
 ; ========================== sprawdzanie kolizji ==========================
@@ -3311,13 +3422,13 @@ CzyNastepnyPoziom1:
     CPY #$04
     BNE :-
     
-    LDA szybkoscSpadania1
+    LDA szybkoscSpadania
     CMP #$08
     BEQ :+
 
     CLC
     SBC #$03
-    STA szybkoscSpadania1
+    STA szybkoscSpadania
 :
 
     RTS
@@ -4096,9 +4207,6 @@ GrafikaTloMenu:
 
 GrafikaTloGra:
     .incbin "grafika/Gra.nam"
-
-GrafikaTloGra2Graczy:
-    .incbin "grafika/Gra2Graczy.nam"
 
 GrafikaTloKoniecGryKlatka1:
     .incbin "grafika/KoniecGryKlatka1.nam"
