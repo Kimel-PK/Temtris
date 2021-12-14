@@ -4,6 +4,12 @@ Projekt cc65 assembly dla NES
 
 Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
+## Trailer
+
+https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-86cd-e9affed738ba.mp4
+
+![Obejrzyj trailer w lepszej jakości w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
+
 ## W trakcie prac: Wersja 1.4
 
 ### Planowane zmiany
