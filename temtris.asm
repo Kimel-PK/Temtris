@@ -1,11 +1,11 @@
 .segment "HEADER"
 
 .byte "NES"
-.byte $1A
-.byte $02
-.byte $02
-.byte %01100001 ; %MMMMvTsM - mapper bity niskie, coś i mirroring
-.byte %00000000 ; %MMMM---- - mapper bity wysokie
+.byte $1A ; MS-DOS EOF
+.byte $02 ; rozmiar PRG ROM
+.byte $02 ; rozmiar CHR ROM
+.byte %01101000 ; %MMMMvTsm - M - mapper bity niskie, v - 4 ekranowy VRAM, T - trainer, s - bateria, m - mirroring
+.byte %00000000 ; %MMMM---- - M - mapper bity wysokie
 .byte $00
 .byte $00
 .byte $00
@@ -39,8 +39,7 @@ pauza: .res 1
 zegar: .res 1
 zegarSpadania: .res 1
 szybkoscSpadania: .res 1
-poziom1: .res 1
-poziom2: .res 1
+poziom: .res 1
 
 ; zmienne klocka
 kolizja: .res 1; (---ABLDP = kolizja przy obrocie w lewo, w prawo, z lewej, z dołu, z prawej)
@@ -54,13 +53,12 @@ pozycjaPPUH: .res 1 ; lewy górny róg siatki kolizji 6x5 (-1 komórka PPU wzgl�
 pozycjaPPUL: .res 1
 pozycjaLiniiKlocka: .res 1 ; potrzebne do liczenia wypełnienia linii
 pozycjaDanychKlocka: .res 2 ; wskaźnik do obecnie używanych danych klocka
-pozycjaDanychNastepnegoKlocka: .res 2 ; wskaźnik do obecnie używanych danych klocka
+pozycjaDanychNastepnegoKlocka: .res 2 ; wskaźnik do danych następnego klocka
 mapaKolizji: .res 30
 
 ; linie i punktacja
 wypelnienieLinii: .res 20
-liczbaLiniiNastepnyPoziom1: .res 1
-liczbaLiniiNastepnyPoziom2: .res 1
+liczbaLiniiNastepnyPoziom: .res 1
 liczbaLinii1BCD: .res 4
 liczbaLinii2BCD: .res 4
 punkty1BCD: .res 4
@@ -91,24 +89,25 @@ linieCheems1BCD: .res 4
 linieDoge1BCD: .res 4
 linieBuffDoge1BCD: .res 4
 linieTemtris1BCD: .res 4
+
 linieCheems2BCD: .res 4
 linieDoge2BCD: .res 4
 linieBuffDoge2BCD: .res 4
 linieTemtris2BCD: .res 4
 
-; animacja
+; animacja rozbijanej linii
 klatkaAnimacji: .res 1
 blokAnimacji: .res 1
 
 ; pozostała pamięć
-pozostaloBajtow: .res 80
+pozostaloBajtow: .res 82
 
 .segment "STARTUP"
 
 Sponsor:
-	.byte $53, $70, $6F, $6E, $73, $6F, $72, $20, $70, $72, $6F, $6A, $65, $6B, $74, $75, $3A, $20, $72, $2F, $52, $75, $64, $7A, $69, $61, $20, $20, $20, $20, $20, $20
+	.byte "Sponsor projektu: r/Rudzia      "
 
-; ===================== ściąga ====================
+; ========================= ściąga ========================
 
 ; OAM
 ; 1 bajt - pozycja Y
@@ -116,11 +115,11 @@ Sponsor:
 ; 3 bajt - lustro w pionie, lustro w poziomie, priorytet, (3) nieużywane, (2) paleta
 ; 4 bajt - pozycja X
 
-; ==================================================
-; =================== główny program ===============
-; ==================================================
+; =========================================================
+; ===================== główny program ====================
+; =========================================================
 
-; =================== inicjalizacja ================
+; ===================== inicjalizacja =====================
 
 RESET:
 	SEI ; wylaczyc przerwania
@@ -292,9 +291,9 @@ RESET:
 	LDA #%00000111
 	STA wlaczMuzyke
 
-; ==========================================================================
-; ======================== główna pętla programu ===========================
-; ==========================================================================
+; =========================================================
+; ================= główna pętla programu =================
+; =========================================================
 
 PETLA:
 
@@ -320,7 +319,7 @@ PowrotDoPETLI:
 
 	JMP PETLA
 
-; ============================== stany gry =================================
+; ======================= stany gry =======================
 
 PETLAMenu:
 
@@ -329,7 +328,7 @@ PETLAMenu:
 	JMP PowrotDoPETLI
 
 PETLAGra:
-   
+	
 	INC zegar
 	INC zegarSpadania
 	LDA zegarSpadania
@@ -377,9 +376,9 @@ PETLAPalenieGumy:
 	; procesor nie ma nic do roboty
 	JMP PowrotDoPETLI
 
-; =========================================================================
-; ================================== VBLANK ===============================
-; =========================================================================
+; =========================================================
+; ========================= VBLANK ========================
+; =========================================================
 
 NMI:
 
@@ -409,7 +408,7 @@ PowrotDoNMI:
 
 	RTI
 
-; ============================= stany NMI ===============================
+; ======================= stany NMI =======================
 
 NMIMenuGry:
 
@@ -485,19 +484,66 @@ NMILadowanieGry:
 	INX
 	BNE :-
 
-	; załaduj inną paletę 2
+	; wybierz paletę tła 1
 	LDA #$3F
 	STA $2006
 	LDA #$05
 	STA $2006
 
-	; szary
+	; załaduj odpowiednią paletę tła 1 w zależności od trybu gry
+	LDA trybGry
+	CMP #$00
+	BNE :+
+
+	; 1 gracz, szara paleta poziomu 0
 	LDA #$00
 	STA $2007
 	LDA #$10
 	STA $2007
 	LDA #$20
 	STA $2007
+	
+	JMP :++
+:
+	
+	; 2 graczy, kolory gracza 1 i 2
+	LDA #$0F
+	STA $2007
+	LDA #$1A
+	STA $2007
+	LDA #$12
+	STA $2007
+	
+	; załaduj paletę spritów 0 na kolory gracza 1 i 2
+	BIT $2002
+	LDA #$3F
+	STA $2006
+	LDA #$11
+	STA $2006
+
+	LDA #$0F
+	STA $2007
+	LDA #$1A
+	STA $2007
+	LDA #$12
+	STA $2007
+	
+	; ustaw numer gracza na 2 (zostanie zmieniony po załadowaniu gry na 1)
+	INC numerGracza
+	
+	; losuj pierwszy klocek dla gracza 2
+:
+	LDA losowa
+	AND #%00000111
+	CMP #%00000111
+	BNE :+
+	JSR Losuj
+	JMP :-
+:
+
+	STA numerNastepnegoKlocka2
+	; stwórz następny klocek drugiemu graczowi bo na początku nic nie widać
+	JSR StworzNastepnyKlocek
 
 	; załaduj chr bank 1
 	LDA #$01
@@ -649,11 +695,16 @@ NMILadowanieGry:
 	STA grajMuzykeMenu
 
 	JSR MuzykaGrajMelodie
-
+	
 	LDA #<NMIBrakKlocka
 	STA wskaznikNMI
 	LDA #>NMIBrakKlocka
 	STA wskaznikNMI+1
+
+; czekaj na VBLANK
+:
+	BIT $2002
+	BPL :-
 
 	LDA #<PETLAGra
 	STA wskaznikPetli
@@ -663,20 +714,49 @@ NMILadowanieGry:
 	JMP PowrotDoNMI
 
 NMIBrakKlocka:
-
+	
 	LDA #<PETLAPalenieGumy
 	STA wskaznikPetli
 	LDA #>PETLAPalenieGumy
 	STA wskaznikPetli+1
-
+	
 	JSR WyswietlLiczbeLinii1
 	JSR WyswietlLiczbePunktow1
+	
+	; linie i punkty drugiego gracza tylko w trybie dla dwóch graczy
+	LDA trybGry
+	CMP #$00
+	BEQ :+
+	
+	JSR WyswietlLiczbeLinii2
+	JSR WyswietlLiczbePunktow2
+:
+	
+	; jeśli tryb na dwóch graczy zmień gracza
+	
+	LDA trybGry
+	CMP #$00
+	BEQ :+
 
-	; wylosuj klocek
-
+	INC numerGracza
+	LDA numerGracza
+	AND #%00000001
+	STA numerGracza
+	
+:
+	
+	; weź numer następnego klocka
+	LDA numerGracza
+	CMP #$01
+	BEQ :+
 	LDA numerNastepnegoKlocka1
+	JMP :++
+:
+	LDA numerNastepnegoKlocka2
+:
 	STA numerKlocka
 
+	; wylosuj następny klocek
 :
 	LDA losowa
 	AND #%00000111
@@ -685,7 +765,14 @@ NMIBrakKlocka:
 	JSR Losuj
 	JMP :-
 :
+	LDX numerGracza
+	CPX #$01
+	BEQ :+
 	STA numerNastepnegoKlocka1
+	JMP :++
+:
+	STA numerNastepnegoKlocka2
+:
 
 	JSR StworzNastepnyKlocek
 
@@ -1133,8 +1220,6 @@ NMIAnimacjaRozbijanychLinii:
 :
 	CMP #$26
 	BNE :+
-	
-
 
 	JMP PowrotDoNMI
 
@@ -1384,11 +1469,6 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
 	CMP #$0A
 	BNE :+
 
-	; policz rozbitą linię
-
-	; JSR PoliczLinieG1
-	; JSR CzyNastepnyPoziom1
-
 	JMP :-
 
 :
@@ -1408,36 +1488,70 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
 
 	LDA ileNaRazLinii
 	CMP #$01
+	BNE :++
+	LDA numerGracza
+	CMP #$00
 	BNE :+
 	JSR PoliczLinieCheems1
 	JSR PoliczLinieG1
-	JMP :++++
+	JMP :++++++++
+:
+	JSR PoliczLinieCheems2
+	JSR PoliczLinieG2
+	JMP :+++++++
 :
 	CMP #$02
+	BNE :++
+	LDA numerGracza
+	CMP #$00
 	BNE :+
 	JSR PoliczLinieDoge1
 	JSR PoliczLinieG1
 	JSR PoliczLinieG1
-	JMP :+++
+	JMP :++++++
+:
+	JSR PoliczLinieDoge2
+	JSR PoliczLinieG2
+	JSR PoliczLinieG2
+	JMP :+++++
 :
 	CMP #$03
+	BNE :++
+	LDA numerGracza
+	CMP #$00
 	BNE :+
 	JSR PoliczLinieBuffDoge1
 	JSR PoliczLinieG1
 	JSR PoliczLinieG1
 	JSR PoliczLinieG1
-	JMP :++
+	JMP :++++
+:
+	JSR PoliczLinieBuffDoge2
+	JSR PoliczLinieG2
+	JSR PoliczLinieG2
+	JSR PoliczLinieG2
+	JMP :+++
 :
 	CMP #$04
+	BNE :++
+	LDA numerGracza
+	CMP #$00
 	BNE :+
 	JSR PoliczLinieTemtris1
 	JSR PoliczLinieG1
 	JSR PoliczLinieG1
 	JSR PoliczLinieG1
 	JSR PoliczLinieG1
+	JMP :++
 :
-	JSR CzyNastepnyPoziom1
-
+	JSR PoliczLinieTemtris2
+	JSR PoliczLinieG2
+	JSR PoliczLinieG2
+	JSR PoliczLinieG2
+	JSR PoliczLinieG2
+:
+	JSR CzyNastepnyPoziom
+	
 	LDA #$00
 	STA ileNaRazLinii
 
@@ -1623,7 +1737,15 @@ NMIKoniecGry:
 
 	; wypisz punkty na ekran
 
+	LDA trybGry
+	CMP #$01
+	BEQ :+
+	
 	JSR WyswietlStatystki
+	JMP :++
+:
+	JSR WyswietlStatystki2Graczy
+:
 
 	; wyzeruj scrollowanie
 	LDA #$00
@@ -1665,9 +1787,9 @@ NMIPalenieGumy:
 
 	JMP PowrotDoNMI
 
-; =======================================================================
-; ============================== podprogramy ============================
-; =======================================================================
+; =========================================================
+; ====================== podprogramy ======================
+; =========================================================
 
 ZerujAPU:
 
@@ -1774,7 +1896,7 @@ CzytajKontroler:
 
 	RTS
 
-; ================= generator liczb losowych ===================
+; ================ generator liczb losowych ===============
 
 Losuj:
 
@@ -1793,7 +1915,7 @@ Losuj:
 
 	RTS
 
-; =================== dodatkowe obliczenia =====================
+; ================== dodatkowe obliczenia =================
 
 ObliczPozycjeWPPU:
 
@@ -1881,7 +2003,7 @@ ObliczWskaznikDoDanychKlocka:
 
 	RTS
 
-; ======================= ruch klockiem ========================
+; ===================== ruch klockiem =====================
 
 PrzesunKlocekWLewo:
 
@@ -1980,9 +2102,13 @@ ObrocKlocekWLewo:
 
 	RTS
 
-; ========================== tworzenie klocków =======================
+; =================== tworzenie klocków ===================
 
 StworzKlocek:
+
+	LDA trybGry
+	CMP #$01
+	BEQ :+
 
 	; zmień paletę
 
@@ -2018,6 +2144,8 @@ StworzKlocek:
 	STA $2007
 	INY
 
+:
+
 	; wyzeruj pozycje
 
 	LDA #$2F
@@ -2036,6 +2164,17 @@ StworzKlocek:
 
 StworzNastepnyKlocek:
 
+	; ustawienie w int następnego klocka uwzględniając graczy
+	LDA numerGracza
+	CMP #$01
+	BEQ :+
+	LDA numerNastepnegoKlocka1
+	JMP :++
+:
+	LDA numerNastepnegoKlocka2
+:
+	STA int
+
 	; zmień paletę
 
 	LDA #<DaneKlockowPalety
@@ -2044,16 +2183,27 @@ StworzNastepnyKlocek:
 	STA temp+1
 
 	CLC
-	LDA numerNastepnegoKlocka1
+	LDA int
 	ROL A
 	ROL A
 	TAY
 
-	; załaduj palety ($3F14)
+	LDA numerGracza
+	CMP #$01
+	BEQ :+
+	; załaduj paletę spriteów 1 ($3F14)
 	LDA #$3F
 	STA $2006
 	LDA #$14
 	STA $2006
+	JMP :++
+:
+	; załaduj paletę spriteów 2 ($3F18)
+	LDA #$3F
+	STA $2006
+	LDA #$18
+	STA $2006
+:
 	
 	LDA (temp), Y
 	STA $2007
@@ -2074,7 +2224,7 @@ StworzNastepnyKlocek:
 	STA pozycjaDanychNastepnegoKlocka+1
 
 	CLC
-	LDA numerNastepnegoKlocka1
+	LDA int
 	ROL A
 	TAY
 	LDA (pozycjaDanychNastepnegoKlocka), Y
@@ -2103,7 +2253,7 @@ StworzNastepnyKlocek:
 :
 	INY
 	CPY #$10
-	BEQ :++
+	BEQ :++++
 
 	CLC
 	LDA temp
@@ -2127,7 +2277,14 @@ StworzNastepnyKlocek:
 	LDA (pozycjaDanychNastepnegoKlocka), Y
 	CMP #$00
 	BEQ :--
-
+	
+	LDA numerGracza
+	CMP #$01
+	BEQ :+
+	
+	; tworzenie spritów klocka gracza 1
+	
+	; ustaw pozycję Y
 	LDA temp+1
 	STA $0210, X
 	INX
@@ -2137,20 +2294,44 @@ StworzNastepnyKlocek:
 	LDA #$01
 	STA $0210, X
 	INX
+	; ustaw pozycję X
 	LDA temp
 	STA $0210, X
 	INX
+	
+	JMP :++
+:
+	
+	; tworzenie spritów klocka gracza 2
+	
+	; ustaw pozycję Y
+	LDA temp+1
+	STA $0220, X
+	INX
+	LDA (pozycjaDanychNastepnegoKlocka), Y
+	STA $0220, X
+	INX
+	LDA #$02
+	STA $0220, X
+	INX
+	; ustaw pozycję X
+	LDA temp
+	ADC #$90
+	STA $0220, X
+	INX
 
-	JMP :--
+:
+	
+	JMP :----
 
 :
 	
 	RTS
 
-; ========================== rysuj klocek =================================
+; ====================== rysuj klocek =====================
 
 RysujKlocek:
-
+	
 	JSR ObliczWskaznikDoDanychKlocka
 
 	LDA pozycjaKlockaX
@@ -2175,7 +2356,7 @@ RysujKlocek:
 :
 	INC int
 	CPY #$10
-	BEQ :++
+	BEQ :+++
 
 	LDA int
 	CMP #$04
@@ -2207,26 +2388,46 @@ RysujKlocek:
 	CMP #$00
 	BEQ :---
 
+	; zapisz pozycje Y
 	LDA temp+1
 	STA $0200, X
 	INX
 	LDA (pozycjaDanychKlocka), Y
+	
+	; załaduj sprite w zależności od numeru gracza
+	
+	STY tempY
+	LDY trybGry
+	CPY #$00
+	BEQ :+
+	CLC
+	ADC #$20
+	LDY numerGracza
+	CPY #$00
+	BEQ :+
+	CLC
+	ADC #$20
+:
+	LDY tempY
+	
 	STA $0200, X
 	INX
+	; zapisz informacje o lustrze i palecie
 	LDA #$00
 	STA $0200, X
 	INX
+	; zapisz pozycje X
 	LDA temp
 	STA $0200, X
 	INX
-
-	JMP :---
+	
+	JMP :----
 
 :
-
+	
 	RTS
 
-; ========================== stawianie klocka ===========================
+; ==================== stawianie klocka ===================
 
 PostawKlocek:
 
@@ -2276,7 +2477,7 @@ PostawKlocek:
 	INY
 
 	CPY #$10
-	BEQ :+++
+	BEQ :++++
 
 	LDA int
 	CMP #$04
@@ -2315,26 +2516,41 @@ PostawKlocek:
 	STA $2007 ; przepisz bajt z mapy kolizji (nie akutalizuj tła)
 	JMP :--
 :
-
+	
+	; jeśli tryb dla dwóch graczy inaczej zachowuje się tło
+	STY tempY ; tymczasowo przechowaj Y
+	LDY trybGry
+	CPY #$00
+	BEQ :+
+	CLC
+	ADC #$A0
+	LDY numerGracza
+	CPY #$00
+	BEQ :+
+	CLC
+	ADC #$20
+:
+	
 	STA $2007 ; przepisz bajt z danych klocków (aktualizuj tło)
-
+	LDY tempY
+	
 	; dodaj bloki do zmiennej zajętośćPlanszy
-
+	
 	TXA
 	LDX pozycjaLiniiKlocka
 	INX
 	INC wypelnienieLinii, X
 	TAX
-
-	JMP :---
-
+	
+	JMP :----
+	
 :
-
+	
 	LDA #$01
 	STA wstrzymajOAMDMA
-
+	
 	; usuń spritey
-
+	
 	LDA #$FF
 	STA $0200
 	STA $0201
@@ -2353,28 +2569,9 @@ PostawKlocek:
 	STA $020E
 	STA $020F
 	
-	; jeśli tryb na dwóch graczy zmień gracza
-	
-	LDA trybGry
-	CMP #$00
-	BEQ :++
-
-	LDA numerGracza
-	CMP #$01
-	BEQ :+
-	
-	LDA #$01
-	STA numerGracza
-	
-	JMP :++
-:
-	LDA #$00
-	STA numerGracza
-:
-	
 	RTS
 
-; ========================== sprawdzanie kolizji ==========================
+; ================== sprawdzanie kolizji ==================
 
 SprawdzKolizje:
 
@@ -2738,7 +2935,7 @@ SkopiujMapeKolizji:
 
 	RTS
 
-; ========================== przepisywanie linii ==================================
+; ================== przepisywanie linii ==================
 
 PrzepiszLinie:
 
@@ -2766,13 +2963,31 @@ PrzepiszLinie:
 
 	LDA wypelnienieLinii-1, Y
 	CMP #$0A
-	BNE :+
+	BNE :++
+	
+	LDA trybGry
+	CMP #$01
+	BEQ :+
+	
 	JSR ZmienGrafikeRozbitaGora
+	JMP :++
+:
+	JSR ZmienGrafikeRozbitaGoraG1
+	JSR ZmienGrafikeRozbitaGoraG2
 :
 	LDA wypelnienieLinii+1, Y
 	CMP #$0A
-	BNE :+
+	BNE :++
+	
+	LDA trybGry
+	CMP #$01
+	BEQ :+
+	
 	JSR ZmienGrafikeRozbitaDol
+	JMP :++
+:
+	JSR ZmienGrafikeRozbitaDolG1
+	JSR ZmienGrafikeRozbitaDolG2
 :
 
 	; przepisz tymczasową na zapis
@@ -2803,9 +3018,6 @@ PrzepiszLinie:
 
 ZmienGrafikeRozbitaGora:
 
-	; a może by to zapisał w pamięci i przeleciał po tablicy sprawdzając?
-	; NMI tego nie wytrzyma
-
 	LDX #$FF
 
 :
@@ -2817,10 +3029,10 @@ ZmienGrafikeRozbitaGora:
 
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
-	; 04 -> 9A
+	; 04 -> 10
 	CMP #$04
 	BNE :+
-	LDA #$9A
+	LDA #$10
 	STA zrzutLinii, X
 	JMP :--
 :   
@@ -2875,6 +3087,150 @@ ZmienGrafikeRozbitaGora:
 :
 
 	JMP :----------
+	
+ZmienGrafikeRozbitaGoraG1:
+
+	LDX #$FF
+
+:
+	INX
+	CPX #$0A
+	BNE :+
+	RTS
+:
+
+	; zamień wygląd klocków
+	LDA zrzutLinii, X
+	; A4 -> B0
+	CMP #$A4
+	BNE :+
+	LDA #$B0
+	STA zrzutLinii, X
+	JMP :--
+:   
+	; A6 -> A3
+	CMP #$A6
+	BNE :+
+	LDA #$A3
+	STA zrzutLinii, X
+	JMP :---
+:
+	; A9 -> A2
+	CMP #$A9
+	BNE :+
+	LDA #$A2
+	STA zrzutLinii, X
+	JMP :----
+:
+	; AA -> A1
+	CMP #$AA
+	BNE :+
+	LDA #$A1
+	STA zrzutLinii, X
+	JMP :-----
+:
+	; AC -> A8
+	CMP #$AC
+	BNE :+
+	LDA #$A8
+	STA zrzutLinii, X
+	JMP :------
+:
+	; AD -> A5
+	CMP #$AD
+	BNE :+
+	LDA #$A5
+	STA zrzutLinii, X
+	JMP :-------
+:
+	; AE -> A7
+	CMP #$AE
+	BNE :+
+	LDA #$A7
+	STA zrzutLinii, X
+	JMP :--------
+:
+	; AF -> AB
+	CMP #$AF
+	BNE :+
+	LDA #$AB
+	STA zrzutLinii, X
+	JMP :---------
+:
+
+	JMP :----------
+
+ZmienGrafikeRozbitaGoraG2:
+
+	LDX #$FF
+
+:
+	INX
+	CPX #$0A
+	BNE :+
+	RTS
+:
+
+	; zamień wygląd klocków
+	LDA zrzutLinii, X
+	; C4 -> D0
+	CMP #$C4
+	BNE :+
+	LDA #$D0
+	STA zrzutLinii, X
+	JMP :--
+:   
+	; C6 -> C3
+	CMP #$C6
+	BNE :+
+	LDA #$C3
+	STA zrzutLinii, X
+	JMP :---
+:
+	; C9 -> C2
+	CMP #$C9
+	BNE :+
+	LDA #$C2
+	STA zrzutLinii, X
+	JMP :----
+:
+	; CA -> C1
+	CMP #$CA
+	BNE :+
+	LDA #$C1
+	STA zrzutLinii, X
+	JMP :-----
+:
+	; CC -> C8
+	CMP #$CC
+	BNE :+
+	LDA #$C8
+	STA zrzutLinii, X
+	JMP :------
+:
+	; CD -> C5
+	CMP #$CD
+	BNE :+
+	LDA #$C5
+	STA zrzutLinii, X
+	JMP :-------
+:
+	; CE -> C7
+	CMP #$CE
+	BNE :+
+	LDA #$C7
+	STA zrzutLinii, X
+	JMP :--------
+:
+	; CF -> CB
+	CMP #$CF
+	BNE :+
+	LDA #$CB
+	STA zrzutLinii, X
+	JMP :---------
+:
+
+	JMP :----------
 
 ZmienGrafikeRozbitaDol:
 
@@ -2889,10 +3245,10 @@ ZmienGrafikeRozbitaDol:
 
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
-	; 03 -> 9A
+	; 03 -> 10
 	CMP #$03
 	BNE :+
-	LDA #$9A
+	LDA #$10
 	STA zrzutLinii, X
 	JMP :--
 :   
@@ -2948,14 +3304,157 @@ ZmienGrafikeRozbitaDol:
 
 	JMP :----------
 
+ZmienGrafikeRozbitaDolG1:
 
-; ===================================================================
-; ===================== liczenie punktów i linii ====================
-; ===================================================================
+	LDX #$FF
+
+:
+	INX
+	CPX #$0A
+	BNE :+
+	RTS
+:
+
+	; zamień wygląd klocków
+	LDA zrzutLinii, X
+	; A3 -> B0
+	CMP #$A3
+	BNE :+
+	LDA #$B0
+	STA zrzutLinii, X
+	JMP :--
+:   
+	; A6 -> A4
+	CMP #$A6
+	BNE :+
+	LDA #$A4
+	STA zrzutLinii, X
+	JMP :---
+:
+	; A7 -> A1
+	CMP #$A7
+	BNE :+
+	LDA #$A1
+	STA zrzutLinii, X
+	JMP :----
+:
+	; A8 -> A2
+	CMP #$A8
+	BNE :+
+	LDA #$A2
+	STA zrzutLinii, X
+	JMP :-----
+:
+	; AB -> A5
+	CMP #$AB
+	BNE :+
+	LDA #$A5
+	STA zrzutLinii, X
+	JMP :------
+:
+	; AC -> A9
+	CMP #$AC
+	BNE :+
+	LDA #$A9
+	STA zrzutLinii, X
+	JMP :-------
+:
+	; AE -> AA
+	CMP #$AE
+	BNE :+
+	LDA #$AA
+	STA zrzutLinii, X
+	JMP :--------
+:
+	; AF -> AD
+	CMP #$AF
+	BNE :+
+	LDA #$AD
+	STA zrzutLinii, X
+	JMP :---------
+:
+
+	JMP :----------
+	
+ZmienGrafikeRozbitaDolG2:
+
+	LDX #$FF
+
+:
+	INX
+	CPX #$0A
+	BNE :+
+	RTS
+:
+
+	; zamień wygląd klocków
+	LDA zrzutLinii, X
+	; C3 -> D0
+	CMP #$C3
+	BNE :+
+	LDA #$D0
+	STA zrzutLinii, X
+	JMP :--
+:   
+	; C6 -> C4
+	CMP #$C6
+	BNE :+
+	LDA #$C4
+	STA zrzutLinii, X
+	JMP :---
+:
+	; C7 -> C1
+	CMP #$C7
+	BNE :+
+	LDA #$C1
+	STA zrzutLinii, X
+	JMP :----
+:
+	; C8 -> C2
+	CMP #$C8
+	BNE :+
+	LDA #$C2
+	STA zrzutLinii, X
+	JMP :-----
+:
+	; CB -> C5
+	CMP #$CB
+	BNE :+
+	LDA #$C5
+	STA zrzutLinii, X
+	JMP :------
+:
+	; CC -> C9
+	CMP #$CC
+	BNE :+
+	LDA #$C9
+	STA zrzutLinii, X
+	JMP :-------
+:
+	; CE -> CA
+	CMP #$CE
+	BNE :+
+	LDA #$CA
+	STA zrzutLinii, X
+	JMP :--------
+:
+	; CF -> CD
+	CMP #$CF
+	BNE :+
+	LDA #$CD
+	STA zrzutLinii, X
+	JMP :---------
+:
+
+	JMP :----------
+
+; =========================================================
+; ================ liczenie punktów i linii ===============
+; =========================================================
 
 PoliczLinieG1:
 
-	INC liczbaLiniiNastepnyPoziom1
+	INC liczbaLiniiNastepnyPoziom
 	INC liczbaLinii1BCD+3
 	
 	LDX #$03
@@ -2969,6 +3468,31 @@ PoliczLinieG1:
 	STA liczbaLinii1BCD, X
 	DEX
 	INC liczbaLinii1BCD, X
+
+	CPX #$00
+	BEQ :+
+
+	JMP :-
+:
+
+	RTS
+	
+PoliczLinieG2:
+
+	INC liczbaLiniiNastepnyPoziom
+	INC liczbaLinii2BCD+3
+	
+	LDX #$03
+
+:
+	LDA liczbaLinii2BCD, X
+	CMP #$0A
+	BNE :+
+
+	LDA #$00
+	STA liczbaLinii2BCD, X
+	DEX
+	INC liczbaLinii2BCD, X
 
 	CPX #$00
 	BEQ :+
@@ -2992,6 +3516,30 @@ WyswietlLiczbeLinii1:
 	CLC
 	LDA #$E0
 	ADC liczbaLinii1BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	RTS
+	
+WyswietlLiczbeLinii2:
+
+	BIT $2002
+	LDA #$21
+	STA $2006
+	LDA #$56
+	STA $2006
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC liczbaLinii2BCD, X
 	STA $2007
 
 	INX
@@ -3025,6 +3573,30 @@ PoliczPunktG1:
 :
 
 	RTS
+	
+PoliczPunktG2:
+	
+	INC punkty2BCD+3
+	
+	LDX #$03
+
+:
+	LDA punkty2BCD, X
+	CMP #$0A
+	BNE :+
+
+	LDA #$00
+	STA punkty2BCD, X
+	DEX
+	INC punkty2BCD, X
+
+	CPX #$00
+	BEQ :+
+
+	JMP :-
+:
+
+	RTS
 
 WyswietlLiczbePunktow1:
 
@@ -3040,6 +3612,30 @@ WyswietlLiczbePunktow1:
 	CLC
 	LDA #$E0
 	ADC punkty1BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	RTS
+	
+WyswietlLiczbePunktow2:
+
+	BIT $2002
+	LDA #$21
+	STA $2006
+	LDA #$B6
+	STA $2006
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC punkty2BCD, X
 	STA $2007
 
 	INX
@@ -3075,6 +3671,32 @@ PoliczLinieCheems1:
 :
 
 	RTS
+	
+PoliczLinieCheems2:
+
+	JSR PoliczPunktG2
+
+	INC linieCheems2BCD+3
+	
+	LDX #$03
+
+:
+	LDA linieCheems2BCD, X
+	CMP #$0A
+	BNE :+
+
+	LDA #$00
+	STA linieCheems2BCD, X
+	DEX
+	INC linieCheems2BCD, X
+
+	CPX #$00
+	BEQ :+
+
+	JMP :-
+:
+
+	RTS
 
 PoliczLinieDoge1:
 
@@ -3096,6 +3718,35 @@ PoliczLinieDoge1:
 	STA linieDoge1BCD, X
 	DEX
 	INC linieDoge1BCD, X
+
+	CPX #$00
+	BEQ :+
+
+	JMP :-
+:
+
+	RTS
+	
+PoliczLinieDoge2:
+
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+
+	INC linieDoge2BCD+3
+	
+	LDX #$03
+
+:
+	LDA linieDoge2BCD, X
+	CMP #$0A
+	BNE :+
+
+	LDA #$00
+	STA linieDoge2BCD, X
+	DEX
+	INC linieDoge2BCD, X
 
 	CPX #$00
 	BEQ :+
@@ -3135,6 +3786,37 @@ PoliczLinieBuffDoge1:
 :
 
 	RTS
+	
+PoliczLinieBuffDoge2:
+
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+
+	INC linieBuffDoge2BCD+3
+	
+	LDX #$03
+
+:
+	LDA linieBuffDoge2BCD, X
+	CMP #$0A
+	BNE :+
+
+	LDA #$00
+	STA linieBuffDoge2BCD, X
+	DEX
+	INC linieBuffDoge2BCD, X
+
+	CPX #$00
+	BEQ :+
+
+	JMP :-
+:
+
+	RTS
 
 PoliczLinieTemtris1:
 
@@ -3160,6 +3842,39 @@ PoliczLinieTemtris1:
 	STA linieTemtris1BCD, X
 	DEX
 	INC linieTemtris1BCD, X
+
+	CPX #$00
+	BEQ :+
+
+	JMP :-
+:
+
+	RTS
+	
+PoliczLinieTemtris2:
+
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+	JSR PoliczPunktG2
+
+	INC linieTemtris2BCD+3
+	
+	LDX #$03
+
+:
+	LDA linieTemtris2BCD, X
+	CMP #$0A
+	BNE :+
+
+	LDA #$00
+	STA linieTemtris2BCD, X
+	DEX
+	INC linieTemtris2BCD, X
 
 	CPX #$00
 	BEQ :+
@@ -3305,6 +4020,405 @@ WyswietlStatystki:
 
 	RTS
 
+WyswietlStatystki2Graczy:
+
+	; sprawdź kto ma więcej punktów
+	
+	LDA #$01
+	STA temp
+	
+	INC $FF
+	
+	LDA punkty1BCD
+	CLC
+	SBC punkty2BCD
+	BPL :+
+	LDA punkty1BCD+1
+	CLC
+	SBC punkty2BCD+1
+	BPL :+
+	LDA punkty1BCD+2
+	CLC
+	SBC punkty2BCD+2
+	BPL :+
+	LDA punkty1BCD+3
+	CLC
+	SBC punkty2BCD+3
+	BPL :+
+	LDA punkty1BCD+3
+	CMP punkty2BCD+3
+	BNE :++
+	LDA #$02
+	STA temp
+	JMP :++
+:
+	DEC temp ; gracz 1 ma więcej punktów
+:
+	
+	; napis G1
+	
+	BIT $2002
+	LDA #$21
+	STA $2006
+	LDA #$87
+	STA $2006
+	
+	LDA temp
+	CMP #$00
+	BEQ :+
+	LDA #$00
+	JMP :++
+:
+	LDA #$DE
+:
+	STA $2007
+	LDA #$F0
+	STA $2007
+	LDA #$E1
+	STA $2007
+	LDA numerGracza
+	CMP #$01
+	BEQ :+
+	LDA #$DD
+	JMP :++
+:
+	LDA #$00
+:
+	STA $2007
+	
+	; napis G2
+	
+	BIT $2002
+	LDA #$21
+	STA $2006
+	LDA #$8C
+	STA $2006
+	
+	LDA temp
+	CMP #$01
+	BEQ :+
+	LDA #$00
+	JMP :++
+:
+	LDA #$DE
+:
+	STA $2007
+	LDA #$F0
+	STA $2007
+	LDA #$E2
+	STA $2007
+	LDA numerGracza
+	CMP #$00
+	BEQ :+
+	LDA #$DD
+	JMP :++
+:
+	LDA #$00
+:
+	STA $2007
+	
+	; pumkty G1
+	
+	BIT $2002
+	LDA #$21
+	STA $2006
+	LDA #$C6
+	STA $2006
+	
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC punkty1BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+	
+	; pumkty G2
+	
+	BIT $2002
+	LDA #$21
+	STA $2006
+	LDA #$CB
+	STA $2006
+	
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC punkty2BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+	
+	; linie ogółem G1
+
+	BIT $2002
+	LDA #$22
+	STA $2006
+	LDA #$06
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC liczbaLinii1BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	; linie ogółem G2
+
+	BIT $2002
+	LDA #$22
+	STA $2006
+	LDA #$0B
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC liczbaLinii2BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	; ilość cheems G1
+
+	BIT $2002
+	LDA #$22
+	STA $2006
+	LDA #$46
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC linieCheems1BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	; ilość cheems G2
+
+	BIT $2002
+	LDA #$22
+	STA $2006
+	LDA #$4B
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC linieCheems2BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	; ilość doge G1
+
+	BIT $2002
+	LDA #$22
+	STA $2006
+	LDA #$86
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC linieDoge1BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	; ilość doge G2
+
+	BIT $2002
+	LDA #$22
+	STA $2006
+	LDA #$8B
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC linieDoge2BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	; ilość buffdoge G1
+
+	BIT $2002
+	LDA #$22
+	STA $2006
+	LDA #$C6
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC linieBuffDoge1BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	; ilość buffdoge G2
+
+	BIT $2002
+	LDA #$22
+	STA $2006
+	LDA #$CB
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC linieBuffDoge2BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+
+	; ilość temtris G1
+
+	BIT $2002
+	LDA #$23
+	STA $2006
+	LDA #$06
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC linieTemtris1BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+	
+	; ilość temtris G2
+
+	BIT $2002
+	LDA #$23
+	STA $2006
+	LDA #$0B
+	STA $2006
+
+	LDA #$00
+	STA $2007
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC linieTemtris2BCD, X
+	STA $2007
+
+	INX
+	CPX #$04
+	BEQ :+
+	JMP :-
+:
+	
+	RTS
+
 OdtworzDzwiekRozbijanejLinii:
 
 	; odtwórz dźwięk
@@ -3363,30 +4477,34 @@ OdtworzDzwiekRozbijanejLinii:
 
 	RTS
 
-; ===================================================================
-; ============================ poziomy ==============================
-; ===================================================================
+; =========================================================
+; ======================== poziomy ========================
+; =========================================================
 
-CzyNastepnyPoziom1:
+CzyNastepnyPoziom:
 
-	LDA liczbaLiniiNastepnyPoziom1
+	LDA liczbaLiniiNastepnyPoziom
 	CMP #$1E
 	BEQ :+
 	RTS
 :
 
-	INC poziom1
-	LDA poziom1
+	INC poziom
+	LDA poziom
 	CMP #$10
 	BNE :+
 	LDA #$00
-	STA poziom1
+	STA poziom
 :
 
 	LDA #$00
-	STA liczbaLiniiNastepnyPoziom1
+	STA liczbaLiniiNastepnyPoziom
 
-	; załaduj palete bloków G1 ($3F04)
+	LDA trybGry
+	CMP #$01
+	BEQ :++++
+
+	; załaduj palete klocków ($3F04)
 	LDA #$3F
 	STA $2006
 	LDA #$04
@@ -3399,7 +4517,7 @@ CzyNastepnyPoziom1:
 
 	LDX #$00
 :
-	CPX poziom1
+	CPX poziom
 	BEQ :+
 
 	CLC
@@ -3421,7 +4539,9 @@ CzyNastepnyPoziom1:
 	STA $2007
 	CPY #$04
 	BNE :-
-	
+
+:
+
 	LDA szybkoscSpadania
 	CMP #$08
 	BEQ :+
@@ -3433,9 +4553,9 @@ CzyNastepnyPoziom1:
 
 	RTS
 
-; ===================================================================
-; ========================= odtwarzanie muzyki ======================
-; ===================================================================
+; =========================================================
+; =================== odtwarzanie muzyki ==================
+; =========================================================
 
 ; ściąga
 
@@ -3456,7 +4576,7 @@ CzyNastepnyPoziom1:
 ; KANAŁ 4 - NOISE
 
 ; $400C 	--LC VVVV 	Envelope loop / length counter halt (L), constant volume (C), volume/envelope (V)
-; $400D	 ---- ----   Unused
+; $400D	 	---- ----   Unused
 ; $400E 	L--- PPPP 	Loop noise (L), noise period (P)
 ; $400F 	LLLL L--- 	Length counter load (L)
 
@@ -3521,8 +4641,8 @@ OdtwarzajMuzyke:
 	RTS
 
 OdtwarzaczMuzykiKanalP:
-
-	; ================== kanał 1 - fala kwadratowa ===================
+	
+	; =============== kanał 1 - fala kwadratowa ===============
 
 	LDA zegarMuzykiP
 	CMP #$00
@@ -3700,36 +4820,35 @@ OdtwarzaczMuzykiKanalP:
 	STA wskaznikDoMuzykiP+1
 
 :
-
+	
 	DEC zegarMuzykiP
-
+	
 	RTS
-
+	
 OdtwarzaczMuzykiKanalT:
-
-	; =========================== kanał 3 fala trójkątna =========================
-
+	
+	; ================= kanał 3 fala trójkątna ================
+	
 	LDA zegarMuzykiT
 	CMP #$00
 	BEQ :+
 	DEC zegarMuzykiT
 	RTS
 :
-
+	
 	LDY #$00
-
+	
 	LDA (wskaznikDoMuzykiT), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
 	AND #%11111000
 	CMP #%11111000
 	BNE :++
-	INC $FF
 	INY
 	LDA (wskaznikDoMuzykiT), Y
 	CMP #$AE
 	BNE :++
-
+	
 	; kod końca bloku
-
+	
 	CLC
 	LDA odtwarzanaMuzykaT
 	ADC #$02
@@ -3866,8 +4985,8 @@ OdtwarzaczMuzykiKanalT:
 	RTS
 
 OdtwarzaczMuzykiKanalN:
-
-	; ========================== kanał 4 szum ==================================
+	
+	; ====================== kanał 4 szum =====================
 
 	LDA zegarMuzykiN
 	CMP #$00
@@ -4053,36 +5172,41 @@ MuzykaGrajMelodie:
 	STA zegarMuzykiT
 	STA zegarMuzykiN
 
+	LDA #$07
+	STA wlaczMuzyke
+
 	; wylosuj melodię
 	
 	; LDA losowa
-	LDA #$00
-	AND #%00000001
+	LDA losowa
+	AND #%00000011
 	CMP #$00
 	BNE :+
 
 	; załaduj Never Gonna Give You Up
-
-	LDA #<NeverGonnaGiveYouUpKanalP
+	
+	LDA #<Never_Gonna_Give_You_Up_Kanal_P
 	STA odtwarzanaMuzykaP
-	LDA #>NeverGonnaGiveYouUpKanalP
+	LDA #>Never_Gonna_Give_You_Up_Kanal_P
 	STA odtwarzanaMuzykaP+1
 
-	LDA #<NeverGonnaGiveYouUpKanalT
+	LDA #<Never_Gonna_Give_You_Up_Kanal_T
 	STA odtwarzanaMuzykaT
-	LDA #>NeverGonnaGiveYouUpKanalT
+	LDA #>Never_Gonna_Give_You_Up_Kanal_T
 	STA odtwarzanaMuzykaT+1
 
-	LDA #<NeverGonnaGiveYouUpKanalN
+	LDA #<Never_Gonna_Give_You_Up_Kanal_N
 	STA odtwarzanaMuzykaN
-	LDA #>NeverGonnaGiveYouUpKanalN
+	LDA #>Never_Gonna_Give_You_Up_Kanal_N
 	STA odtwarzanaMuzykaN+1
 
-	JMP :++
+	JMP :++++
 :
+	CMP #$01
+	BNE :+
 
 	; załaduj Together Forever
-
+	
 	LDA #<TogetherForeverKanalP
 	STA odtwarzanaMuzykaP
 	LDA #>TogetherForeverKanalP
@@ -4098,6 +5222,44 @@ MuzykaGrajMelodie:
 	LDA #>TogetherForeverKanalN
 	STA odtwarzanaMuzykaN+1
 
+	JMP :+++
+:
+	CMP #$02
+	BNE :+
+	
+	LDA #<Song_For_Denise_kanal_P
+	STA odtwarzanaMuzykaP
+	LDA #>Song_For_Denise_kanal_P
+	STA odtwarzanaMuzykaP+1
+
+	LDA #<Song_For_Denise_kanal_T
+	STA odtwarzanaMuzykaT
+	LDA #>Song_For_Denise_kanal_T
+	STA odtwarzanaMuzykaT+1
+
+	LDA #<Song_For_Denise_kanal_N
+	STA odtwarzanaMuzykaN
+	LDA #>Song_For_Denise_kanal_N
+	STA odtwarzanaMuzykaN+1
+	
+	JMP :++
+:
+	
+	LDA #<Szanty_Bitwa_Kanal_P
+	STA odtwarzanaMuzykaP
+	LDA #>Szanty_Bitwa_Kanal_P
+	STA odtwarzanaMuzykaP+1
+
+	LDA #<Szanty_Bitwa_Kanal_T
+	STA odtwarzanaMuzykaT
+	LDA #>Szanty_Bitwa_Kanal_T
+	STA odtwarzanaMuzykaT+1
+
+	LDA #<Szanty_Bitwa_Kanal_N
+	STA odtwarzanaMuzykaN
+	LDA #>Szanty_Bitwa_Kanal_N
+	STA odtwarzanaMuzykaN+1
+	
 :
 
 	LDY #$00
@@ -4124,65 +5286,68 @@ MuzykaGrajMelodie:
 	RTS
 
 MuzykaGrajIntro:
-
+	
 	LDA #$00
 	STA zegarMuzykiP
 	STA zegarMuzykiT
 	STA zegarMuzykiN
-
-	LDA #<KorobiejnikiKanalP
+	
+	LDA #$07
+	STA wlaczMuzyke
+	
+	LDA #<Korobiejniki_Kanal_P
 	STA odtwarzanaMuzykaP
-	LDA #>KorobiejnikiKanalP
+	LDA #>Korobiejniki_Kanal_P
 	STA odtwarzanaMuzykaP+1
-
+	
 	LDY #$00
 	LDA (odtwarzanaMuzykaP), Y
 	STA wskaznikDoMuzykiP
 	INY
 	LDA (odtwarzanaMuzykaP), Y
 	STA wskaznikDoMuzykiP+1
-
-	LDA #<KorobiejnikiKanalT
+	
+	LDA #<Korobiejniki_Kanal_T
 	STA odtwarzanaMuzykaT
-	LDA #>KorobiejnikiKanalT
+	LDA #>Korobiejniki_Kanal_T
 	STA odtwarzanaMuzykaT+1
-
+	
 	LDY #$00
 	LDA (odtwarzanaMuzykaT), Y
 	STA wskaznikDoMuzykiT
 	INY
 	LDA (odtwarzanaMuzykaT), Y
 	STA wskaznikDoMuzykiT+1
-
-	LDA #<KorobiejnikiKanalN
+	
+	LDA #<Korobiejniki_Kanal_N
 	STA odtwarzanaMuzykaN
-	LDA #>KorobiejnikiKanalN
+	LDA #>Korobiejniki_Kanal_N
 	STA odtwarzanaMuzykaN+1
-
+	
 	LDY #$00
 	LDA (odtwarzanaMuzykaN), Y
 	STA wskaznikDoMuzykiN
 	INY
 	LDA (odtwarzanaMuzykaN), Y
 	STA wskaznikDoMuzykiN+1
-
+	
 	RTS
-
+	
 MuzykaGrajKoniecGry:
-
+	
 	LDA #<KoniecGryKanalP
 	STA odtwarzanaMuzykaP
 	LDA #>KoniecGryKanalP
 	STA odtwarzanaMuzykaP+1
-
+	
 	LDA #<KoniecGry_P_melodia
 	STA wskaznikDoMuzykiP
 	LDA #>KoniecGry_P_melodia
 	STA wskaznikDoMuzykiP+1
-
+	
 	RTS
 
-; ========================== dane zewnętrzne ========================
+; ==================== dane zewnętrzne ====================
 
 ZerowanieAPU:
 	.byte $30, $08, $00, $00
@@ -4213,9 +5378,6 @@ GrafikaTloKoniecGryKlatka1:
 
 GrafikaTloKoniecGryKlatka2:
 	.incbin "grafika/KoniecGryKlatka2.nam"
-
-GrafikaTloKoniecGryKlatka2Graczy:
-	.incbin "grafika/KoniecGryKlatka2Graczy.nam"
 
 DaneKlockow:
 	.byte <DaneKlockowKostka, >DaneKlockowKostka
@@ -4437,26 +5599,13 @@ DaneKlockowTObr4:
 	.byte $00, $00, $00, $00
 
 DaneKlockowPalety:
-	; kostka
-	.byte $0F, $01, $12, $21
-
-	; dlugi
-	.byte $0F, $06, $16, $26
-
-	; L
-	.byte $0F, $14, $24, $34
-
-	; odwroconeL
-	.byte $0F, $17, $27, $37
-
-	; krzeslo
-	.byte $0F, $0A, $1A, $2A
-
-	; odwroconeKrzeslo
-	.byte $0F, $0C, $1C, $2C
-
-	; T
-	.byte $0F, $08, $18, $27
+	.byte $0F, $01, $12, $21 ; kostka
+	.byte $0F, $06, $16, $26 ; dlugi
+	.byte $0F, $14, $24, $34 ; L
+	.byte $0F, $17, $27, $37 ; odwroconeL
+	.byte $0F, $0A, $1A, $2A ; krzeslo
+	.byte $0F, $0C, $1C, $2C ; odwroconeKrzeslo
+	.byte $0F, $08, $18, $27 ; T
 
 PaletyPoziomow:
 	.byte $0F, $00, $10, $20 ; 0
@@ -4570,9 +5719,9 @@ RozbitaLiniaTemtrisNapis:
 	.byte $00
 	.byte $00
 
-; ======================================================================
-; ============================= Dane Muzyki ============================
-; ======================================================================
+; =========================================================
+; ====================== Dane Muzyki ======================
+; =========================================================
 
 ; uniwersalne
 
@@ -4597,16 +5746,16 @@ Pauza15klatek:
 	.byte %11101000, %00001111
 	.byte %11111000, $AE
 
-; ========================== Korobiejniki ==================================
+; ====================== Korobiejniki =====================
 
-KorobiejnikiKanalP:
+Korobiejniki_Kanal_P:
 	.byte <Korobiejniki_P_zwrotka, >Korobiejniki_P_zwrotka
 	.byte <Korobiejniki_P_zwrotka, >Korobiejniki_P_zwrotka
 	.byte <Korobiejniki_P_przejscie, >Korobiejniki_P_przejscie
 
 	.byte %11111000, $AE
 
-KorobiejnikiKanalT:
+Korobiejniki_Kanal_T:
 	.byte <Korobiejniki_T_inicjalizacja, >Korobiejniki_T_inicjalizacja
 	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
 	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
@@ -4624,6 +5773,7 @@ KorobiejnikiKanalT:
 	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
 	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
 	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	; fajnie by tu było ustawić skok o 16 w tył reagujący tylko raz
 	; powtórzenie
 	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
 	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
@@ -4653,13 +5803,13 @@ KorobiejnikiKanalT:
 
 	.byte $FF, $AE
 
-KorobiejnikiKanalN:
+Korobiejniki_Kanal_N:
 	.byte <Korobiejniki_N_inicjalizacja, >Korobiejniki_N_inicjalizacja
 	.byte <Korobiejniki_N_rytm, >Korobiejniki_N_rytm
-
+	
 	.byte %11111000, $AE
-
-; ========================== Korobiejniki kanał P ==================================
+	
+; ================== Korobiejniki kanał P =================
 
 Korobiejniki_P_zwrotka:
 	.byte %10101000, %11111111, %00000000
@@ -4773,7 +5923,7 @@ Korobiejniki_P_przejscie:
 
 	.byte %11111000, $AE
 
-; ========================== Korobiejniki kanał T ==================================
+; ================== Korobiejniki kanał T =================
 
 Korobiejniki_T_inicjalizacja:
 	.byte %10101000, %11111111
@@ -4876,7 +6026,7 @@ Korobiejniki_T_przejscie_E:
 
 	.byte %11111000, $AE
 
-; ========================== Korobiejniki kanał N ==================================
+; ================== Korobiejniki kanał N =================
 
 Korobiejniki_N_inicjalizacja:
 	.byte %00010000, %01010111
@@ -4898,9 +6048,11 @@ Korobiejniki_N_rytm:
 
 	.byte %01110000, $AE
 
-; ==================== Never Gonna Give You Up ==========================
+; =========================================================
+; ================ Never Gonna Give You Up ================
+; =========================================================
 
-NeverGonnaGiveYouUpKanalP:
+Never_Gonna_Give_You_Up_Kanal_P:
 	.byte <NGGYU_P_Wstep_1, >NGGYU_P_Wstep_1
 	.byte <NGGYU_P_Wstep_2, >NGGYU_P_Wstep_2
 	.byte <NGGYU_P_Wstep_3, >NGGYU_P_Wstep_3
@@ -4928,7 +6080,7 @@ NeverGonnaGiveYouUpKanalP:
 
 	.byte %11111000, $AE
 
-NeverGonnaGiveYouUpKanalT:
+Never_Gonna_Give_You_Up_Kanal_T:
 	.byte <NGGYU_T_WSTEP_1, >NGGYU_T_WSTEP_1
 	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
 	.byte <NGGYU_T_REFREN_2, >NGGYU_T_REFREN_2
@@ -4976,13 +6128,13 @@ NeverGonnaGiveYouUpKanalT:
 
 	.byte $FF, $AE
 
-NeverGonnaGiveYouUpKanalN:
+Never_Gonna_Give_You_Up_Kanal_N:
 	.byte <NGGYU_N_Wstep, >NGGYU_N_Wstep
 	.byte <NGGYU_N_Rytm, >NGGYU_N_Rytm
 
 	.byte %11111000, $AE
 
-; ===================== NGGYU kanał P =========================
+; ===================== NGGYU kanał P =====================
 
 NGGYU_P_Wstep_1:
 	.byte %10101000, %11111111, %00000000
@@ -5279,7 +6431,7 @@ NGGYU_P_Przejscie_2:
 
 	.byte %11111000, $AE
 
-; ===================== NGGYU kanał T =========================
+; ===================== NGGYU kanał T =====================
 
 NGGYU_T_WSTEP_1:
 	.byte %10101000, %11111111
@@ -5567,7 +6719,7 @@ NGGYU_T_PAUZA_WSTAWKA:
 
 	.byte %11111000, $AE
 
-; ===================== NGGYU kanał N =========================
+; ===================== NGGYU kanał N =====================
 
 NGGYU_N_Wstep:
 	.byte %00010000, %01010111
@@ -5599,63 +6751,155 @@ NGGYU_N_Rytm:
 
 	.byte %01110000, $AE
 
-; =================== Together Forever =========================
+; =========================================================
+; ==================== Together Forever ===================
+; =========================================================
 
 TogetherForeverKanalP:
 	.byte <TF_P_INICJALIZACJA, >TF_P_INICJALIZACJA
-	.byte <TF_P, >TF_P
-
+	.byte <TF_P_1, >TF_P_1
+	.byte <TF_P_2, >TF_P_2
+	.byte <TF_P_3, >TF_P_3
+	.byte <TF_P_4, >TF_P_4
+	.byte <TF_P_5, >TF_P_5
+	.byte <TF_P_6, >TF_P_6
+	.byte <TF_P_7, >TF_P_7
+	.byte <TF_P_8, >TF_P_8
+	.byte <TF_P_9, >TF_P_9
+	.byte <TF_P_10, >TF_P_10
+	.byte <TF_P_11, >TF_P_11
+	.byte <TF_P_12, >TF_P_12
+	.byte <TF_P_13, >TF_P_13
+	.byte <TF_P_10, >TF_P_10
+	.byte <TF_P_14, >TF_P_14
+	.byte <TF_P_15, >TF_P_15
+	.byte <TF_P_16, >TF_P_16
+	.byte <TF_P_17, >TF_P_17
+	.byte <TF_P_18, >TF_P_18
+	.byte <TF_P_19, >TF_P_19
+	.byte <TF_P_20, >TF_P_20
+	.byte <TF_P_21, >TF_P_21
+	.byte <TF_P_22, >TF_P_22
+	.byte <TF_P_23, >TF_P_23
+	.byte <TF_P_24, >TF_P_24
+	.byte <TF_P_25, >TF_P_25
+	.byte <TF_P_26, >TF_P_26
+	.byte <TF_P_27, >TF_P_27
+	.byte <TF_P_28, >TF_P_28
+	.byte <TF_P_29, >TF_P_29
+	.byte <TF_P_30, >TF_P_30
+	.byte <TF_P_31, >TF_P_31
+	.byte <TF_P_32, >TF_P_32
+	.byte <TF_P_33, >TF_P_33
+	.byte <TF_P_34, >TF_P_34
+	.byte <TF_P_35, >TF_P_35
+	.byte <TF_P_36, >TF_P_36
+	.byte <TF_P_33, >TF_P_33
+	.byte <TF_P_34, >TF_P_34
+	.byte <TF_P_37, >TF_P_37
+	.byte <TF_P_38, >TF_P_38
+	.byte <TF_P_17, >TF_P_17
+	.byte <TF_P_39, >TF_P_39
+	.byte <TF_P_23, >TF_P_23
+	.byte <TF_P_40, >TF_P_40
+	.byte <TF_P_17, >TF_P_17
+	.byte <TF_P_41, >TF_P_41
+	.byte <TF_P_23, >TF_P_23
+	.byte <TF_P_42, >TF_P_42
+	.byte <TF_P_29, >TF_P_29
+	.byte <TF_P_43, >TF_P_43
+	.byte <TF_P_44, >TF_P_44
+	.byte <TF_P_45, >TF_P_45
+	.byte <TF_P_29, >TF_P_29
+	.byte <TF_P_46, >TF_P_46
+	.byte <TF_P_47, >TF_P_47
+	.byte <TF_P_32, >TF_P_32
+	.byte <TF_P_17, >TF_P_17
+	.byte <TF_P_48, >TF_P_48
+	.byte <TF_P_23, >TF_P_23
+	.byte <TF_P_49, >TF_P_49
+	.byte <TF_P_50, >TF_P_50
+	.byte <TF_P_51, >TF_P_51
+	.byte <TF_P_52, >TF_P_52
+	.byte <TF_P_53, >TF_P_53
+	.byte <TF_P_54, >TF_P_54
+	.byte <TF_P_26, >TF_P_26
+	.byte <TF_P_44, >TF_P_44
+	.byte <TF_P_45, >TF_P_45
+	.byte <TF_P_29, >TF_P_29
+	.byte <TF_P_46, >TF_P_46
+	.byte <TF_P_55, >TF_P_55
+	.byte <TF_P_56, >TF_P_56
+	.byte <TF_P_29, >TF_P_29
+	.byte <TF_P_26, >TF_P_26
+	.byte <TF_P_44, >TF_P_44
+	.byte <TF_P_45, >TF_P_45
+	.byte <TF_P_57, >TF_P_57
+	.byte <TF_P_46, >TF_P_46
+	.byte <TF_P_55, >TF_P_55
+	.byte <TF_P_58, >TF_P_58
+	.byte <TF_P_29, >TF_P_29
+	.byte <TF_P_26, >TF_P_26
+	.byte <TF_P_44, >TF_P_44
+	.byte <TF_P_45, >TF_P_45
+	.byte <TF_P_29, >TF_P_29
+	.byte <TF_P_46, >TF_P_46
+	.byte <TF_P_59, >TF_P_59
+	.byte <TF_P_60, >TF_P_60
+	
 	.byte %11111000, $AE
-
+	
 TogetherForeverKanalT:
 	.byte <TF_T_INICJALIZACJA, >TF_T_INICJALIZACJA
 	.byte <TF_T, >TF_T
-
+	
 	.byte $FF, $AE
-
+	
 TogetherForeverKanalN:
 	.byte <TF_N_INICJALIZACJA, >TF_N_INICJALIZACJA
 	.byte <TF_N, >TF_N
-
+	
 	.byte %11111000, $AE
-
-; ===================== Toghether Forever kanał P =========================
+	
+; =============== Toghether Forever kanał P ===============
 
 TF_P_INICJALIZACJA:
 	.byte %10101000, %11111111, %00000000
+	
+	.byte %11111000, $AE
+	
+TF_P_1:
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00001000
+	.byte %11101000, %00001000
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00001000
+	.byte %11101000, %00001000
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %01001111, %00001000
 
 	.byte %11111000, $AE
 
-TF_P:
-
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %01001111, %00001000
-
+TF_P_2:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10110010, %00001000
 	.byte %11101000, %00001000
@@ -5669,6 +6913,9 @@ TF_P:
 	.byte %00000000, %10011111, %00001000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_3:
 	.byte %11101000, %00010000
 	.byte %00000000, %10111101, %00001000
 	.byte %11101000, %00001000
@@ -5678,6 +6925,9 @@ TF_P:
 	.byte %11101000, %00111000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_4:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10110010, %00001000
 	.byte %11101000, %00001000
@@ -5690,6 +6940,9 @@ TF_P:
 	.byte %00000000, %10001101, %00001000
 	.byte %11101000, %00011000
 
+	.byte %11111000, $AE
+
+TF_P_5:
 	.byte %00000000, %10001101, %00001000
 	.byte %00000000, %01011110, %00001000
 	.byte %00000000, %01001111, %00001000
@@ -5705,6 +6958,9 @@ TF_P:
 	.byte %00000000, %01001111, %00001000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_6:
 	.byte %00000000, %01000110, %00001000
 	.byte %11101000, %00001000
 	.byte %00000000, %01011000, %00001000
@@ -5719,6 +6975,9 @@ TF_P:
 	.byte %11101000, %00001000
 	.byte %00000000, %01001111, %00011000
 
+	.byte %11111000, $AE
+
+TF_P_7:
 	.byte %11101000, %00001000
 	.byte %00000000, %01000110, %00001000
 	.byte %11101000, %00001000
@@ -5733,6 +6992,9 @@ TF_P:
 	.byte %00000000, %00101110, %00001000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_8:
 	.byte %00000000, %00101011, %00001000
 	.byte %11101000, %00001000
 	.byte %00000000, %00101110, %00001000
@@ -5746,6 +7008,9 @@ TF_P:
 	.byte %00000000, %00110100, %00001000
 	.byte %11101000, %00011000
 
+	.byte %11111000, $AE
+
+TF_P_9:
 	.byte %00000000, %00111010, %01000000
 	.byte %11101000, %00001000
 	.byte %00000000, %00111010, %00001000
@@ -5753,12 +7018,18 @@ TF_P:
 	.byte %00000000, %00111010, %00001000
 	.byte %11101000, %00011000
 
+	.byte %11111000, $AE
+
+TF_P_10:
 	.byte %11101000, %00100000
 	.byte %00000000, %01110110, %00010000
 	.byte %11101000, %00010000
 	.byte %00000000, %01110110, %00011000
 	.byte %11101000, %00101000
 
+	.byte %11111000, $AE
+
+TF_P_11:
 	.byte %00000000, %01111110, %00001000
 	.byte %00000000, %10001101, %00001000
 	.byte %11101000, %00001000
@@ -5769,6 +7040,9 @@ TF_P:
 	.byte %11101000, %00100000
 	.byte %00000000, %10111101, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_12:
 	.byte %00000000, %10011111, %00010000
 	.byte %00000000, %10111101, %00010000
 	.byte %00000000, %10011111, %00010000
@@ -5777,17 +7051,17 @@ TF_P:
 	.byte %00000000, %10111101, %00001000
 	.byte %11101000, %00100000
 
+	.byte %11111000, $AE
+
+TF_P_13:
 	.byte %00000000, %01110110, %00010000
 	.byte %00000000, %01111110, %00001000
 	.byte %00000000, %10001101, %00110000
 	.byte %11101000, %00111000
 
-	.byte %11101000, %00100000
-	.byte %00000000, %01110110, %00010000
-	.byte %11101000, %00010000
-	.byte %00000000, %01110110, %00011000
-	.byte %11101000, %00101000
+	.byte %11111000, $AE
 
+TF_P_14:
 	.byte %00000000, %01111110, %00010000
 	.byte %00000000, %10001101, %00000110
 	.byte %11101000, %00000010
@@ -5798,6 +7072,9 @@ TF_P:
 	.byte %11101000, %00011000
 	.byte %00000000, %10111101, %00011000
 
+	.byte %11111000, $AE
+
+TF_P_15:
 	.byte %00000000, %10011111, %00100000
 	.byte %11101000, %00001000
 	.byte %00000000, %10111101, %00010000
@@ -5805,9 +7082,15 @@ TF_P:
 	.byte %00000000, %10111101, %00011000
 	.byte %00000000, %01110110, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_16:
 	.byte %00000000, %10001101, %00110000
 	.byte %11101000, %01010000
 
+	.byte %11111000, $AE
+
+TF_P_17:
 	.byte %00000000, %01111110, %00010000
 	.byte %11101000, %00001000
 	.byte %00000000, %01111110, %00010000
@@ -5818,6 +7101,9 @@ TF_P:
 	.byte %00000000, %10001101, %00011000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_18:
 	.byte %00000000, %10000101, %00001000
 	.byte %11101000, %00010000
 	.byte %00000000, %10000101, %00001000
@@ -5828,6 +7114,9 @@ TF_P:
 	.byte %00000000, %01101001, %00100000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_19:
 	.byte %00000000, %10001101, %00010000
 	.byte %11101000, %00001000
 	.byte %00000000, %10001101, %00010000
@@ -5839,6 +7128,9 @@ TF_P:
 	.byte %00000000, %10110010, %00010000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_20:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10011111, %00010000
 	.byte %00000000, %01110110, %00001000
@@ -5852,6 +7144,9 @@ TF_P:
 	.byte %00000000, %01001111, %00001000
 	.byte %11101000, %00011000
 
+	.byte %11111000, $AE
+
+TF_P_21:
 	.byte %00000000, %01111110, %00010000
 	.byte %11101000, %00001000
 	.byte %00000000, %01111110, %00010000
@@ -5862,6 +7157,9 @@ TF_P:
 	.byte %00000000, %10001101, %00011000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_22:
 	.byte %00000000, %10000101, %00010000
 	.byte %11101000, %00001000
 	.byte %00000000, %10000101, %00010000
@@ -5871,6 +7169,9 @@ TF_P:
 	.byte %00000000, %01101001, %00100000
 	.byte %11101000, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_23:
 	.byte %00000000, %10001101, %00010000
 	.byte %11101000, %00001000
 	.byte %00000000, %10001101, %00010000
@@ -5884,6 +7185,9 @@ TF_P:
 	.byte %00000000, %10110010, %00010000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_24:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10011111, %00010000
 	.byte %00000000, %01110110, %00001000
@@ -5899,6 +7203,9 @@ TF_P:
 	.byte %00000000, %01001111, %00001000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_25:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10110010, %00001000
 	.byte %11101000, %00001000
@@ -5910,12 +7217,18 @@ TF_P:
 	.byte %11101000, %00001000
 	.byte %00000000, %10011111, %00100000
 
+	.byte %11111000, $AE
+
+TF_P_26:
 	.byte %00000000, %10111101, %00010000
 	.byte %00000000, %01101001, %00010000
 	.byte %00000000, %01110110, %00110000
 	.byte %11101000, %00010000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_27:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10110010, %00001000
 	.byte %11101000, %00001000
@@ -5927,6 +7240,9 @@ TF_P:
 	.byte %00000000, %01111110, %00001000
 	.byte %00000000, %10001101, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_28:
 	.byte %00000000, %10011111, %00001000
 	.byte %00000000, %01011110, %00001000
 	.byte %00000000, %01001111, %00001000
@@ -5941,6 +7257,9 @@ TF_P:
 	.byte %11101000, %00011000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_29:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10110010, %00001000
 	.byte %11101000, %00001000
@@ -5950,6 +7269,9 @@ TF_P:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10011111, %00100000
 
+	.byte %11111000, $AE
+
+TF_P_30:
 	.byte %00000000, %10001101, %00001000
 	.byte %11101000, %00001000
 	.byte %00000000, %01111110, %00001000
@@ -5965,6 +7287,9 @@ TF_P:
 	.byte %00000000, %01011110, %00001000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_31:
 	.byte %00000000, %01011000, %00010000
 	.byte %00000000, %01011110, %00010000
 	.byte %00000000, %01101001, %00001000
@@ -5974,6 +7299,9 @@ TF_P:
 	.byte %00000000, %01101001, %00011000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_32:
 	.byte %00000000, %01101001, %00010000
 	.byte %00000000, %01110110, %00001000
 	.byte %11101000, %00110000
@@ -5982,12 +7310,18 @@ TF_P:
 	.byte %00000000, %00111010, %00001000
 	.byte %11101000, %00011000
 
+	.byte %11111000, $AE
+
+TF_P_33:
 	.byte %11101000, %00100000
 	.byte %00000000, %01110110, %00010000
 	.byte %11101000, %00010000
 	.byte %00000000, %01110110, %00010000
 	.byte %11101000, %00110000
 
+	.byte %11111000, $AE
+
+TF_P_34:
 	.byte %00000000, %01111110, %00001000
 	.byte %00000000, %10001101, %00001000
 	.byte %11101000, %00001000
@@ -5999,6 +7333,9 @@ TF_P:
 	.byte %11101000, %00011000
 	.byte %00000000, %10111101, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_35:
 	.byte %00000000, %10011111, %00010000
 	.byte %00000000, %10111101, %00010000
 	.byte %00000000, %10011111, %00010000
@@ -6008,6 +7345,9 @@ TF_P:
 	.byte %11101000, %00001000
 	.byte %00000000, %01110110, %00011000
 
+	.byte %11111000, $AE
+
+TF_P_36:
 	.byte %00000000, %01111110, %00001000
 	.byte %11101000, %00100000
 	.byte %00000000, %01111110, %00010000
@@ -6016,23 +7356,9 @@ TF_P:
 	.byte %00000000, %01001111, %00001000
 	.byte %11101000, %00101000
 
-	.byte %11101000, %00100000
-	.byte %00000000, %01110110, %00010000
-	.byte %11101000, %00010000
-	.byte %00000000, %01110110, %00010000
-	.byte %11101000, %00110000
+	.byte %11111000, $AE
 
-	.byte %00000000, %01111110, %00001000
-	.byte %00000000, %10001101, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %10001101, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %10011111, %00001000
-	.byte %11101000, %00010000
-	.byte %00000000, %10011111, %00011000
-	.byte %11101000, %00011000
-	.byte %00000000, %10111101, %00010000
-
+TF_P_37:
 	.byte %00000000, %10011111, %00010000
 	.byte %00000000, %10111101, %00010000
 	.byte %00000000, %10011111, %00010000
@@ -6044,21 +7370,17 @@ TF_P:
 	.byte %00000000, %01111110, %00010000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_38:
 	.byte %00000000, %01110110, %00001000
 	.byte %00000000, %01111110, %00001000
 	.byte %00000000, %10001101, %01001000
 	.byte %11101000, %00101000
 
-	.byte %00000000, %01111110, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00011000
-	.byte %00000000, %10001101, %00011000
-	.byte %00000000, %10011111, %00010000
+	.byte %11111000, $AE
 
+TF_P_39:
 	.byte %00000000, %10000101, %00010000
 	.byte %11101000, %00001000
 	.byte %00000000, %10000101, %00010000
@@ -6067,19 +7389,9 @@ TF_P:
 	.byte %00000000, %01110110, %00010000
 	.byte %00000000, %01101001, %00110000
 
-	.byte %00000000, %10001101, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %10001101, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %10001101, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %10001101, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00010000
-	.byte %00000000, %10110010, %00010000
-	.byte %00000000, %10011111, %00010000
+	.byte %11111000, $AE
 
+TF_P_40:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10011111, %00001000
 	.byte %11101000, %00001000
@@ -6095,16 +7407,9 @@ TF_P:
 	.byte %11101000, %00001000
 	.byte %00000000, %10001101, %00010000
 
-	.byte %00000000, %01111110, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00011000
-	.byte %00000000, %10001101, %00011000
-	.byte %00000000, %10011111, %00010000
+	.byte %11111000, $AE
 
+TF_P_41:
 	.byte %00000000, %10000101, %00010000
 	.byte %11101000, %00001000
 	.byte %00000000, %10000101, %00010000
@@ -6115,19 +7420,9 @@ TF_P:
 	.byte %00000000, %01101001, %00100000
 	.byte %11101000, %00001000
 
-	.byte %00000000, %10001101, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %10001101, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %10001101, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %10001101, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00010000
-	.byte %00000000, %10110010, %00010000
-	.byte %00000000, %10011111, %00010000
+	.byte %11111000, $AE
 
+TF_P_42:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10011111, %00010000
 	.byte %00000000, %01110110, %00001000
@@ -6143,21 +7438,18 @@ TF_P:
 	.byte %00000000, %01001111, %00001000
 	.byte %11101000, %00001000
 
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00100000
+	.byte %11111000, $AE
 
+TF_P_43:
 	.byte %00000000, %10111101, %00010000
 	.byte %00000000, %01101001, %00010000
 	.byte %00000000, %01110110, %00100000
 	.byte %11101000, %00100000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_44:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10110010, %00001000
 	.byte %11101000, %00001000
@@ -6168,6 +7460,9 @@ TF_P:
 	.byte %00000000, %01111110, %00001000
 	.byte %00000000, %10001101, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_45:
 	.byte %00000000, %10011111, %00001000
 	.byte %00000000, %01011110, %00001000
 	.byte %00000000, %01001111, %00001000
@@ -6184,15 +7479,9 @@ TF_P:
 	.byte %00000000, %01000110, %00001000
 	.byte %00000000, %10011111, %00010000
 
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00100000
+	.byte %11111000, $AE
 
+TF_P_46:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %01111110, %00010000
 	.byte %00000000, %01110110, %00010000
@@ -6201,6 +7490,9 @@ TF_P:
 	.byte %00000000, %01101001, %00010000
 	.byte %00000000, %01011110, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_47:
 	.byte %00000000, %01011000, %00010000
 	.byte %00000000, %01011110, %00010000
 	.byte %00000000, %01101001, %00010000
@@ -6211,24 +7503,9 @@ TF_P:
 	.byte %00000000, %01101001, %00001100
 	.byte %11101000, %00000100
 
-	.byte %00000000, %01101001, %00010000
-	.byte %00000000, %01110110, %00001000
-	.byte %11101000, %00110000
-	.byte %00000000, %00111010, %00001000
-	.byte %11101000, %00010000
-	.byte %00000000, %00111010, %00001000
-	.byte %11101000, %00011000
+	.byte %11111000, $AE
 
-	.byte %00000000, %01111110, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01111110, %00011000
-	.byte %00000000, %10001101, %00011000
-	.byte %00000000, %10011111, %00010000
-
+TF_P_48:
 	.byte %00000000, %10000101, %00010000
 	.byte %11101000, %00001000
 	.byte %00000000, %10000101, %00010000
@@ -6238,19 +7515,9 @@ TF_P:
 	.byte %00000000, %01101001, %00100000
 	.byte %11101000, %00001000
 
-	.byte %00000000, %10001101, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %10001101, %00010000
-	.byte %11101000, %00001000
-	.byte %00000000, %10001101, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %10001101, %00000110
-	.byte %11101000, %00000010
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00010000
-	.byte %00000000, %10110010, %00010000
-	.byte %00000000, %10011111, %00010000
+	.byte %11111000, $AE
 
+TF_P_49:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10011111, %00001000
 	.byte %11101000, %00001000
@@ -6264,6 +7531,9 @@ TF_P:
 	.byte %11101000, %00001000
 	.byte %00000000, %10001101, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_50:
 	.byte %00000000, %00111110, %00001000
 	.byte %11101000, %00010000
 	.byte %00000000, %01111110, %00010000
@@ -6274,6 +7544,9 @@ TF_P:
 	.byte %00000000, %10001101, %00011000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_51:
 	.byte %00000000, %01000010, %00001000
 	.byte %11101000, %00010000
 	.byte %00000000, %10000101, %00010000
@@ -6283,6 +7556,9 @@ TF_P:
 	.byte %00000000, %01101001, %00100000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_52:
 	.byte %00000000, %01000110, %00001000
 	.byte %11101000, %00010000
 	.byte %00000000, %10001101, %00010000
@@ -6296,6 +7572,9 @@ TF_P:
 	.byte %00000000, %10110010, %00010000
 	.byte %00000000, %10011111, %00010000
 
+	.byte %11111000, $AE
+
+TF_P_53:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10011111, %00001000
 	.byte %11101000, %00001000
@@ -6314,6 +7593,9 @@ TF_P:
 	.byte %00000000, %01001111, %00001000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_54:
 	.byte %00000000, %10001101, %00001000
 	.byte %11101000, %00001000
 	.byte %00000000, %10110010, %00001000
@@ -6326,55 +7608,9 @@ TF_P:
 	.byte %11101000, %00001000
 	.byte %00000000, %10011111, %00100000
 
-	.byte %00000000, %10111101, %00010000
-	.byte %00000000, %01101001, %00010000
-	.byte %00000000, %01110110, %00110000
-	.byte %11101000, %00010000
-	.byte %00000000, %10011111, %00010000
+	.byte %11111000, $AE
 
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %01111110, %00001000
-	.byte %00000000, %10001101, %00001000
-
-	.byte %00000000, %10011111, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %00000000, %01001111, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %00111010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %00111010, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01001111, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %00000000, %10011111, %00010000
-
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00100000
-
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %01110110, %00010000
-	.byte %11101000, %00010000
-	.byte %00000000, %01110110, %00010000
-	.byte %00000000, %01101001, %00010000
-	.byte %00000000, %01011110, %00010000
-
+TF_P_55:
 	.byte %00000000, %01011000, %00010000
 	.byte %00000000, %01011110, %00010000
 	.byte %00000000, %01101001, %00010000
@@ -6383,6 +7619,9 @@ TF_P:
 	.byte %00000000, %01101001, %00011000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_56:
 	.byte %00000000, %01101001, %00010000
 	.byte %00000000, %01110110, %00110000
 	.byte %11101000, %00001000
@@ -6392,47 +7631,9 @@ TF_P:
 	.byte %11101000, %00001000
 	.byte %00000000, %10011111, %00010000
 
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00100000
+	.byte %11111000, $AE
 
-	.byte %00000000, %10111101, %00010000
-	.byte %00000000, %01101001, %00010000
-	.byte %00000000, %01110110, %00110000
-	.byte %11101000, %00010000
-	.byte %00000000, %10011111, %00010000
-
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %01111110, %00001000
-	.byte %00000000, %10001101, %00001000
-
-	.byte %00000000, %10011111, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %00000000, %01001111, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %00111010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %00111010, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01001111, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %00000000, %10011111, %00010000
-
+TF_P_57:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10110010, %00010000
 	.byte %00000000, %01011110, %00010000
@@ -6441,22 +7642,9 @@ TF_P:
 	.byte %00000000, %10001101, %00010000
 	.byte %00000000, %10011111, %00100000
 
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %01110110, %00010000
-	.byte %11101000, %00010000
-	.byte %00000000, %01110110, %00010000
-	.byte %00000000, %01101001, %00010000
-	.byte %00000000, %01011110, %00010000
+	.byte %11111000, $AE
 
-	.byte %00000000, %01011000, %00010000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00010000
-	.byte %00000000, %01111110, %00100000
-	.byte %00000000, %01110110, %00010000
-	.byte %00000000, %01101001, %00011000
-	.byte %11101000, %00001000
-
+TF_P_58:
 	.byte %00000000, %01101001, %00010000
 	.byte %00000000, %01110110, %00001000
 	.byte %11101000, %00110000
@@ -6466,64 +7654,9 @@ TF_P:
 	.byte %11101000, %00001000
 	.byte %00000000, %10011111, %00010000
 
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00100000
+	.byte %11111000, $AE
 
-	.byte %00000000, %10111101, %00010000
-	.byte %00000000, %01101001, %00010000
-	.byte %00000000, %01110110, %00110000
-	.byte %11101000, %00010000
-	.byte %00000000, %10011111, %00010000
-
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %01111110, %00001000
-	.byte %00000000, %10001101, %00001000
-
-	.byte %00000000, %10011111, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %00000000, %01001111, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %00000000, %01011110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %00111010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %00111010, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01001111, %00001000
-	.byte %00000000, %01000110, %00001000
-	.byte %00000000, %10011111, %00010000
-
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10110010, %00001000
-	.byte %11101000, %00001000
-	.byte %00000000, %01011110, %00010000
-	.byte %00000000, %01101001, %00100000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %10011111, %00100000
-
-	.byte %00000000, %10001101, %00010000
-	.byte %00000000, %01111110, %00010000
-	.byte %00000000, %01110110, %00010000
-	.byte %11101000, %00010000
-	.byte %00000000, %01110110, %00010000
-	.byte %00000000, %01101001, %00010000
-	.byte %00000000, %01011110, %00010000
-
+TF_P_59:
 	.byte %00000000, %01011000, %00010000
 	.byte %00000000, %01011110, %00010000
 	.byte %00000000, %01101001, %00010000
@@ -6533,6 +7666,9 @@ TF_P:
 	.byte %00000000, %01101001, %00011000
 	.byte %11101000, %00001000
 
+	.byte %11111000, $AE
+
+TF_P_60:
 	.byte %00000000, %01101001, %00010000
 	.byte %00000000, %01110110, %00001000
 	.byte %11101000, %00110000
@@ -6544,18 +7680,15 @@ TF_P:
 	.byte %00000000, %01011110, %00001000
 	.byte %11101000, %00001000
 
-	.byte %00000000, %01110110, %00011000
-
-
 	.byte %11111000, $AE
 
-; ===================== Toghether Forever kanał T =========================
+; =============== Toghether Forever kanał T ===============
 
 TF_T_INICJALIZACJA:
 	.byte %10101000, %11111111
-
+	
 	.byte %11111000, $AE
-
+	
 TF_T:
 
 	.byte %00000000, %10011111, %00000110
@@ -8253,11 +9386,11 @@ TF_T:
 
 	.byte %11111000, $AE
 
-; ===================== Toghether Forever kanał N =========================
+; =============== Toghether Forever kanał N ===============
 
 TF_N_INICJALIZACJA:
 	.byte %00010000, %01010111
-
+	
 	.byte %01110000, $AE
 	
 TF_N:
@@ -9780,14 +10913,2734 @@ TF_N:
 
 	.byte %01110000, $AE
 
-; ==================== Szanty Bitwa + ==========================
+; =========================================================
+; ==================== Song for Denise ====================
+; =========================================================
 
-SzantyBitwaKanalP:
-	.byte <SzantyBitwa_P, >SzantyBitwa_P
+Song_For_Denise_kanal_P:
+	.byte <SFD_P_INICJALIZACJA, >SFD_P_INICJALIZACJA
+	
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_2, >SFD_P_2
+	.byte <SFD_P_3, >SFD_P_3
+	.byte <SFD_P_2, >SFD_P_2
+	.byte <SFD_P_4, >SFD_P_4
+	.byte <SFD_P_5, >SFD_P_5
+	.byte <SFD_P_5, >SFD_P_5
+	.byte <SFD_P_5, >SFD_P_5
+	.byte <SFD_P_6, >SFD_P_6
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_7, >SFD_P_7
+	.byte <SFD_P_8, >SFD_P_8
+	.byte <SFD_P_7, >SFD_P_7
+	.byte <SFD_P_9, >SFD_P_9
+	.byte <SFD_P_10, >SFD_P_10
+	.byte <SFD_P_10, >SFD_P_10
+	.byte <SFD_P_10, >SFD_P_10
+	.byte <SFD_P_11, >SFD_P_11
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_1, >SFD_P_1
+	.byte <SFD_P_12, >SFD_P_12
+	.byte <SFD_P_5, >SFD_P_5
+	.byte <SFD_P_6, >SFD_P_6
+	.byte <SFD_P_13, >SFD_P_13
+	.byte <SFD_P_14, >SFD_P_14
+	.byte <SFD_P_15, >SFD_P_15
+	.byte <SFD_P_15, >SFD_P_15
+	.byte <SFD_P_15, >SFD_P_15
+	.byte <SFD_P_16, >SFD_P_16
+	.byte <SFD_P_17, >SFD_P_17
+	.byte <SFD_P_18, >SFD_P_18
+	.byte <SFD_P_17, >SFD_P_17
+	.byte <SFD_P_19, >SFD_P_19
+	.byte <SFD_P_20, >SFD_P_20
+	.byte <SFD_P_20, >SFD_P_20
+	.byte <SFD_P_20, >SFD_P_20
 
 	.byte %11111000, $AE
 
-SzantyBitwa_P:
+Song_For_Denise_kanal_T:
+	.byte <SFD_T_INICJALIZACJA, >SFD_T_INICJALIZACJA
+	
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_3, >SFD_T_3
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_5, >SFD_T_5
+	.byte <SFD_T_5, >SFD_T_5
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_7, >SFD_T_7
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_8, >SFD_T_8
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_9, >SFD_T_9
+	.byte <SFD_T_10, >SFD_T_10
+	.byte <SFD_T_11, >SFD_T_11
+	.byte <SFD_T_10, >SFD_T_10
+	.byte <SFD_T_11, >SFD_T_11
+	.byte <SFD_T_10, >SFD_T_10
+	.byte <SFD_T_10, >SFD_T_10
+	.byte <SFD_T_10, >SFD_T_10
+
+	.byte $FF, $AE
+
+Song_For_Denise_kanal_N:
+	.byte <SFD_N_INICJALIZACJA, >SFD_N_INICJALIZACJA
+	
+	.byte <SFD_N_1, >SFD_N_1
+	.byte <SFD_N_2, >SFD_N_2
+	.byte <SFD_N_3, >SFD_N_3
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_5, >SFD_N_5
+	.byte <SFD_N_3, >SFD_N_3
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_6, >SFD_N_6
+	.byte <SFD_N_7, >SFD_N_7
+	.byte <SFD_N_8, >SFD_N_8
+	.byte <SFD_N_9, >SFD_N_9
+	.byte <SFD_N_10, >SFD_N_10
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_12, >SFD_N_12
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_13, >SFD_N_13
+	.byte <SFD_N_14, >SFD_N_14
+	.byte <SFD_N_15, >SFD_N_15
+	.byte <SFD_N_16, >SFD_N_16
+	.byte <SFD_N_17, >SFD_N_17
+	.byte <SFD_N_18, >SFD_N_18
+	.byte <SFD_N_19, >SFD_N_19
+	.byte <SFD_N_20, >SFD_N_20
+	.byte <SFD_N_20, >SFD_N_20
+	.byte <SFD_N_20, >SFD_N_20
+	.byte <SFD_N_21, >SFD_N_21
+	.byte <SFD_N_22, >SFD_N_22
+	.byte <SFD_N_23, >SFD_N_23
+	.byte <SFD_N_23, >SFD_N_23
+	.byte <SFD_N_24, >SFD_N_24
+	.byte <SFD_N_25, >SFD_N_25
+	.byte <SFD_N_26, >SFD_N_26
+	.byte <SFD_N_26, >SFD_N_26
+	.byte <SFD_N_27, >SFD_N_27
+
+	.byte %11111000, $AE
+
+; ================ Song for Denise kanał P ================
+
+SFD_P_INICJALIZACJA:
+	.byte %10101000, %11111111, %00000000
+
+	.byte %11111000, $AE
+	
+SFD_P_1:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000001, %00011100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_P_2:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10110010, %00001000
+	.byte %11101000, %00001000
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10001101, %00001000
+	.byte %11101000, %00001000
+
+	.byte %11111000, $AE
+
+SFD_P_3:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %00000000, %11100001, %00000100
+	.byte %00000000, %11101110, %00000100
+	.byte %00000000, %11111101, %00000100
+	.byte %00000001, %00001100, %00000100
+	.byte %00000001, %00011100, %00000100
+	.byte %00000001, %00101101, %00000100
+	.byte %00000001, %00111111, %00000100
+	.byte %00000001, %01010010, %00000100
+	.byte %00000001, %01100110, %00000100
+	.byte %00000001, %01111011, %00000100
+	.byte %00000001, %10010010, %00000100
+	.byte %00000001, %10101010, %00000100
+	.byte %00000001, %11000011, %00000100
+	.byte %00000001, %11011110, %00000100
+	.byte %00000001, %11111011, %00000100
+
+	.byte %11111000, $AE
+
+SFD_P_4:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10110010, %00010000
+
+	.byte %11111000, $AE
+
+SFD_P_5:
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000001, %00011100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00010000
+	.byte %00000000, %10110010, %00010000
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10000101, %00010000
+	.byte %00000000, %10011111, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10011111, %00011000
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10110010, %00010000
+
+	.byte %11111000, $AE
+
+SFD_P_6:
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000001, %00011100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00010000
+	.byte %00000000, %10110010, %00010000
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10000101, %00010000
+	.byte %00000000, %10011111, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10011111, %00011000
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_P_7:
+	.byte %00000000, %11010100, %00001000
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00100000
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00100000
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %10001101, %00001000
+	.byte %11101000, %00001000
+
+	.byte %11111000, $AE
+
+SFD_P_8:
+	.byte %00000000, %11010100, %00001000
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00100000
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00011000
+	.byte %00000000, %11010100, %00000100
+	.byte %00000000, %11100001, %00000100
+	.byte %00000000, %11101110, %00000100
+	.byte %00000000, %11111101, %00000100
+	.byte %00000001, %00001100, %00000100
+	.byte %00000001, %00011100, %00000100
+	.byte %00000001, %00101101, %00000100
+	.byte %00000001, %00111111, %00000100
+	.byte %00000001, %01010010, %00000100
+	.byte %00000001, %01100110, %00000100
+	.byte %00000001, %01111011, %00000100
+	.byte %00000001, %10010010, %00000100
+	.byte %00000001, %10101010, %00000100
+	.byte %00000001, %11000011, %00000100
+	.byte %00000001, %11011110, %00000100
+	.byte %00000001, %11111011, %00000100
+
+	.byte %11111000, $AE
+
+SFD_P_9:
+	.byte %00000000, %11010100, %00001000
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00100000
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00001000
+	.byte %11101000, %00101000
+	.byte %00000001, %00011100, %00010000
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10110010, %00010000
+
+	.byte %11111000, $AE
+
+SFD_P_10:
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00010000
+	.byte %11101000, %00101000
+	.byte %00000001, %00011100, %00010000
+	.byte %00000000, %11010100, %00010000
+	.byte %00000000, %10110010, %00010000
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10000101, %00010000
+	.byte %00000000, %10011111, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10011111, %00011000
+	.byte %00000001, %00011100, %00010000
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10110010, %00010000
+
+	.byte %11111000, $AE
+
+SFD_P_11:
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00010000
+	.byte %11101000, %00101000
+	.byte %00000001, %00011100, %00010000
+	.byte %00000000, %11010100, %00010000
+	.byte %00000000, %10110010, %00010000
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10000101, %00010000
+	.byte %00000000, %10011111, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10011111, %00011000
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_P_12:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000001, %00011100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10110010, %00010000
+
+	.byte %11111000, $AE
+
+SFD_P_13:
+	.byte %11101000, %10000000
+	.byte %00000010, %00111001, %10000000
+
+	.byte %11111000, $AE
+
+SFD_P_14:
+	.byte %00000010, %00011001, %01000000
+	.byte %00000010, %00111001, %01000000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000001, %00011100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_P_15:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000001, %00011100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_P_16:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_P_17:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10110010, %00001000
+	.byte %11101000, %00001000
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10001101, %00001000
+	.byte %11101000, %00001000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_P_18:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_P_19:
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000001, %00011100, %00001000
+	.byte %00000000, %10111101, %00001000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000110
+	.byte %11101000, %00000010
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10110010, %00010000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000001, %00011100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00010000
+	.byte %00000000, %10110010, %00010000
+
+	.byte %11111000, $AE
+
+SFD_P_20:
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10000101, %00010000
+	.byte %00000000, %10011111, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %10011111, %00011000
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %10001101, %00010000
+	.byte %00000000, %10110010, %00010000
+	.byte %00000000, %10111101, %00010000
+	.byte %00000000, %10110010, %00001000
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11101110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000001, %00011100, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %11010100, %00010000
+	.byte %00000000, %10110010, %00010000
+
+	.byte %11111000, $AE
+
+; ================ Song for Denise kanał T ================
+
+SFD_T_INICJALIZACJA:
+	.byte %10101000, %11111111
+	
+	.byte %11111000, $AE
+
+SFD_T_2:
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %00010000
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %01010000
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00010000
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00001000
+	.byte %00000010, %01111111, %00001000
+	.byte %00000010, %00111001, %00000110
+	.byte %11101000, %00000010
+	.byte %00000010, %00111001, %00001000
+	.byte %11101000, %00001000
+	.byte %00000010, %00111001, %00000110
+	.byte %11101000, %00000010
+	.byte %00000010, %00111001, %00001000
+	.byte %00000010, %00011001, %00001000
+	.byte %00000001, %11011110, %00010000
+
+	.byte %11111000, $AE
+
+SFD_T_3:
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %00010000
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %01010000
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00010000
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00001000
+	.byte %00000010, %01111111, %00001000
+	.byte %00000000, %01101001, %00000100
+	.byte %00000000, %01110000, %00000100
+	.byte %00000000, %01110110, %00000100
+	.byte %00000000, %01111110, %00000100
+	.byte %00000000, %10000101, %00000100
+	.byte %00000000, %10001101, %00000100
+	.byte %00000000, %10010110, %00000100
+	.byte %00000000, %10011111, %00000100
+	.byte %00000000, %10101000, %00000100
+	.byte %00000000, %10110010, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %00000000, %11001000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %00000000, %11100001, %00000100
+	.byte %00000000, %11101110, %00000100
+	.byte %00000000, %11111101, %00000100
+
+	.byte %11111000, $AE
+
+SFD_T_4:
+	.byte %11101000, %10000000
+
+	.byte %11111000, $AE
+
+SFD_T_5:
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %00010000
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %00001000
+	.byte %00000001, %11011110, %00001000
+	.byte %00000001, %10101010, %00000110
+	.byte %11101000, %00000010
+	.byte %00000001, %10101010, %00001000
+	.byte %11101000, %00001000
+	.byte %00000001, %10101010, %00001000
+	.byte %00000010, %00111001, %00010000
+	.byte %00000001, %11011110, %00001000
+	.byte %11101000, %00001000
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00010000
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00001000
+	.byte %00000010, %01111111, %00001000
+	.byte %00000010, %00111001, %00000110
+	.byte %11101000, %00000010
+	.byte %00000010, %00111001, %00001000
+	.byte %11101000, %00001000
+	.byte %00000010, %00111001, %00000110
+	.byte %11101000, %00000010
+	.byte %00000010, %00111001, %00001000
+	.byte %00000010, %00011001, %00001000
+	.byte %00000001, %11011110, %00010000
+
+	.byte %11111000, $AE
+
+SFD_T_6:
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01110110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10001101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01110110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000010, %01111111, %00001000
+	.byte %00000000, %01011110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000010, %00111001, %00001000
+	.byte %00000000, %01011110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01011110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000010, %00111001, %00001000
+	.byte %00000000, %01011110, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01011110, %00000100
+	.byte %11101000, %00001100
+
+	.byte %11111000, $AE
+
+SFD_T_7:
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01110110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10001101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01110110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000010, %01111111, %00001000
+	.byte %00000000, %01101001, %00000100
+	.byte %00000000, %01110000, %00000100
+	.byte %00000000, %01110110, %00000100
+	.byte %00000000, %01111110, %00000100
+	.byte %00000000, %10000101, %00000100
+	.byte %00000000, %10001101, %00000100
+	.byte %00000000, %10010110, %00000100
+	.byte %00000000, %10011111, %00000100
+	.byte %00000000, %10101000, %00000100
+	.byte %00000000, %10110010, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %00000000, %11001000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %00000000, %11100001, %00000100
+	.byte %00000000, %11101110, %00000100
+	.byte %00000000, %11111101, %00000100
+
+	.byte %11111000, $AE
+
+SFD_T_8:
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01110110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %10001101, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01110110, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00001100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000000, %01101001, %00000100
+	.byte %11101000, %00000100
+	.byte %00000010, %01111111, %00001000
+	.byte %00000010, %00111001, %00000110
+	.byte %11101000, %00000010
+	.byte %00000010, %00111001, %00001000
+	.byte %11101000, %00001000
+	.byte %00000010, %00111001, %00000110
+	.byte %11101000, %00000010
+	.byte %00000010, %00111001, %00001000
+	.byte %00000010, %00011001, %00001000
+	.byte %00000001, %11011110, %00010000
+
+	.byte %11111000, $AE
+
+SFD_T_9:
+	.byte %11101000, %10000000
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %00010000
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %01010000
+
+	.byte %11111000, $AE
+
+SFD_T_10:
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00010000
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00001000
+	.byte %00000010, %01111111, %00001000
+	.byte %00000010, %00111001, %00000110
+	.byte %11101000, %00000010
+	.byte %00000010, %00111001, %00001000
+	.byte %11101000, %00001000
+	.byte %00000010, %00111001, %00000110
+	.byte %11101000, %00000010
+	.byte %00000010, %00111001, %00001000
+	.byte %00000010, %00011001, %00001000
+	.byte %00000001, %11011110, %00010000
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %00010000
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %01010000
+
+	.byte %11111000, $AE
+
+SFD_T_11:
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00010000
+	.byte %00000010, %01111111, %00010000
+	.byte %11101000, %00001000
+	.byte %00000010, %01111111, %00001000
+	.byte %00000000, %01101001, %00000100
+	.byte %00000000, %01110000, %00000100
+	.byte %00000000, %01110110, %00000100
+	.byte %00000000, %01111110, %00000100
+	.byte %00000000, %10000101, %00000100
+	.byte %00000000, %10001101, %00000100
+	.byte %00000000, %10010110, %00000100
+	.byte %00000000, %10011111, %00000100
+	.byte %00000000, %10101000, %00000100
+	.byte %00000000, %10110010, %00000100
+	.byte %00000000, %10111101, %00000100
+	.byte %00000000, %11001000, %00000100
+	.byte %00000000, %11010100, %00000100
+	.byte %00000000, %11100001, %00000100
+	.byte %00000000, %11101110, %00000100
+	.byte %00000000, %11111101, %00000100
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %00010000
+	.byte %00000001, %10101010, %00010000
+	.byte %11101000, %01010000
+
+	.byte %11111000, $AE
+
+; ================ Song for Denise kanał N ================
+
+SFD_N_INICJALIZACJA:
+	.byte %00010000, %01010111
+	
+	.byte %01110000, $AE
+	
+SFD_N_1:
+	.byte %00110000, %10000000
+
+	.byte %01110000, $AE
+
+SFD_N_2:
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00011000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00011000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00010100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+
+	.byte %01110000, $AE
+
+SFD_N_3:
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_4:
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_5:
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+
+	.byte %01110000, $AE
+
+SFD_N_6:
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+
+	.byte %01110000, $AE
+
+SFD_N_7:
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_8:
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000000
+	.byte %00001111, %10000000, %00000011
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_9:
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+
+	.byte %01110000, $AE
+
+SFD_N_10:
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_11:
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_12:
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_13:
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_14:
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_15:
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_16:
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00010000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00010000
+
+	.byte %01110000, $AE
+
+SFD_N_17:
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000000
+	.byte %00001111, %10000000, %00000011
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_18:
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_19:
+	.byte %00110000, %00011100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_20:
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_21:
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_22:
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000110, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00011011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_23:
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_24:
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+
+	.byte %01110000, $AE
+
+SFD_N_25:
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00001000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00010000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00010000
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_26:
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+
+	.byte %01110000, $AE
+
+SFD_N_27:
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000011
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00000111, %10000000, %00000100
+	.byte %00110000, %00000100
+	.byte %00001111, %10000000, %00000100
+	.byte %00110000, %00001000
+
+	.byte %01110000, $AE
+	
+; =========================================================
+; ====================== Szanty Bitwa =====================
+; =========================================================
+
+Szanty_Bitwa_Kanal_P:
+	.byte <SB_P_INICJALIZACJA, >SB_P_INICJALIZACJA
+	.byte <SB_P_1, >SB_P_1
+	
+	.byte %11111000, $AE
+
+Szanty_Bitwa_Kanal_T:
+	.byte <SB_T_INICJALIZACJA, >SB_T_INICJALIZACJA
+	
+	.byte $FF, $AE
+
+Szanty_Bitwa_Kanal_N:
+	.byte <SB_N_INICJALIZACJA, >SB_N_INICJALIZACJA
+	
+	.byte %11111000, $AE
+
+; ================== Szanty Bitwa kanał P =================
+
+SB_P_INICJALIZACJA:
+	.byte %10101000, %11111111, %00000000
+	
+	.byte %11111000, $AE
+
+SB_P_1:
 	.byte %00000000, %10101000, %00001111
 	.byte %00000000, %11100001, %00001111
 	.byte %00000000, %10101000, %00011110
@@ -9878,15 +13731,31 @@ SzantyBitwa_P:
 	.byte %00000001, %01010010, %01111000
 
 	.byte %11111000, $AE
+	
+; ================== Szanty Bitwa kanał T =================
 
-; ==================== Koniec Gry =======================
+SB_T_INICJALIZACJA:
+	.byte %10101000, %11111111
+	
+	.byte %11111000, $AE
+	
+; ================== Szanty Bitwa kanał N =================
+
+SB_N_INICJALIZACJA:
+	.byte %00010000, %01010111
+	
+	.byte %01110000, $AE
+
+; =========================================================
+; ======================= Koniec Gry ======================
+; =========================================================
 
 KoniecGryKanalP:
 	.byte <KoniecGry_P_melodia, >KoniecGry_P_melodia
-
+	
 	.byte %11111000, $AE
 
-; ==================== Koniec Gry kanał P =======================
+; =================== Koniec Gry kanał P ==================
 
 KoniecGry_P_melodia:
 	.byte %10101000, %11111111, %00000000
@@ -9906,9 +13775,11 @@ KoniecGry_P_melodia:
 
 	.byte %11111000, $AE
 
-; ==========================================================
-; ==================== Koniec ROMu =========================
-; ==========================================================
+; =========================================================
+; ====================== Koniec ROMu ======================
+; =========================================================
+
+.byte "Koniec ROM"
 
 .segment "VECTORS"
 	.word NMI
