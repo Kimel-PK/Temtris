@@ -5752,7 +5752,11 @@ Pauza15klatek:
 	.byte %11101000, %00001111
 	.byte %11111000, $AE
 
+; =========================================================
 ; ====================== Korobiejniki =====================
+; =========================================================
+
+; ================== Korobiejniki kanał P =================
 
 Korobiejniki_Kanal_P:
 	.byte <Korobiejniki_P_zwrotka, >Korobiejniki_P_zwrotka
@@ -5760,62 +5764,6 @@ Korobiejniki_Kanal_P:
 	.byte <Korobiejniki_P_przejscie, >Korobiejniki_P_przejscie
 
 	.byte %11111000, $AE
-
-Korobiejniki_Kanal_T:
-	.byte <Korobiejniki_T_inicjalizacja, >Korobiejniki_T_inicjalizacja
-	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
-	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	.byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_E
-	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	.byte <Korobiejniki_T_akord_Am_przejscie, >Korobiejniki_T_akord_Am_przejscie
-	.byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
-	.byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
-	.byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
-	.byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
-	.byte <Korobiejniki_T_akord_G, >Korobiejniki_T_akord_G
-	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	; fajnie by tu było ustawić skok o 16 w tył reagujący tylko raz
-	; powtórzenie
-	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
-	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	.byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_E
-	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	.byte <Korobiejniki_T_akord_Am_przejscie, >Korobiejniki_T_akord_Am_przejscie
-	.byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
-	.byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
-	.byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
-	.byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
-	.byte <Korobiejniki_T_akord_G, >Korobiejniki_T_akord_G
-	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
-	; przejście
-	.byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
-	.byte <Korobiejniki_T_przejscie_B, >Korobiejniki_T_przejscie_B
-	.byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
-	.byte <Korobiejniki_T_przejscie_E, >Korobiejniki_T_przejscie_E
-	.byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
-	.byte <Korobiejniki_T_przejscie_B, >Korobiejniki_T_przejscie_B
-	.byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
-	.byte <Korobiejniki_T_przejscie_E, >Korobiejniki_T_przejscie_E
-
-	.byte $FF, $AE
-
-Korobiejniki_Kanal_N:
-	.byte <Korobiejniki_N_inicjalizacja, >Korobiejniki_N_inicjalizacja
-	.byte <Korobiejniki_N_rytm, >Korobiejniki_N_rytm
-	
-	.byte %11111000, $AE
-	
-; ================== Korobiejniki kanał P =================
 
 Korobiejniki_P_zwrotka:
 	.byte %10101000, %11111111, %00000000
@@ -5931,6 +5879,54 @@ Korobiejniki_P_przejscie:
 
 ; ================== Korobiejniki kanał T =================
 
+Korobiejniki_Kanal_T:
+	.byte <Korobiejniki_T_inicjalizacja, >Korobiejniki_T_inicjalizacja
+	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	.byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_E
+	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	.byte <Korobiejniki_T_akord_Am_przejscie, >Korobiejniki_T_akord_Am_przejscie
+	.byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
+	.byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
+	.byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
+	.byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
+	.byte <Korobiejniki_T_akord_G, >Korobiejniki_T_akord_G
+	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	; fajnie by tu było ustawić skok o 16 w tył reagujący tylko raz
+	; powtórzenie
+	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	.byte <Korobiejniki_T_akord_E, >Korobiejniki_T_akord_E
+	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	.byte <Korobiejniki_T_akord_Am_przejscie, >Korobiejniki_T_akord_Am_przejscie
+	.byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
+	.byte <Korobiejniki_T_akord_Dm, >Korobiejniki_T_akord_Dm
+	.byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
+	.byte <Korobiejniki_T_akord_C, >Korobiejniki_T_akord_C
+	.byte <Korobiejniki_T_akord_G, >Korobiejniki_T_akord_G
+	.byte <Korobiejniki_T_akord_Em, >Korobiejniki_T_akord_Em
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	.byte <Korobiejniki_T_akord_Am, >Korobiejniki_T_akord_Am
+	; przejście
+	.byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
+	.byte <Korobiejniki_T_przejscie_B, >Korobiejniki_T_przejscie_B
+	.byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
+	.byte <Korobiejniki_T_przejscie_E, >Korobiejniki_T_przejscie_E
+	.byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
+	.byte <Korobiejniki_T_przejscie_B, >Korobiejniki_T_przejscie_B
+	.byte <Korobiejniki_T_przejscie_Am, >Korobiejniki_T_przejscie_Am
+	.byte <Korobiejniki_T_przejscie_E, >Korobiejniki_T_przejscie_E
+
+	.byte $FF, $AE
+
 Korobiejniki_T_inicjalizacja:
 	.byte %10101000, %11111111
 
@@ -6034,6 +6030,12 @@ Korobiejniki_T_przejscie_E:
 
 ; ================== Korobiejniki kanał N =================
 
+Korobiejniki_Kanal_N:
+	.byte <Korobiejniki_N_inicjalizacja, >Korobiejniki_N_inicjalizacja
+	.byte <Korobiejniki_N_rytm, >Korobiejniki_N_rytm
+	
+	.byte %11111000, $AE
+
 Korobiejniki_N_inicjalizacja:
 	.byte %00010000, %01010111
 
@@ -6057,6 +6059,8 @@ Korobiejniki_N_rytm:
 ; =========================================================
 ; ================ Never Gonna Give You Up ================
 ; =========================================================
+
+; ===================== NGGYU kanał P =====================
 
 Never_Gonna_Give_You_Up_Kanal_P:
 	.byte <NGGYU_P_Wstep_1, >NGGYU_P_Wstep_1
@@ -6085,62 +6089,6 @@ Never_Gonna_Give_You_Up_Kanal_P:
 	.byte <Pauza360klatek, >Pauza360klatek
 
 	.byte %11111000, $AE
-
-Never_Gonna_Give_You_Up_Kanal_T:
-	.byte <NGGYU_T_WSTEP_1, >NGGYU_T_WSTEP_1
-	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
-	.byte <NGGYU_T_REFREN_2, >NGGYU_T_REFREN_2
-	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
-	.byte <NGGYU_T_WSTEP_2, >NGGYU_T_WSTEP_2
-	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
-	.byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
-	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
-	.byte <NGGYU_T_PODKLAD_1_WAR_2, >NGGYU_T_PODKLAD_1_WAR_2
-	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
-	.byte <NGGYU_T_PODKLAD_1_WAR_3, >NGGYU_T_PODKLAD_1_WAR_3
-	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
-	.byte <NGGYU_T_REFREN_2, >NGGYU_T_REFREN_2
-	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
-	.byte <NGGYU_T_REFREN_OUTRO, >NGGYU_T_REFREN_OUTRO
-	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
-	.byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
-	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
-	.byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
-	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
-	.byte <NGGYU_T_PODKLAD_1_WAR_4, >NGGYU_T_PODKLAD_1_WAR_4
-	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
-	.byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
-	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
-	.byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
-	.byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
-	.byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
-	.byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
-	.byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
-	.byte <Pauza360klatek, >Pauza360klatek
-	.byte <NGGYU_T_PAUZA_WSTAWKA, >NGGYU_T_PAUZA_WSTAWKA
-	.byte <Pauza360klatek, >Pauza360klatek
-	.byte <NGGYU_T_PAUZA_WSTAWKA, >NGGYU_T_PAUZA_WSTAWKA
-	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
-	.byte <NGGYU_T_PODKLAD_1_WAR_4, >NGGYU_T_PODKLAD_1_WAR_4
-	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
-	.byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
-	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
-	.byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
-	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
-	.byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
-	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
-	.byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
-	.byte <Pauza360klatek, >Pauza360klatek
-
-	.byte $FF, $AE
-
-Never_Gonna_Give_You_Up_Kanal_N:
-	.byte <NGGYU_N_Wstep, >NGGYU_N_Wstep
-	.byte <NGGYU_N_Rytm, >NGGYU_N_Rytm
-
-	.byte %11111000, $AE
-
-; ===================== NGGYU kanał P =====================
 
 NGGYU_P_Wstep_1:
 	.byte %10101000, %11111111, %00000000
@@ -6439,6 +6387,54 @@ NGGYU_P_Przejscie_2:
 
 ; ===================== NGGYU kanał T =====================
 
+Never_Gonna_Give_You_Up_Kanal_T:
+	.byte <NGGYU_T_WSTEP_1, >NGGYU_T_WSTEP_1
+	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
+	.byte <NGGYU_T_REFREN_2, >NGGYU_T_REFREN_2
+	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
+	.byte <NGGYU_T_WSTEP_2, >NGGYU_T_WSTEP_2
+	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+	.byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
+	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+	.byte <NGGYU_T_PODKLAD_1_WAR_2, >NGGYU_T_PODKLAD_1_WAR_2
+	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+	.byte <NGGYU_T_PODKLAD_1_WAR_3, >NGGYU_T_PODKLAD_1_WAR_3
+	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
+	.byte <NGGYU_T_REFREN_2, >NGGYU_T_REFREN_2
+	.byte <NGGYU_T_REFREN_1, >NGGYU_T_REFREN_1
+	.byte <NGGYU_T_REFREN_OUTRO, >NGGYU_T_REFREN_OUTRO
+	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+	.byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
+	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+	.byte <NGGYU_T_PODKLAD_1_WAR_1, >NGGYU_T_PODKLAD_1_WAR_1
+	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+	.byte <NGGYU_T_PODKLAD_1_WAR_4, >NGGYU_T_PODKLAD_1_WAR_4
+	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+	.byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
+	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+	.byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
+	.byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
+	.byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
+	.byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
+	.byte <NGGYU_T_PRZEJSCIE, >NGGYU_T_PRZEJSCIE
+	.byte <Pauza360klatek, >Pauza360klatek
+	.byte <NGGYU_T_PAUZA_WSTAWKA, >NGGYU_T_PAUZA_WSTAWKA
+	.byte <Pauza360klatek, >Pauza360klatek
+	.byte <NGGYU_T_PAUZA_WSTAWKA, >NGGYU_T_PAUZA_WSTAWKA
+	.byte <NGGYU_T_PODKLAD_1, >NGGYU_T_PODKLAD_1
+	.byte <NGGYU_T_PODKLAD_1_WAR_4, >NGGYU_T_PODKLAD_1_WAR_4
+	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+	.byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
+	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+	.byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
+	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+	.byte <NGGYU_T_REFREN_2_WAR_1, >NGGYU_T_REFREN_2_WAR_1
+	.byte <NGGYU_T_REFREN_1_WAR_1, >NGGYU_T_REFREN_1_WAR_1
+	.byte <NGGYU_T_REFREN_OUTRO_WAR_1, >NGGYU_T_REFREN_OUTRO_WAR_1
+	.byte <Pauza360klatek, >Pauza360klatek
+
+	.byte $FF, $AE
+
 NGGYU_T_WSTEP_1:
 	.byte %10101000, %11111111
 	.byte %11101000, %01001011
@@ -6727,6 +6723,12 @@ NGGYU_T_PAUZA_WSTAWKA:
 
 ; ===================== NGGYU kanał N =====================
 
+Never_Gonna_Give_You_Up_Kanal_N:
+	.byte <NGGYU_N_Wstep, >NGGYU_N_Wstep
+	.byte <NGGYU_N_Rytm, >NGGYU_N_Rytm
+
+	.byte %11111000, $AE
+
 NGGYU_N_Wstep:
 	.byte %00010000, %01010111
 	.byte %00001110, %10000000, %00000111
@@ -6760,6 +6762,8 @@ NGGYU_N_Rytm:
 ; =========================================================
 ; ==================== Together Forever ===================
 ; =========================================================
+
+; =============== Toghether Forever kanał P ===============
 
 TogetherForeverKanalP:
 	.byte <TF_P_INICJALIZACJA, >TF_P_INICJALIZACJA
@@ -6855,20 +6859,6 @@ TogetherForeverKanalP:
 	
 	.byte %11111000, $AE
 	
-TogetherForeverKanalT:
-	.byte <TF_T_INICJALIZACJA, >TF_T_INICJALIZACJA
-	.byte <TF_T, >TF_T
-	
-	.byte $FF, $AE
-	
-TogetherForeverKanalN:
-	.byte <TF_N_INICJALIZACJA, >TF_N_INICJALIZACJA
-	.byte <TF_N, >TF_N
-	
-	.byte %11111000, $AE
-	
-; =============== Toghether Forever kanał P ===============
-
 TF_P_INICJALIZACJA:
 	.byte %10101000, %11111111, %00000000
 	
@@ -7691,6 +7681,12 @@ TF_P_60:
 
 ; =============== Toghether Forever kanał T ===============
 
+TogetherForeverKanalT:
+	.byte <TF_T_INICJALIZACJA, >TF_T_INICJALIZACJA
+	.byte <TF_T, >TF_T
+	
+	.byte $FF, $AE
+	
 TF_T_INICJALIZACJA:
 	.byte %10101000, %11111111
 	
@@ -9395,6 +9391,12 @@ TF_T:
 
 ; =============== Toghether Forever kanał N ===============
 
+TogetherForeverKanalN:
+	.byte <TF_N_INICJALIZACJA, >TF_N_INICJALIZACJA
+	.byte <TF_N, >TF_N
+	
+	.byte %11111000, $AE
+	
 TF_N_INICJALIZACJA:
 	.byte %00010000, %01010111
 	
@@ -10924,6 +10926,8 @@ TF_N:
 ; ==================== Song for Denise ====================
 ; =========================================================
 
+; ================ Song for Denise kanał P ================
+
 Song_For_Denise_kanal_P:
 	.byte <SFD_P_INICJALIZACJA, >SFD_P_INICJALIZACJA
 	
@@ -10976,108 +10980,6 @@ Song_For_Denise_kanal_P:
 	.byte <SFD_P_20, >SFD_P_20
 
 	.byte %11111000, $AE
-
-Song_For_Denise_kanal_T:
-	.byte <SFD_T_INICJALIZACJA, >SFD_T_INICJALIZACJA
-	
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_3, >SFD_T_3
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_4, >SFD_T_4
-	.byte <SFD_T_4, >SFD_T_4
-	.byte <SFD_T_5, >SFD_T_5
-	.byte <SFD_T_5, >SFD_T_5
-	.byte <SFD_T_6, >SFD_T_6
-	.byte <SFD_T_6, >SFD_T_6
-	.byte <SFD_T_6, >SFD_T_6
-	.byte <SFD_T_7, >SFD_T_7
-	.byte <SFD_T_6, >SFD_T_6
-	.byte <SFD_T_6, >SFD_T_6
-	.byte <SFD_T_6, >SFD_T_6
-	.byte <SFD_T_8, >SFD_T_8
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_2, >SFD_T_2
-	.byte <SFD_T_4, >SFD_T_4
-	.byte <SFD_T_4, >SFD_T_4
-	.byte <SFD_T_4, >SFD_T_4
-	.byte <SFD_T_4, >SFD_T_4
-	.byte <SFD_T_4, >SFD_T_4
-	.byte <SFD_T_9, >SFD_T_9
-	.byte <SFD_T_10, >SFD_T_10
-	.byte <SFD_T_11, >SFD_T_11
-	.byte <SFD_T_10, >SFD_T_10
-	.byte <SFD_T_11, >SFD_T_11
-	.byte <SFD_T_10, >SFD_T_10
-	.byte <SFD_T_10, >SFD_T_10
-	.byte <SFD_T_10, >SFD_T_10
-
-	.byte $FF, $AE
-
-Song_For_Denise_kanal_N:
-	.byte <SFD_N_INICJALIZACJA, >SFD_N_INICJALIZACJA
-	
-	.byte <SFD_N_1, >SFD_N_1
-	.byte <SFD_N_2, >SFD_N_2
-	.byte <SFD_N_3, >SFD_N_3
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_5, >SFD_N_5
-	.byte <SFD_N_3, >SFD_N_3
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_4, >SFD_N_4
-	.byte <SFD_N_6, >SFD_N_6
-	.byte <SFD_N_7, >SFD_N_7
-	.byte <SFD_N_8, >SFD_N_8
-	.byte <SFD_N_9, >SFD_N_9
-	.byte <SFD_N_10, >SFD_N_10
-	.byte <SFD_N_11, >SFD_N_11
-	.byte <SFD_N_11, >SFD_N_11
-	.byte <SFD_N_11, >SFD_N_11
-	.byte <SFD_N_12, >SFD_N_12
-	.byte <SFD_N_11, >SFD_N_11
-	.byte <SFD_N_11, >SFD_N_11
-	.byte <SFD_N_11, >SFD_N_11
-	.byte <SFD_N_13, >SFD_N_13
-	.byte <SFD_N_14, >SFD_N_14
-	.byte <SFD_N_15, >SFD_N_15
-	.byte <SFD_N_16, >SFD_N_16
-	.byte <SFD_N_17, >SFD_N_17
-	.byte <SFD_N_18, >SFD_N_18
-	.byte <SFD_N_19, >SFD_N_19
-	.byte <SFD_N_20, >SFD_N_20
-	.byte <SFD_N_20, >SFD_N_20
-	.byte <SFD_N_20, >SFD_N_20
-	.byte <SFD_N_21, >SFD_N_21
-	.byte <SFD_N_22, >SFD_N_22
-	.byte <SFD_N_23, >SFD_N_23
-	.byte <SFD_N_23, >SFD_N_23
-	.byte <SFD_N_24, >SFD_N_24
-	.byte <SFD_N_25, >SFD_N_25
-	.byte <SFD_N_26, >SFD_N_26
-	.byte <SFD_N_26, >SFD_N_26
-	.byte <SFD_N_27, >SFD_N_27
-
-	.byte %11111000, $AE
-
-; ================ Song for Denise kanał P ================
 
 SFD_P_INICJALIZACJA:
 	.byte %10101000, %11111111, %00000000
@@ -11769,6 +11671,54 @@ SFD_P_20:
 
 ; ================ Song for Denise kanał T ================
 
+Song_For_Denise_kanal_T:
+	.byte <SFD_T_INICJALIZACJA, >SFD_T_INICJALIZACJA
+	
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_3, >SFD_T_3
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_5, >SFD_T_5
+	.byte <SFD_T_5, >SFD_T_5
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_7, >SFD_T_7
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_6, >SFD_T_6
+	.byte <SFD_T_8, >SFD_T_8
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_2, >SFD_T_2
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_4, >SFD_T_4
+	.byte <SFD_T_9, >SFD_T_9
+	.byte <SFD_T_10, >SFD_T_10
+	.byte <SFD_T_11, >SFD_T_11
+	.byte <SFD_T_10, >SFD_T_10
+	.byte <SFD_T_11, >SFD_T_11
+	.byte <SFD_T_10, >SFD_T_10
+	.byte <SFD_T_10, >SFD_T_10
+	.byte <SFD_T_10, >SFD_T_10
+
+	.byte $FF, $AE
+
 SFD_T_INICJALIZACJA:
 	.byte %10101000, %11111111
 	
@@ -12058,6 +12008,58 @@ SFD_T_11:
 	.byte %11111000, $AE
 
 ; ================ Song for Denise kanał N ================
+
+Song_For_Denise_kanal_N:
+	.byte <SFD_N_INICJALIZACJA, >SFD_N_INICJALIZACJA
+	
+	.byte <SFD_N_1, >SFD_N_1
+	.byte <SFD_N_2, >SFD_N_2
+	.byte <SFD_N_3, >SFD_N_3
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_5, >SFD_N_5
+	.byte <SFD_N_3, >SFD_N_3
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_4, >SFD_N_4
+	.byte <SFD_N_6, >SFD_N_6
+	.byte <SFD_N_7, >SFD_N_7
+	.byte <SFD_N_8, >SFD_N_8
+	.byte <SFD_N_9, >SFD_N_9
+	.byte <SFD_N_10, >SFD_N_10
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_12, >SFD_N_12
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_11, >SFD_N_11
+	.byte <SFD_N_13, >SFD_N_13
+	.byte <SFD_N_14, >SFD_N_14
+	.byte <SFD_N_15, >SFD_N_15
+	.byte <SFD_N_16, >SFD_N_16
+	.byte <SFD_N_17, >SFD_N_17
+	.byte <SFD_N_18, >SFD_N_18
+	.byte <SFD_N_19, >SFD_N_19
+	.byte <SFD_N_20, >SFD_N_20
+	.byte <SFD_N_20, >SFD_N_20
+	.byte <SFD_N_20, >SFD_N_20
+	.byte <SFD_N_21, >SFD_N_21
+	.byte <SFD_N_22, >SFD_N_22
+	.byte <SFD_N_23, >SFD_N_23
+	.byte <SFD_N_23, >SFD_N_23
+	.byte <SFD_N_24, >SFD_N_24
+	.byte <SFD_N_25, >SFD_N_25
+	.byte <SFD_N_26, >SFD_N_26
+	.byte <SFD_N_26, >SFD_N_26
+	.byte <SFD_N_27, >SFD_N_27
+
+	.byte %11111000, $AE
 
 SFD_N_INICJALIZACJA:
 	.byte %00010000, %01010111
@@ -14000,12 +14002,12 @@ SB_N_2:
 ; ======================= Koniec Gry ======================
 ; =========================================================
 
+; =================== Koniec Gry kanał P ==================
+
 KoniecGryKanalP:
 	.byte <KoniecGry_P_melodia, >KoniecGry_P_melodia
 	
 	.byte %11111000, $AE
-
-; =================== Koniec Gry kanał P ==================
 
 KoniecGry_P_melodia:
 	.byte %10101000, %11111111, %00000000
