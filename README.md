@@ -1,8 +1,16 @@
 # Temtris
 
-Projekt cc65 assembly dla NES
+Projekt gry Tetris w assemblerze cc65 dla konsoli Nintendo Entertainment System.
+
+Kod gry został napisany całkowicie od zera, grafika jest inspirowana Tetrisem Tengen. Gościnnie wystąpili Shiba Inu Cheems oraz Owczarek Niemiecki Argo.
 
 Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
+
+## Status projektu
+
+Status: W trakcie prac
+
+Szacowany postęp projektu: 83%
 
 ## Trailer
 
@@ -32,6 +40,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 - [ ] Podczas zmiany poziomu z niewyjaśnionych przyczyn czasem zostają wyzerowane zmienne od $50 do $FF
 - [X] Nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1))
 - [ ] Powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
+- [ ] W specyficznych przypadkach klocki da się przesunąc mimo kolizji
 
 ## Wersje stabilne
 
