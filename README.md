@@ -10,9 +10,9 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 ![Obejrzyj trailer w lepszej jakości w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
 
-## Przyszła wersja 1.4.1:
+## Przyszła wersja 1.4.1
 
-### Planowane zmiany
+### Planowane zmiany 1.4.1
 
 - [ ] poprawienie szczególnego błędu kolizji
 - [ ] naprawienie błędu animacji podczas rozbijania linii między którymi jest przerwa
@@ -24,7 +24,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 - [X] dodanie trybu dla dwóch graczy
 - [X] dodanie muzyki Together Forever
-- [ ] dodanie muzyki Szanty Bitwa
+- [X] dodanie muzyki Szanty Bitwa
 - [ ] dodanie muzyki Song For Denise
 
 ## Wersje stabilne
