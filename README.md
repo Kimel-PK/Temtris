@@ -27,6 +27,12 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 - [X] dodanie muzyki Szanty Bitwa
 - [ ] dodanie muzyki Song For Denise
 
+### Znane problemy 1.4
+
+- [ ] Podczas zmiany poziomu z niewyjaśnionych przyczyn czasem zostają wyzerowane zmienne od $50 do $FF
+- [X] Nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu
+- [ ] Powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry
+
 ## Wersje stabilne
 
 ### Wersja 1.3.1
