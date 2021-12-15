@@ -16,7 +16,7 @@ Szacowany postęp projektu: 83%
 
 https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-86cd-e9affed738ba.mp4
 
-![Obejrzyj trailer w lepszej jakości w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
+[Obejrzyj trailer w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
 
 ## Przyszła wersja 1.4.1
 
