@@ -41,6 +41,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 - [X] Nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1))
 - [ ] Powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
 - [ ] W specyficznych przypadkach klocki da się przesunąc mimo kolizji
+- [ ] Jeśli zbuduje się wysoką wieże i zrobi linię to powstaje dziura w ramce planszy
 
 ## Wersje stabilne
 
