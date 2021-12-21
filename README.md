@@ -10,7 +10,7 @@ Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
 Status: W trakcie prac
 
-Szacowany postęp projektu: 83%
+Szacowany postęp projektu: 86%
 
 ## Trailer
 
