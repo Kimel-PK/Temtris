@@ -23,8 +23,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 ### Planowane zmiany 1.4.1
 
 - [ ] poprawienie szczególnego błędu kolizji
-- [ ] naprawienie błędu animacji podczas rozbijania linii między którymi jest przerwa
-- [ ] poprawienie wykrywania naciśnięcia Start na ekranie końca gry
+- [ ] naprawienie błędu animacji i liczenia punktów podczas rozbijania linii między którymi jest przerwa
 
 ## W trakcie prac: Wersja 1.4
 
@@ -39,7 +38,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 - [ ] Podczas zmiany poziomu z niewyjaśnionych przyczyn czasem zostają wyzerowane zmienne od $50 do $FF
 - [X] Nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1))
-- [ ] Powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
+- [X] Powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
 - [ ] W specyficznych przypadkach klocki da się przesunąc mimo kolizji
 - [ ] Jeśli zbuduje się wysoką wieże i zrobi linię to powstaje dziura w ramce planszy
 
