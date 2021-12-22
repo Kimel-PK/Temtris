@@ -10,7 +10,7 @@ Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
 Status: W trakcie prac
 
-Szacowany postęp projektu: 86%
+Szacowany postęp projektu: 87%
 
 ## Trailer
 
@@ -25,21 +25,21 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 - [ ] poprawienie szczególnego błędu kolizji
 - [ ] naprawienie błędu animacji i liczenia punktów podczas rozbijania linii między którymi jest przerwa
 
-## W trakcie prac: Wersja 1.4
+## Faza testów: Wersja 1.4
 
-### Planowane zmiany
+### Zmiany
 
 - [X] dodanie trybu dla dwóch graczy
 - [X] dodanie muzyki Together Forever
 - [X] dodanie muzyki Szanty Bitwa
-- [ ] dodanie muzyki Song For Denise
+- [X] dodanie muzyki Song For Denise
+- [X] Naprawiono bug: nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1))
+- [X] Naprawiono bug: powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
 
 ### Znane problemy 1.4
 
 - [ ] Podczas zmiany poziomu z niewyjaśnionych przyczyn czasem zostają wyzerowane zmienne od $50 do $FF
-- [X] Nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1))
-- [X] Powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
-- [ ] W specyficznych przypadkach klocki da się przesunąc mimo kolizji
+- [ ] Jeśli klocek zostanie przesunięty w lewo lub w prawo, a następną klatką będzie jego obrót to kolizja zostanie zignorowana
 - [ ] Jeśli zbuduje się wysoką wieże i zrobi linię to powstaje dziura w ramce planszy
 
 ## Wersje stabilne
