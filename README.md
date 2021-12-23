@@ -18,31 +18,31 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 [Obejrzyj trailer w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
 
-## Przyszła wersja 1.5
+## W trakcie prac: Wersja 1.5
 
-### Planowane zmiany 1.5
+### Planowane zmiany
 
 - [ ] naprawienie błędu animacji i liczenia punktów podczas rozbijania linii między którymi jest przerwa
 - [ ] obrót przy ścianie powinien powodować odsunięcie od ściany i obrót klocka
 
-## Faza testów: Wersja 1.4
-
-### Zmiany
-
-- [X] dodanie trybu dla dwóch graczy
-- [X] dodanie muzyki Together Forever
-- [X] dodanie muzyki Szanty Bitwa
-- [X] dodanie muzyki Song For Denise
-- [X] Naprawiono bug: nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1))
-- [X] Naprawiono bug: powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
-- [X] Naprawiono bug: jeśli klocek zostanie przesunięty w lewo lub w prawo, a następną klatką będzie jego obrót to kolizja zostanie zignorowana
-
-### Znane problemy 1.4
-
-- [ ] Podczas zmiany poziomu z niewyjaśnionych przyczyn czasem zostają wyzerowane zmienne od $50 do $FF
-- [ ] Jeśli zbuduje się wysoką wieże i zrobi linię to powstaje dziura w ramce planszy (błąd samoczynnie znikął?)
-
 ## Wersje stabilne
+
+### Wersja 1.4
+
+Zmiany
+
+- dodanie trybu dla dwóch graczy
+- dodanie muzyki Together Forever
+- dodanie muzyki Szanty Bitwa
+- dodanie muzyki Song For Denise
+- Naprawiono bug: nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1))
+- Naprawiono bug: powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
+- Naprawiono bug: jeśli klocek zostanie przesunięty w lewo lub w prawo, a następną klatką będzie jego obrót to kolizja zostanie zignorowana
+
+Znane problemy
+
+- Podczas zmiany poziomu z niewyjaśnionych przyczyn czasem zostają wyzerowane zmienne od $50 do $FF
+- Jeśli zbuduje się wysoką wieże i zrobi linię to powstaje dziura w ramce planszy (błąd samoczynnie znikął?)
 
 ### Wersja 1.3.1
 

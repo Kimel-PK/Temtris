@@ -350,8 +350,6 @@ PETLAGra:
 :
 
 	JSR SprawdzKolizje
-	INC $FF
-	NOP
 
 	JMP PowrotDoPETLI
 
