@@ -42,7 +42,7 @@ szybkoscSpadania: .res 1
 poziom: .res 1
 
 ; zmienne klocka
-kolizja: .res 1; (---BALDP = kolizja przy obrocie w lewo, w prawo, z lewej, z dołu, z prawej)
+kolizja: .res 1 ; %X--BALDP kolizja - X - koniec gry, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
 numerKlocka: .res 1
 numerNastepnegoKlocka1: .res 1
 numerNastepnegoKlocka2: .res 1
@@ -330,6 +330,8 @@ PETLAMenu:
 
 PETLAGra:
 	
+	JSR Losuj
+	
 	INC zegar
 	INC zegarSpadania
 	LDA zegarSpadania
@@ -348,6 +350,8 @@ PETLAGra:
 :
 
 	JSR SprawdzKolizje
+	INC $FF
+	NOP
 
 	JMP PowrotDoPETLI
 
@@ -859,6 +863,12 @@ NMISpadajacyKlocek:
 	; jeśli pod spodem coś jest to umieść
 	; w przeciwnym wypadku przesuń
 	JSR PrzesunKlocekWDol
+	
+	; oszukać przeznaczenie i bugi
+	; nie da się już wcisnąć klocka w podłogę bo zaraz po opadnięciu nie można się ruszyć
+	INC zegarKontroleraobrot
+	INC zegarKontroleraobrot
+	
 	JSR SkopiujMapeKolizji
 
 	JMP PowrotDoNMI
@@ -2024,9 +2034,12 @@ PrzesunKlocekWLewo:
 	SEC
 	SBC #$08
 	STA pozycjaKlockaX
-
-	JSR Losuj
-
+	
+	; oszukać przeznaczenie i bugi
+	; nie da się już wcisnąć klocka w ścianę ponieważ nie można obróbić go w następnej klatce zaraz po ruchu
+	INC zegarKontroleraobrot
+	INC zegarKontroleraobrot
+	
 	RTS
 
 PrzesunKlocekWDol:
@@ -2050,8 +2063,6 @@ PrzesunKlocekWDol:
 
 	INC pozycjaLiniiKlocka
 
-	JSR Losuj
-
 	RTS
 
 PrzesunKlocekWPrawo:
@@ -2069,8 +2080,11 @@ PrzesunKlocekWPrawo:
 	LDA pozycjaKlockaX
 	ADC #$08
 	STA pozycjaKlockaX
-
-	JSR Losuj
+	
+	; oszukać przeznaczenie i bugi
+	; nie da się już wcisnąć klocka w ścianę ponieważ nie można obróbić go w następnej klatce zaraz po ruchu
+	INC zegarKontroleraobrot
+	INC zegarKontroleraobrot
 
 	RTS
 
@@ -2580,7 +2594,7 @@ PostawKlocek:
 SprawdzKolizje:
 
 	; zeruj wykrywanie kolizji
-	LDA #%00000000 ; koniec gry (1), niewykorzystane (2), obrót w lewo (1), obrót w prawo (1), lewa (1), dół (1), prawa (1)
+	LDA #%00000000 ; %X--BALDP kolizja - X - koniec gry, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
 	STA kolizja
 
 	; sprawdzanie kolizji z lewej strony
