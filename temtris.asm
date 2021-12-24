@@ -1069,7 +1069,125 @@ NMISpadajacyKlocek:
 
 :
 
+	; czy naciśnięto Start
+	LDA kontroler
+	AND #%00001000
+	CMP #%00001000
+	BNE :+
+
+	LDA kontrolerpoprzedni
+	AND #%00001000
+	CMP #%00000000
+	BNE :+
+	
+	; pauza gry
+	
+	LDA #$00
+	STA wlaczMuzyke
+	STA $4002
+	STA $4003
+	STA $400A
+	STA $400B
+	STA $400E
+	STA $400F
+	
+	BIT $2007
+	LDA #$20
+	STA $2006
+	LDA #$6C
+	STA $2006
+	
+	LDA #$9B ; ⏸
+	STA $2007
+	LDA #$F9 ; P
+	STA $2007
+	LDA #$EA ; A
+	STA $2007
+	LDA #$FD ; U
+	STA $2007
+	LDA #$FF ; Z
+	STA $2007
+	LDA #$EA ; A
+	STA $2007
+	
+	LDA #<PETLAPalenieGumy
+	STA wskaznikPetli
+	LDA #>PETLAPalenieGumy
+	STA wskaznikPetli+1
+	
+	LDA #<NMIPauza
+	STA wskaznikNMI
+	LDA #>NMIPauza
+	STA wskaznikNMI+1
+	
+:
+	
+	; czy naciśnieto Select
+	LDA kontroler
+	AND #%00000100
+	CMP #%00000100
+	BNE :+
+
+	LDA kontrolerpoprzedni
+	AND #%00000100
+	CMP #%00000000
+	BNE :+
+	
+	; następna melodia
+	
+	JSR MuzykaGrajMelodie
+	
+:
+
 	JSR SkopiujMapeKolizji
+	JMP PowrotDoNMI
+
+NMIPauza:
+	
+	JSR CzytajKontroler
+	
+	; czy naciśnięto Start
+	LDA kontroler
+	AND #%00001000
+	CMP #%00001000
+	BNE :+
+
+	LDA kontrolerpoprzedni
+	AND #%00001000
+	CMP #%00000000
+	BNE :+
+	
+	; wyłącz pauze
+	
+	BIT $2007
+	LDA #$20
+	STA $2006
+	LDA #$6C
+	STA $2006
+	
+	LDA #$00
+	STA $2007 ; ⏸
+	STA $2007 ; P
+	STA $2007 ; A
+	STA $2007 ; U
+	STA $2007 ; Z
+	STA $2007 ; A
+	
+	LDA #%00000111
+	STA wlaczMuzyke
+	
+	LDA #<PETLAGra
+	STA wskaznikPetli
+	LDA #>PETLAGra
+	STA wskaznikPetli+1
+	
+	LDA #<NMISpadajacyKlocek
+	STA wskaznikNMI
+	LDA #>NMISpadajacyKlocek
+	STA wskaznikNMI+1
+	
+:
+	
 	JMP PowrotDoNMI
 
 NMIStawianieKlocka:
