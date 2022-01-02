@@ -26,6 +26,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 - [X] dodanie możliwości pominięcia melodii
 - [ ] naprawienie błędu animacji i liczenia punktów podczas rozbijania linii między którymi jest przerwa
 - [ ] obrót przy ścianie powinien powodować odsunięcie od ściany i obrót klocka
+- [ ] Wyświetlenie czasu gry na ekranie końca gry
 
 ## Wersje stabilne
 
