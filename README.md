@@ -28,6 +28,10 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 - [ ] obrót przy ścianie powinien powodować odsunięcie od ściany i obrót klocka
 - [ ] Wyświetlenie czasu gry na ekranie końca gry
 
+Znane problemy
+
+- Nadal da się przesunąć klocek o dwa w dół jeśli poruszymy nim jedną klatkę po tym jak samoczynnie opadł
+
 ## Wersje stabilne
 
 ### Wersja 1.4
