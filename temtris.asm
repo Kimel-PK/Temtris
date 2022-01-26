@@ -2723,6 +2723,9 @@ PostawKlocek:
 	STA $020E
 	STA $020F
 	
+	LDA #$00
+	STA zegarSpadania
+	
 	RTS
 
 ; ================== sprawdzanie kolizji ==================
