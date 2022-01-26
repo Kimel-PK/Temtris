@@ -127,36 +127,36 @@ Sponsor:
 RESET:
 	SEI ; wylaczyc przerwania
 	CLD ; wylaczyc tryb dziesietny
-
+	
 	; inicjalizuj APU
-
+	
 	JSR ZerujAPU
- 
+	
 	; pomijamy rejestr $4014 (OAMDMA)
 	LDA #$0F
 	STA $4015
 	LDA #$40
 	STA $4017
-
+	
 	; inicjalizacja stosu
 	LDX #$FF
 	TXS
-
+	
 	INX
-
+	
 	; wyzerowac PPU
 	STX $2000
 	STX $2001
-
+	
 	STX $4010
-
+	
 :
 	BIT $2002
 	BPL :-
-
+	
 	TXA
-
-; czyść pamieć
+	
+	; czyść pamieć
 :
 	STA $0000, X
 	STA $0100, X
@@ -170,32 +170,32 @@ RESET:
 	LDA #$00
 	INX
 	BNE :-
-
+	
 	; inicjalizacja ziarna
 	LDA #$21
 	STA losowa
 	LDA #$37
 	STA losowa+1
-
-; czekaj na VBLANK
+	
+	; czekaj na VBLANK
 :
 	BIT $2002
 	BPL :-
-
+	
 	LDA #$02
 	STA $4014
 	NOP
-
+	
 	; załaduj chr bank 0
 	LDA #$00
 	STA $8000
-
+	
 	; załaduj palety ($3F00)
 	LDA #$3F
 	STA $2006
 	LDA #$00
 	STA $2006
-
+	
 	LDX #$00
 	
 :
@@ -204,26 +204,26 @@ RESET:
 	INX
 	CPX #$20
 	BNE :-
-
+	
 	; narysuj tlo menu na ekranie
-
+	
 	; zapisz wskaznik do zmiennej int
 	LDA #<GrafikaTloMenu
 	STA int
 	LDA #>GrafikaTloMenu
 	STA int+1
-
+	
 	; wybierz nametable 0
 	BIT $2002
 	LDA #$20
 	STA $2006
 	LDA #$00
 	STA $2006
-
+	
 	; zeruj rejestry i zmienne
 	LDX #$00
 	LDY #$00
-
+	
 	; wczytaj GrafikaTloMenu
 :
 	LDA (int), Y
@@ -239,15 +239,15 @@ RESET:
 	INX
 	INC int+1
 	JMP :--
-
+	
 :
-
+	
 	; wyzeruj scrollowanie
 	LDA #$00
 	STA $2005
 	STA $2005
-
-	; zaladuj sprite strzałki wyboru graczy
+	
+	; załaduj sprite strzałki wyboru graczy
 	LDA #$A7
 	STA $0200
 	LDA #$00
@@ -256,20 +256,20 @@ RESET:
 	STA $0202
 	LDA #$26
 	STA $0203
-
-	; wlacz przerwania
+	
+	; włacz przerwania
 	CLI
-
-	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
+	
+	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tła
 	STA $2000
-
-	; wlacz sprite i tlo
+	
+	; włacz sprite i tło
 	LDA #%00011110
 	STA $2001
-
+	
 	LDA #$3C
 	STA szybkoscSpadania
-
+	
 	LDA #$FF
 	STA klatkaAnimacji
 	
@@ -280,55 +280,55 @@ RESET:
 	STA wskaznikNMI
 	LDA #>NMIMenuGry
 	STA wskaznikNMI+1
-
+	
 	LDA #<PETLAMenu
 	STA wskaznikPetli
 	LDA #>PETLAMenu
 	STA wskaznikPetli+1
-
+	
 	LDA #$01
 	STA odtwarzajMuzykeLosowo
 	STA grajMuzykeMenu
-
+	
 	JSR MuzykaGrajIntro
-
+	
 	LDA #%00000111
 	STA wlaczMuzyke
-
+	
 ; =========================================================
 ; ================= główna pętla programu =================
 ; =========================================================
-
+	
 PETLA:
-
+	
 	; pętla wykonuje sie tylko raz na klatkę
-
+	
 	; podprogramy wykonujące się za każdym razem
-
+	
 	LDA coKlatke
 	CMP #$00
 	BEQ :+
 	JMP PETLA
 :
-
+	
 	JMP (wskaznikPetli)
 
 PowrotDoPETLI:
-
+	
 	; odtwarzaj muzyke
 	JSR OdtwarzajMuzyke
-
+	
 	LDA #$01
 	STA coKlatke
-
+	
 	JMP PETLA
-
+	
 ; ======================= stany gry =======================
 
 PETLAMenu:
-
+	
 	JSR Losuj
-
+	
 	JMP PowrotDoPETLI
 
 PETLAGra:
@@ -337,17 +337,17 @@ PETLAGra:
 	
 	INC zegar
 	INC zegarSpadania
-
+	
 	JSR ObliczPozycjeWPPU
-
+	
 	LDA wstrzymajOAMDMA
 	CMP #$01
 	BEQ :+
 	JSR RysujKlocek
 :
-
+	
 	JSR SprawdzKolizje
-
+	
 	INC zegarCzasGry
 	LDA zegarCzasGry
 	CMP #$3C
@@ -357,29 +357,29 @@ PETLAGra:
 	LDA #$00
 	STA zegarCzasGry
 :
-
+	
 	JMP PowrotDoPETLI
 
 PETLAKoniecGry:
-
+	
 	DEC temp
 	LDA temp
 	CMP #$00
 	BEQ :+
-
+	
 	JMP PowrotDoPETLI
 :
-
+	
 	LDA #<NMILadowanieKoniecGry
 	STA wskaznikNMI
 	LDA #>NMILadowanieKoniecGry
 	STA wskaznikNMI+1
-
+	
 	LDA #<PETLAPalenieGumy
 	STA wskaznikPetli
 	LDA #>PETLAPalenieGumy
 	STA wskaznikPetli+1
-
+	
 	JMP PowrotDoPETLI
 
 PETLAPalenieGumy:
@@ -391,71 +391,71 @@ PETLAPalenieGumy:
 ; =========================================================
 
 NMI:
-
+	
 	; skocz do stanu NMI
-
+	
 	JMP (wskaznikNMI)
 
 PowrotDoNMI:
-
+	
 	; zerowanie scrollowania
-
+	
 	LDA #$00
 	STA $2005
 	STA $2005
-
+	
 	LDA #%10010000
 	STA $2000
-
+	
 	; ograniczenie pętli do wykonywania się co klatkę
-
+	
 	LDA #$00
 	STA coKlatke
-
+	
 	; kopiuj pamięć z $0200 przez OAMDMA
 	LDA #$02
 	STA $4014
-
+	
 	RTI
 
 ; ======================= stany NMI =======================
 
 NMIMenuGry:
-
+	
 	JSR CzytajKontroler
-
+	
 	LDA kontroler
 	AND #%00001000
 	CMP #%00001000
 	BNE :+
-
+	
 	LDA kontrolerpoprzedni
 	AND #%00001000
 	CMP #%00000000
 	BNE :+
-
+	
 	; naciśnij start żeby rozpocząć
 	LDA #<NMILadowanieGry
 	STA wskaznikNMI
 	LDA #>NMILadowanieGry
 	STA wskaznikNMI+1
 	JMP PowrotDoNMI
-
+	
 :
 	; naciśnij select żeby zmienić tryb gry
 	LDA kontroler
 	AND #%00000100
 	CMP #%00000100
 	BNE :++
-
+	
 	LDA kontrolerpoprzedni
 	AND #%00000100
 	CMP #%00000000
 	BNE :++
-
+	
 	; naciśnięto select
 	; wybierz tryb dla 1 gracza lub dla 2 graczy
-
+	
 	LDA trybGry
 	CMP #$01
 	BEQ :+
@@ -469,25 +469,25 @@ NMIMenuGry:
 	
 	JMP :++
 :
-
+	
 	LDA $0200
 	SEC
 	SBC #$08
 	STA $0200
 	
 	DEC trybGry
-
+	
 :
-
+	
 	JMP PowrotDoNMI
 
 NMILadowanieGry:
-
+	
 	; wyzerowac PPU
 	LDA #$40
 	STA $2000
 	STA $2001
-
+	
 	; wyzeruj sprite'y
 	LDX #$00
 :
@@ -496,18 +496,18 @@ NMILadowanieGry:
 	LDA #$00
 	INX
 	BNE :-
-
+	
 	; wybierz paletę tła 1
 	LDA #$3F
 	STA $2006
 	LDA #$05
 	STA $2006
-
+	
 	; załaduj odpowiednią paletę tła 1 w zależności od trybu gry
 	LDA trybGry
 	CMP #$00
 	BNE :+
-
+	
 	; 1 gracz, szara paleta poziomu 0
 	LDA #$00
 	STA $2007
@@ -533,7 +533,7 @@ NMILadowanieGry:
 	STA $2006
 	LDA #$11
 	STA $2006
-
+	
 	LDA #$0F
 	STA $2007
 	LDA #$1A
@@ -553,34 +553,34 @@ NMILadowanieGry:
 	JSR Losuj
 	JMP :-
 :
-
+	
 	STA numerNastepnegoKlocka2
 	; stwórz następny klocek drugiemu graczowi bo na początku nic nie widać
 	JSR StworzNastepnyKlocek
-
+	
 	; załaduj chr bank 1
 	LDA #$01
 	STA $8000
-
+	
 	; narysuj tlo gry na ekranie
-
+	
 	; zapisz wskaznik do zmiennej int
 	LDA #<GrafikaTloGra
 	STA int
 	LDA #>GrafikaTloGra
 	STA int+1
-
+	
 	; wybierz nametable 0
 	BIT $2002
 	LDA #$20
 	STA $2006
 	LDA #$00
 	STA $2006
-
+	
 	; zeruj rejestry i zmienne
 	LDX #$00
 	LDY #$00
-
+	
 	; wczytaj GrafikaTloGra
 :
 	LDA (int), Y
@@ -596,9 +596,9 @@ NMILadowanieGry:
 	INX
 	INC int+1
 	JMP :--
-
+	
 : ; koniec wczytywania grafiki tła gry
-
+	
 	; jeżeli tryb dla jednego gracza wyczyść interfejs drugiego gracza
 	LDA trybGry
 	CMP #$01
@@ -691,39 +691,39 @@ NMILadowanieGry:
 	BNE :-
 	
 : ; koniec czyszczenia interfejsu drugiego gracza
-
+	
 	; wyzeruj scrollowanie
 	LDA #$00
 	STA $2005
 	STA $2005
-
+	
 	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
 	STA $2000
-
+	
 	; wlacz sprite i tlo
 	LDA #%00011110
 	STA $2001
-
+	
 	LDA #$00
 	STA grajMuzykeMenu
-
+	
 	JSR MuzykaGrajMelodie
 	
 	LDA #<NMIBrakKlocka
 	STA wskaznikNMI
 	LDA #>NMIBrakKlocka
 	STA wskaznikNMI+1
-
-; czekaj na VBLANK
+	
+	; czekaj na VBLANK
 :
 	BIT $2002
 	BPL :-
-
+	
 	LDA #<PETLAGra
 	STA wskaznikPetli
 	LDA #>PETLAGra
 	STA wskaznikPetli+1
-
+	
 	JMP PowrotDoNMI
 
 NMIBrakKlocka:
@@ -750,7 +750,7 @@ NMIBrakKlocka:
 	LDA trybGry
 	CMP #$00
 	BEQ :+
-
+	
 	INC numerGracza
 	LDA numerGracza
 	AND #%00000001
@@ -768,7 +768,7 @@ NMIBrakKlocka:
 	LDA numerNastepnegoKlocka2
 :
 	STA numerKlocka
-
+	
 	; wylosuj następny klocek
 :
 	LDA losowa
@@ -786,81 +786,81 @@ NMIBrakKlocka:
 :
 	STA numerNastepnegoKlocka2
 :
-
+	
 	JSR StworzNastepnyKlocek
 
 	LDA #<NMIBrakKlocka2
 	STA wskaznikNMI
 	LDA #>NMIBrakKlocka2
 	STA wskaznikNMI+1
-
+	
 	JMP PowrotDoNMI
-
+	
 NMIBrakKlocka2:
-
+	
 	JSR ObliczWskaznikDoDanychKlocka
 	JSR StworzKlocek
 	JSR RysujKlocek
-
+	
 	LDA #<NMIBrakKlocka3
 	STA wskaznikNMI
 	LDA #>NMIBrakKlocka3
 	STA wskaznikNMI+1
-
+	
 	JMP PowrotDoNMI
 
 NMIBrakKlocka3:
-
+	
 	JSR ObliczPozycjeWPPU
 	JSR SkopiujMapeKolizji
 	JSR SprawdzKolizjeKoniecGry
-
+	
 	LDA kolizja
 	AND #%10000000
 	CMP #%10000000
 	BNE :+
-
+	
 	; koniec gry
-
+	
 	LDA #$4F
 	STA temp
-
+	
 	JSR MuzykaWylaczWszystkieKanaly
-
+	
 	LDA #<PETLAKoniecGry
 	STA wskaznikPetli
 	LDA #>PETLAKoniecGry
 	STA wskaznikPetli+1
-
+	
 	LDA #<NMIPalenieGumy
 	STA wskaznikNMI
 	LDA #>NMIPalenieGumy
 	STA wskaznikNMI+1
-
+	
 	JMP PowrotDoNMI
-
+	
 :
-
+	
 	LDA #<NMISpadajacyKlocek
 	STA wskaznikNMI
 	LDA #>NMISpadajacyKlocek
 	STA wskaznikNMI+1
-
+	
 	LDA #<PETLAGra
 	STA wskaznikPetli
 	LDA #>PETLAGra
 	STA wskaznikPetli+1
-
+	
 	JMP PowrotDoNMI
 
 NMISpadajacyKlocek:
-
+	
 	; przesuń klocek w dół lub umieść
-
+	
 	LDA zegarSpadania
 	CMP szybkoscSpadania
 	BNE :++
-
+	
 	LDA kolizja
 	AND #%00000010
 	CMP #%00000010
@@ -878,20 +878,20 @@ NMISpadajacyKlocek:
 	INC zegarKontrolera
 	
 	JSR SkopiujMapeKolizji
-
+	
 	JMP PowrotDoNMI
-
+	
 :
 	
 	LDA #<NMIStawianieKlocka
 	STA wskaznikNMI
 	LDA #>NMIStawianieKlocka
 	STA wskaznikNMI+1
-
+	
 	JMP PowrotDoNMI
-
+	
 :
-
+	
 	; dekrementuj zegary kontrolera
 	LDA zegarKontrolera
 	CMP #$00
@@ -903,147 +903,147 @@ NMISpadajacyKlocek:
 	BEQ :+
 	DEC zegarKontroleraobrot
 :
-
+	
 	JSR CzytajKontroler
-
+	
 	; czy zegar kontrolera pozwala na obrót
 	LDA zegarKontroleraobrot
 	CMP #$00
 	BNE :++
-
+	
 	; czy naciśnięto B
 	LDA kontroler
 	AND #%00000010
 	CMP #%00000010
 	BNE :+
-
+	
 	LDA #$0A
 	STA zegarKontroleraobrot
-
+	
 	JSR ObrocKlocekWLewo
 	JSR SkopiujMapeKolizji
 	JMP PowrotDoNMI
-
+	
 :
-
+	
 	; czy naciśnięto A
 	LDA kontroler
 	AND #%00000001
 	CMP #%00000001
 	BNE :+
-
+	
 	LDA #$0A
 	STA zegarKontroleraobrot
-
+	
 	JSR ObrocKlocekWPrawo
 	JSR SkopiujMapeKolizji
 	JMP PowrotDoNMI
-
+	
 :
-
+	
 	; czy puszczono A lub B
 	LDA kontroler
 	AND #%00000011
 	CMP #%00000000
 	BNE :+
-
+	
 	LDA #$00
 	STA zegarKontroleraobrot
-
+	
 :
-
+	
 	LDA zegarKontrolera
 	CMP #$00
 	BNE :++++++
-
+	
 	; czy naciśnięto R
 	LDA kontroler
 	AND #%10000000
 	CMP #%10000000
 	BNE :+++
-
+	
 	LDA kontrolerpoprzedni
 	AND #%10000000
 	CMP #%00000000
 	BNE :+
-
+	
 	; wciśnięto R
 	LDA #$0A
 	STA zegarKontrolera
 	JMP :++
-
+	
 :
 	; przytrzymano R
 	LDA #$04
 	STA zegarKontrolera
-
+	
 :
-
+	
 	JSR PrzesunKlocekWPrawo
 	JSR SkopiujMapeKolizji
 	JMP PowrotDoNMI
-
+	
 :
-
+	
 	; czy naciśnięto L
 	LDA kontroler
 	AND #%01000000
 	CMP #%01000000
 	BNE :++++
-
+	
 	LDA kontrolerpoprzedni
 	AND #%01000000
 	CMP #%00000000
 	BNE :+
-
+	
 	; wciśnięto L
 	LDA #$0A
 	STA zegarKontrolera
 	JMP :++
 :
-
+	
 	; przytrzymano L
 	LDA #$04
 	STA zegarKontrolera
-
+	
 :
-
+	
 	JSR PrzesunKlocekWLewo
 	JSR SkopiujMapeKolizji
 	JMP PowrotDoNMI
-
+	
 :
 	; duży skok podzielony na dwa małe
 	JMP :+++++
 :
-
+	
 	; czy naciśnięto D
 	LDA kontroler
 	AND #%00100000
 	CMP #%00100000
 	BNE :++++
-
+	
 	LDA kontrolerpoprzedni
 	AND #%00100000
 	CMP #%00000000
 	BNE :+
-
+	
 	; wciśnięto D
 	LDA #$0A
 	STA zegarKontrolera
 	JMP :++
 :
-
+	
 	; przytrzymano D
 	LDA zegarKontroleraszybkosc
 	STA zegarKontrolera
-
+	
 	CMP #$02
 	BEQ :+
 	DEC zegarKontroleraszybkosc
-
+	
 :
-
+	
 	LDA kolizja
 	AND #%00000010
 	CMP #%00000010
@@ -1052,39 +1052,39 @@ NMISpadajacyKlocek:
 	; w przeciwnym wypadku przesuń
 	JSR PrzesunKlocekWDol
 	JSR SkopiujMapeKolizji
-
+	
 	JMP PowrotDoNMI
-
+	
 :
 	
 	LDA #<NMIStawianieKlocka
 	STA wskaznikNMI
 	LDA #>NMIStawianieKlocka
 	STA wskaznikNMI+1
-
+	
 	JMP PowrotDoNMI
-
+	
 :
-
+	
 	; czy puszczono L, R lub D
 	LDA kontroler
 	AND #%11100000
 	CMP #%00000000
 	BNE :+
-
+	
 	LDA #$00
 	STA zegarKontrolera
 	LDA #$05
 	STA zegarKontroleraszybkosc
-
+	
 :
-
+	
 	; czy naciśnięto Start
 	LDA kontroler
 	AND #%00001000
 	CMP #%00001000
 	BNE :+
-
+	
 	LDA kontrolerpoprzedni
 	AND #%00001000
 	CMP #%00000000
@@ -1137,7 +1137,7 @@ NMISpadajacyKlocek:
 	AND #%00000100
 	CMP #%00000100
 	BNE :+
-
+	
 	LDA kontrolerpoprzedni
 	AND #%00000100
 	CMP #%00000000
@@ -1148,7 +1148,7 @@ NMISpadajacyKlocek:
 	JSR MuzykaGrajMelodie
 	
 :
-
+	
 	JSR SkopiujMapeKolizji
 	JMP PowrotDoNMI
 
@@ -1161,7 +1161,7 @@ NMIPauza:
 	AND #%00001000
 	CMP #%00001000
 	BNE :+
-
+	
 	LDA kontrolerpoprzedni
 	AND #%00001000
 	CMP #%00000000
@@ -5855,14 +5855,6 @@ DaneKlockowPalety:
 	.byte $0F, $08, $18, $27 ; T
 
 PaletyPoziomow:
-	.byte $0F, $00, $10, $20 ; 0
-	.byte $0F, $06, $16, $26 ; 1
-	.byte $0F, $08, $18, $27 ; 2
-	.byte $0F, $01, $12, $21 ; 3
-	.byte $0F, $17, $27, $37 ; 4
-	.byte $0F, $14, $24, $34 ; 5
-	.byte $0F, $0C, $1C, $2C ; 6
-	.byte $0F, $0A, $1A, $2A ; 7
 	.byte $0F, $10, $20, $0F ; 8 ; może by ustawić jakieś lepsze?
 	.byte $0F, $16, $26, $0F ; 9
 	.byte $0F, $18, $27, $0F ; 10
@@ -5871,6 +5863,14 @@ PaletyPoziomow:
 	.byte $0F, $24, $34, $0F ; 13
 	.byte $0F, $1C, $2C, $0F ; 14
 	.byte $0F, $1A, $2A, $0F ; 15
+	.byte $0F, $00, $10, $20 ; 0
+	.byte $0F, $06, $16, $26 ; 1
+	.byte $0F, $08, $18, $27 ; 2
+	.byte $0F, $01, $12, $21 ; 3
+	.byte $0F, $17, $27, $37 ; 4
+	.byte $0F, $14, $24, $34 ; 5
+	.byte $0F, $0C, $1C, $2C ; 6
+	.byte $0F, $0A, $1A, $2A ; 7
 
 PozycjaLiniiWPPUL:
 	.byte $CA
