@@ -95,12 +95,15 @@ linieDoge2BCD: .res 4
 linieBuffDoge2BCD: .res 4
 linieTemtris2BCD: .res 4
 
+zegarCzasGry: .res 1
+czasGryBCD: .res 5
+
 ; animacja rozbijanej linii
 klatkaAnimacji: .res 1
 blokAnimacji: .res 1
 
 ; pozostała pamięć
-pozostaloBajtow: .res 82
+pozostaloBajtow: .res 76
 
 .segment "STARTUP"
 
@@ -344,6 +347,16 @@ PETLAGra:
 :
 
 	JSR SprawdzKolizje
+
+	INC zegarCzasGry
+	LDA zegarCzasGry
+	CMP #$3C
+	BNE :+
+	
+	JSR PoliczSekunde
+	LDA #$00
+	STA zegarCzasGry
+:
 
 	JMP PowrotDoPETLI
 
@@ -4149,6 +4162,39 @@ WyswietlStatystki:
 	JMP :-
 :
 
+	; czas gry
+	
+	BIT $2002
+	LDA #$23
+	STA $2006
+	LDA #$4B
+	STA $2006
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC czasGryBCD, X
+	STA $2007
+
+	INX
+	CPX #$03
+	BNE :+
+	
+	BIT $2002
+	LDA #$23
+	STA $2006
+	LDA #$4F
+	STA $2006
+	
+	JMP :-
+:
+	CPX #$05
+	BEQ :+
+	JMP :--
+:
+
 	RTS
 
 WyswietlStatystki2Graczy:
@@ -4545,7 +4591,40 @@ WyswietlStatystki2Graczy:
 	BEQ :+
 	JMP :-
 :
+
+	; czas gry
 	
+	BIT $2002
+	LDA #$23
+	STA $2006
+	LDA #$4B
+	STA $2006
+
+	LDX #$00
+
+:
+	CLC
+	LDA #$E0
+	ADC czasGryBCD, X
+	STA $2007
+
+	INX
+	CPX #$03
+	BNE :+
+	
+	BIT $2002
+	LDA #$23
+	STA $2006
+	LDA #$4F
+	STA $2006
+	
+	JMP :-
+:
+	CPX #$05
+	BEQ :+
+	JMP :--
+:
+
 	RTS
 
 OdtworzDzwiekRozbijanejLinii:
@@ -4685,6 +4764,41 @@ CzyNastepnyPoziom:
 	STA szybkoscSpadania
 :
 
+	RTS
+
+; =========================================================
+; ======================= czas gry ========================
+; =========================================================
+
+PoliczSekunde:
+	
+	INC czasGryBCD+4
+	
+	LDX #$04
+
+:
+	CPX #$03
+	BNE :+
+	
+	LDA czasGryBCD, X
+	CMP #$06
+	BEQ :++
+:
+	LDA czasGryBCD, X
+	CMP #$0A
+	BNE :++
+:
+	LDA #$00
+	STA czasGryBCD, X
+	DEX
+	INC czasGryBCD, X
+
+	CPX #$00
+	BEQ :+
+
+	JMP :---
+:
+	
 	RTS
 
 ; =========================================================
