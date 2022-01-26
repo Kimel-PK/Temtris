@@ -509,11 +509,21 @@ NMILadowanieGry:
 	BNE :+
 	
 	; 1 gracz, szara paleta poziomu 0
-	LDA #$00
+	LDY #$00
+	
+	LDA #<PaletyPoziomow
+	STA temp
+	LDA #>PaletyPoziomow
+	STA temp+1
+	
+	INY
+	LDA (temp), Y
 	STA $2007
-	LDA #$10
+	INY
+	LDA (temp), Y
 	STA $2007
-	LDA #$20
+	INY
+	LDA (temp), Y
 	STA $2007
 	
 	JMP :++
@@ -5855,14 +5865,6 @@ DaneKlockowPalety:
 	.byte $0F, $08, $18, $27 ; T
 
 PaletyPoziomow:
-	.byte $0F, $10, $20, $0F ; 8 ; może by ustawić jakieś lepsze?
-	.byte $0F, $16, $26, $0F ; 9
-	.byte $0F, $18, $27, $0F ; 10
-	.byte $0F, $12, $21, $0F ; 11
-	.byte $0F, $27, $37, $0F ; 12
-	.byte $0F, $24, $34, $0F ; 13
-	.byte $0F, $1C, $2C, $0F ; 14
-	.byte $0F, $1A, $2A, $0F ; 15
 	.byte $0F, $00, $10, $20 ; 0
 	.byte $0F, $06, $16, $26 ; 1
 	.byte $0F, $08, $18, $27 ; 2
@@ -5871,6 +5873,14 @@ PaletyPoziomow:
 	.byte $0F, $14, $24, $34 ; 5
 	.byte $0F, $0C, $1C, $2C ; 6
 	.byte $0F, $0A, $1A, $2A ; 7
+	.byte $0F, $13, $23, $33 ; 8
+	.byte $0F, $16, $26, $36 ; 9
+	.byte $0F, $18, $28, $38 ; 10
+	.byte $0F, $19, $29, $39 ; 11
+	.byte $0F, $1C, $2C, $3C ; 12
+	.byte $0F, $15, $25, $35 ; 13
+	.byte $0F, $1C, $2C, $3C ; 14
+	.byte $0F, $1D, $2D, $3D ; 15
 
 PozycjaLiniiWPPUL:
 	.byte $CA
