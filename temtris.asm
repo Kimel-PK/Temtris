@@ -338,6 +338,13 @@ PETLAGra:
 	INC zegar
 	INC zegarSpadania
 	
+	LDA zegarSpadania
+	CMP szybkoscSpadania
+	BNE :+
+	LDA #$00
+	STA zegarSpadania
+:
+
 	JSR ObliczPozycjeWPPU
 	
 	LDA wstrzymajOAMDMA
@@ -868,7 +875,7 @@ NMISpadajacyKlocek:
 	; przesuń klocek w dół lub umieść
 	
 	LDA zegarSpadania
-	CMP szybkoscSpadania
+	CMP #$00
 	BNE :++
 	
 	LDA kolizja
@@ -883,9 +890,6 @@ NMISpadajacyKlocek:
 	; nie da się już wcisnąć klocka w podłogę bo zaraz po opadnięciu nie można się ruszyć
 	INC zegarKontroleraobrot
 	INC zegarKontroleraobrot
-	
-	INC zegarKontrolera
-	INC zegarKontrolera
 	
 	JSR SkopiujMapeKolizji
 	
