@@ -1422,21 +1422,10 @@ NMIAnimacjaRozbijanychLinii:
 
 	; klatka animacji ++
 
-	LDY $0201
-	INY
-	STY $0201
-
-	LDY $0205
-	INY
-	STY $0205
-
-	LDY $0209
-	INY
-	STY $0209
-
-	LDY $020D
-	INY
-	STY $020D
+	INC $0201
+	INC $0205
+	INC $0209
+	INC $020D
 
 	JMP :++++++++++++
 
