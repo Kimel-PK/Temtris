@@ -886,6 +886,9 @@ NMISpadajacyKlocek:
 	; w przeciwnym wypadku przesuń
 	JSR PrzesunKlocekWDol
 	
+	INC zegarKontrolera
+	INC zegarKontrolera
+	
 	; oszukać przeznaczenie i bugi
 	; nie da się już wcisnąć klocka w podłogę bo zaraz po opadnięciu nie można się ruszyć
 	INC zegarKontroleraobrot
