@@ -62,7 +62,7 @@ szybkoscSpadania: .res 1
 poziom: .res 1
 
 ; zmienne klocka
-kolizja: .res 1 ; %XYZBALDP kolizja - X - koniec gry, Y - kolizja po obrocie w prawo z przesunieciem, Z - kolizja po obrocie w lewo z przesunieciem, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
+kolizja: .res 1 ; %XYZBALDP kolizja - X - koniec gry, Y - kolizja po obrocie w lewo z przesunieciem, Z - kolizja po obrocie w prawo z przesunieciem, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
 numerKlocka: .res 1
 numerNastepnegoKlocka1: .res 1
 numerNastepnegoKlocka2: .res 1
@@ -449,8 +449,6 @@ PowrotDoNMI:
 ; ======================= stany NMI =======================
 
 NMIMenuGry:
-	
-	JSR CzytajKontroler
 	
 	LDA kontroler
 	AND #%00001000
@@ -1189,8 +1187,6 @@ NMISpadajacyKlocek:
 	JMP PowrotDoNMI
 
 NMIPauza:
-	
-	JSR CzytajKontroler
 	
 	; czy naciśnięto Start
 	LDA kontroler
@@ -1935,8 +1931,6 @@ NMIKoniecGry:
 
 NMICzekajNaReset:
 
-	JSR CzytajKontroler
-
 	LDA kontroler
 	AND #%00001000
 	CMP #%00001000
@@ -2247,7 +2241,17 @@ ObrocKlocekWPrawo:
 	LDA kolizja
 	AND #%00001000
 	CMP #%00001000
+	BNE :++
+	
+	LDA kolizja
+	AND #%00100001
+	CMP #%00000001
 	BNE :+
+	
+	JSR PrzesunKlocekWLewo
+	INC obrotKlocka
+	
+:
 	RTS
 :
 
@@ -2263,7 +2267,17 @@ ObrocKlocekWLewo:
 	LDA kolizja
 	AND #%00010000
 	CMP #%00010000
+	BNE :++
+	
+	LDA kolizja
+	AND #%01000001
+	CMP #%00000001
 	BNE :+
+	
+	JSR PrzesunKlocekWLewo
+	DEC obrotKlocka
+	
+:
 	RTS
 :
 
@@ -2935,7 +2949,7 @@ SprawdzKolizje:
 
 :
 
-	; sprawdzanie kolizji po obrocie przeciwnie z ruchem wskazówek
+	; sprawdzanie kolizji po obrocie przeciwnie do ruchu wskazówek
 
 	LDA pozycjaDanychKlocka
 	STA int
@@ -3002,6 +3016,154 @@ SprawdzKolizje:
 	ORA #%00010000
 	STA kolizja
 
+:
+
+	; sprawdzanie kolizji po obrocie zgodnie z ruchem wskazówek z przesunięciem
+	
+	LDA pozycjaDanychKlocka
+	STA int
+	LDA pozycjaDanychKlocka+1
+	STA int+1
+
+	LDA obrotKlocka
+	AND #%00000011
+	CMP #%00000011
+	BNE :+
+
+	LDA int
+	SEC
+	SBC #$30
+	STA int
+	LDA int+1
+	SBC #$00
+	STA int+1
+	JMP :++
+
+:
+
+	CLC
+	LDA int
+	ADC #$10
+	STA int
+	LDA int+1
+	ADC #$00
+	STA int+1
+
+:
+
+	INC $FF
+
+	LDX #$FF ; miejsce w mapie kolizji
+	LDY #$FF ; miejsce w danych klocków
+	LDA #$FF
+	STA temp ; mod 4
+
+:
+	INX
+	INY
+	INC temp
+	LDA temp
+	CMP #$04
+	BNE :+
+
+	LDA #$00
+	STA temp
+	INX
+	INX
+
+:
+	CPY #$10
+	BEQ :+
+
+	LDA (int), Y
+	CMP #$00
+	BEQ :--
+
+	LDA mapaKolizji, X
+	CMP #$00
+	BEQ :--
+
+	LDA kolizja
+	ORA #%00100000
+	STA kolizja
+	
+	; do usunięcia
+	JMP :--
+
+:
+
+	; sprawdzanie kolizji po obrocie przeciwnie do ruchu wskazówek z przesunięciem
+	
+	LDA pozycjaDanychKlocka
+	STA int
+	LDA pozycjaDanychKlocka+1
+	STA int+1
+
+	LDA obrotKlocka
+	AND #%00000011
+	CMP #%00000011
+	BNE :+
+
+	LDA int
+	SEC
+	SBC #$30
+	STA int
+	LDA int+1
+	SBC #$00
+	STA int+1
+	JMP :++
+
+:
+
+	CLC
+	LDA int
+	ADC #$10
+	STA int
+	LDA int+1
+	ADC #$00
+	STA int+1
+
+:
+
+	INC $FF
+
+	LDX #$FF ; miejsce w mapie kolizji
+	LDY #$FF ; miejsce w danych klocków
+	LDA #$FF
+	STA temp ; mod 4
+
+:
+	INX
+	INY
+	INC temp
+	LDA temp
+	CMP #$04
+	BNE :+
+
+	LDA #$00
+	STA temp
+	INX
+	INX
+
+:
+	CPY #$10
+	BEQ :+
+
+	LDA (int), Y
+	CMP #$00
+	BEQ :--
+
+	LDA mapaKolizji, X
+	CMP #$00
+	BEQ :--
+
+	LDA kolizja
+	ORA #%01000000
+	STA kolizja
+	
+	; do usunięcia
+	JMP :--
+	
 :
 
 	RTS
@@ -5832,9 +5994,9 @@ DaneKlockowOdwroconeKrzesloObr1:
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr2:
-	.byte $00, $00, $03, $00
-	.byte $00, $00, $0A, $08
-	.byte $00, $00, $00, $04
+	.byte $00, $03, $00, $00
+	.byte $00, $0A, $08, $00
+	.byte $00, $00, $04, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr3:
@@ -5844,9 +6006,9 @@ DaneKlockowOdwroconeKrzesloObr3:
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr4:
-	.byte $00, $00, $03, $00
-	.byte $00, $00, $0A, $08
-	.byte $00, $00, $00, $04
+	.byte $00, $03, $00, $00
+	.byte $00, $0A, $08, $00
+	.byte $00, $00, $04, $00
 	.byte $00, $00, $00, $00
 	
 DaneKlockowTObr1:
