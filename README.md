@@ -22,18 +22,25 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 ### Planowane zmiany
 
-- [X] ostateczne naprawienie problemów z kolizjami
-- [X] dodanie pauzy w trakcie gry
-- [X] dodanie możliwości pominięcia melodii
-- [ ] naprawienie błędu animacji i liczenia punktów podczas rozbijania linii między którymi jest przerwa
-- [X] obrót przy ścianie powinien powodować odsunięcie od ściany i obrót klocka
-- [X] Wyświetlenie czasu gry na ekranie końca gry
+- [ ] naprawienie ostatniego błędu z umieszczaniem klocków
+- [ ] optymalizacja tła
 
-Znane problemy
+Znane błędy
 
-- Nadal da się przesunąć klocek o dwa w dół jeśli poruszymy nim jedną klatkę po tym jak samoczynnie opadł
+- kiedy agresywnie wciskamy wszystkie przyciski podczas umieszczania klocka czasem coś idzie nie tak z przepisywaniem danych do tła
 
 ## Wersje stabilne
+
+## Wersja 1.4.1
+
+Zmiany
+
+- ostateczne naprawienie problemów z kolizjami
+- dodanie pauzy w trakcie gry
+- dodanie możliwości pominięcia melodii
+- naprawienie błędu animacji i liczenia punktów podczas rozbijania linii między którymi jest przerwa
+- obrót przy ścianie powinien powodować odsunięcie od ściany i obrót klocka
+- Wyświetlenie czasu gry na ekranie końca gry
 
 ### Wersja 1.4
 

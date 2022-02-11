@@ -1260,7 +1260,7 @@ NMIAktualizacjaPlanszy: ; określ numer linii o jeden niżej niż pierwsza rozbi
 
 	; sprawdź czy będzie usuwana jakaś linia
 
-	LDY #$13 ; numer linii która analizujemy
+	LDY #$13 ; numer linii którą analizujemy
 
 	; pozycja w PPU lewego dolnego rogu planszy - $232A
 
@@ -1382,7 +1382,6 @@ NMIAnimacjaRozbijanychLinii:
 	CMP #$00
 	BEQ :+
 
-	DEY
 	JMP :--
 
 :
@@ -3051,8 +3050,6 @@ SprawdzKolizje:
 
 :
 
-	INC $FF
-
 	LDX #$FF ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
@@ -3087,9 +3084,6 @@ SprawdzKolizje:
 	ORA #%00100000
 	STA kolizja
 	
-	; do usunięcia
-	JMP :--
-
 :
 
 	; sprawdzanie kolizji po obrocie przeciwnie do ruchu wskazówek z przesunięciem
@@ -3125,8 +3119,6 @@ SprawdzKolizje:
 
 :
 
-	INC $FF
-
 	LDX #$FF ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
@@ -3160,9 +3152,6 @@ SprawdzKolizje:
 	LDA kolizja
 	ORA #%01000000
 	STA kolizja
-	
-	; do usunięcia
-	JMP :--
 	
 :
 
