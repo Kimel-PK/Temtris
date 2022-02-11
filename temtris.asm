@@ -62,7 +62,7 @@ szybkoscSpadania: .res 1
 poziom: .res 1
 
 ; zmienne klocka
-kolizja: .res 1 ; %X--BALDP kolizja - X - koniec gry, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
+kolizja: .res 1 ; %XYZBALDP kolizja - X - koniec gry, Y - kolizja po obrocie w prawo z przesunieciem, Z - kolizja po obrocie w lewo z przesunieciem, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
 numerKlocka: .res 1
 numerNastepnegoKlocka1: .res 1
 numerNastepnegoKlocka2: .res 1
@@ -333,6 +333,8 @@ PETLA:
 	JMP (wskaznikPetli)
 
 PowrotDoPETLI:
+	
+	JSR CzytajKontroler
 	
 	; odtwarzaj muzyke
 	JSR OdtwarzajMuzyke
@@ -939,8 +941,6 @@ NMISpadajacyKlocek:
 	BEQ :+
 	DEC zegarKontroleraobrot
 :
-	
-	JSR CzytajKontroler
 	
 	; czy zegar kontrolera pozwala na obrót
 	LDA zegarKontroleraobrot
@@ -2748,7 +2748,7 @@ PostawKlocek:
 SprawdzKolizje:
 
 	; zeruj wykrywanie kolizji
-	LDA #%00000000 ; %X--BALDP kolizja - X - koniec gry, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
+	LDA #%00000000 ; %XYZBALDP kolizja - X - koniec gry, Y - kolizja po obrocie w prawo z przesunieciem, Z - kolizja po obrocie w lewo z przesunieciem, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
 	STA kolizja
 
 	; sprawdzanie kolizji z lewej strony
@@ -5868,9 +5868,9 @@ DaneKlockowTObr3:
 	.byte $00, $00, $00, $00
 
 DaneKlockowTObr4:
-	.byte $00, $00, $03, $00
-	.byte $00, $00, $0E, $02
-	.byte $00, $00, $04, $00
+	.byte $00, $03, $00, $00
+	.byte $00, $0E, $02, $00
+	.byte $00, $04, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowPalety:
