@@ -13,6 +13,26 @@
 
 .segment "ZEROPAGE"
 
+; lista rejestrów z nazwami
+
+; kontrolery
+JOYPAD1 = $4016
+JOYPAD2 = $4017
+
+; PPU
+PPUCTRL = $2000
+PPUMASK = $2001
+PPUSTATUS = $2002
+OAMADDR = $2003
+OAMDATA = $2004
+PPUSCROLL = $2005
+PPUADDR = $2006
+PPUDATA = $2007
+OAMDMA = $4014
+
+; APU
+APUSTATUS = $4015
+
 ; zmienne tymczasowe
 temp: .res 2
 int: .res 2
@@ -132,11 +152,10 @@ RESET:
 	
 	JSR ZerujAPU
 	
-	; pomijamy rejestr $4014 (OAMDMA)
 	LDA #$0F
-	STA $4015
+	STA APUSTATUS
 	LDA #$40
-	STA $4017
+	STA JOYPAD2
 	
 	; inicjalizacja stosu
 	LDX #$FF
@@ -145,13 +164,13 @@ RESET:
 	INX
 	
 	; wyzerowac PPU
-	STX $2000
-	STX $2001
+	STX PPUCTRL
+	STX PPUMASK
 	
 	STX $4010
 	
 :
-	BIT $2002
+	BIT PPUSTATUS
 	BPL :-
 	
 	TXA
@@ -179,11 +198,11 @@ RESET:
 	
 	; czekaj na VBLANK
 :
-	BIT $2002
+	BIT PPUSTATUS
 	BPL :-
 	
 	LDA #$02
-	STA $4014
+	STA OAMDMA
 	NOP
 	
 	; załaduj chr bank 0
@@ -192,15 +211,15 @@ RESET:
 	
 	; załaduj palety ($3F00)
 	LDA #$3F
-	STA $2006
+	STA PPUADDR
 	LDA #$00
-	STA $2006
+	STA PPUADDR
 	
 	LDX #$00
 	
 :
 	LDA DanePalet, X
-	STA $2007
+	STA PPUDATA
 	INX
 	CPX #$20
 	BNE :-
@@ -214,11 +233,11 @@ RESET:
 	STA int+1
 	
 	; wybierz nametable 0
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$20
-	STA $2006
+	STA PPUADDR
 	LDA #$00
-	STA $2006
+	STA PPUADDR
 	
 	; zeruj rejestry i zmienne
 	LDX #$00
@@ -227,7 +246,7 @@ RESET:
 	; wczytaj GrafikaTloMenu
 :
 	LDA (int), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	CPX #$03
 	BNE :+
@@ -244,8 +263,8 @@ RESET:
 	
 	; wyzeruj scrollowanie
 	LDA #$00
-	STA $2005
-	STA $2005
+	STA PPUSCROLL
+	STA PPUSCROLL
 	
 	; załaduj sprite strzałki wyboru graczy
 	LDA #$A7
@@ -261,11 +280,11 @@ RESET:
 	CLI
 	
 	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tła
-	STA $2000
+	STA PPUCTRL
 	
 	; włacz sprite i tło
 	LDA #%00011110
-	STA $2001
+	STA PPUMASK
 	
 	LDA #$3C
 	STA szybkoscSpadania
@@ -408,11 +427,11 @@ PowrotDoNMI:
 	; zerowanie scrollowania
 	
 	LDA #$00
-	STA $2005
-	STA $2005
+	STA PPUSCROLL
+	STA PPUSCROLL
 	
 	LDA #%10010000
-	STA $2000
+	STA PPUCTRL
 	
 	; ograniczenie pętli do wykonywania się co klatkę
 	
@@ -421,7 +440,7 @@ PowrotDoNMI:
 	
 	; kopiuj pamięć z $0200 przez OAMDMA
 	LDA #$02
-	STA $4014
+	STA OAMDMA
 	
 	RTI
 
@@ -492,8 +511,8 @@ NMILadowanieGry:
 	
 	; wyzerowac PPU
 	LDA #$40
-	STA $2000
-	STA $2001
+	STA PPUCTRL
+	STA PPUMASK
 	
 	; wyzeruj sprite'y
 	LDX #$00
@@ -506,9 +525,9 @@ NMILadowanieGry:
 	
 	; wybierz paletę tła 1
 	LDA #$3F
-	STA $2006
+	STA PPUADDR
 	LDA #$05
-	STA $2006
+	STA PPUADDR
 	
 	; załaduj odpowiednią paletę tła 1 w zależności od trybu gry
 	LDA trybGry
@@ -525,38 +544,38 @@ NMILadowanieGry:
 	
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	
 	JMP :++
 :
 	
 	; 2 graczy, kolory gracza 1 i 2
 	LDA #$0F
-	STA $2007
+	STA PPUDATA
 	LDA #$1A
-	STA $2007
+	STA PPUDATA
 	LDA #$12
-	STA $2007
+	STA PPUDATA
 	
 	; załaduj paletę spritów 0 na kolory gracza 1 i 2
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$3F
-	STA $2006
+	STA PPUADDR
 	LDA #$11
-	STA $2006
+	STA PPUADDR
 	
 	LDA #$0F
-	STA $2007
+	STA PPUDATA
 	LDA #$1A
-	STA $2007
+	STA PPUDATA
 	LDA #$12
-	STA $2007
+	STA PPUDATA
 	
 	; ustaw numer gracza na 2 (zostanie zmieniony po załadowaniu gry na 1)
 	INC numerGracza
@@ -588,11 +607,11 @@ NMILadowanieGry:
 	STA int+1
 	
 	; wybierz nametable 0
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$20
-	STA $2006
+	STA PPUADDR
 	LDA #$00
-	STA $2006
+	STA PPUADDR
 	
 	; zeruj rejestry i zmienne
 	LDX #$00
@@ -601,7 +620,7 @@ NMILadowanieGry:
 	; wczytaj GrafikaTloGra
 :
 	LDA (int), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	CPX #$03
 	BNE :+
@@ -622,11 +641,11 @@ NMILadowanieGry:
 	BEQ :++++++
 	
 	; wybierz miejsce w PPU
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$20
-	STA $2006
+	STA PPUADDR
 	LDA #$76
-	STA $2006
+	STA PPUADDR
 	
 	; ustaw rejestry
 	LDY #$00
@@ -634,75 +653,75 @@ NMILadowanieGry:
 	
 	; czyść NAST
 :
-	STY $2007
+	STY PPUDATA
 	DEX
 	CPX #$00
 	BNE :-
 	
 	; wybierz miejsce w PPU
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$36
-	STA $2006
+	STA PPUADDR
 	
 	; ustaw rejestr
 	LDX #$05
 	
 	; czyść PUMKTY
 :
-	STY $2007
+	STY PPUDATA
 	DEX
 	CPX #$00
 	BNE :-
 	
 	; wybierz miejsce w PPU
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$56
-	STA $2006
+	STA PPUADDR
 	
 	; ustaw rejestr
 	LDX #$04
 	
 	; czyść NNNN
 :
-	STY $2007
+	STY PPUDATA
 	DEX
 	CPX #$00
 	BNE :-
 	
 	; wybierz miejsce w PPU
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$96
-	STA $2006
+	STA PPUADDR
 	
 	; ustaw rejestr
 	LDX #$06
 	
 	; czyść PUMKTY
 :
-	STY $2007
+	STY PPUDATA
 	DEX
 	CPX #$00
 	BNE :-
 	
 	; wybierz miejsce w PPU
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$B6
-	STA $2006
+	STA PPUADDR
 	
 	; ustaw rejestr
 	LDX #$04
 	
 	; czyść NNNN
 :
-	STY $2007
+	STY PPUDATA
 	DEX
 	CPX #$00
 	BNE :-
@@ -711,15 +730,15 @@ NMILadowanieGry:
 	
 	; wyzeruj scrollowanie
 	LDA #$00
-	STA $2005
-	STA $2005
+	STA PPUSCROLL
+	STA PPUSCROLL
 	
 	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
-	STA $2000
+	STA PPUCTRL
 	
 	; wlacz sprite i tlo
 	LDA #%00011110
-	STA $2001
+	STA PPUMASK
 	
 	LDA #$00
 	STA grajMuzykeMenu
@@ -733,7 +752,7 @@ NMILadowanieGry:
 	
 	; czekaj na VBLANK
 :
-	BIT $2002
+	BIT PPUSTATUS
 	BPL :-
 	
 	LDA #<PETLAGra
@@ -1118,24 +1137,24 @@ NMISpadajacyKlocek:
 	STA $400E
 	STA $400F
 	
-	BIT $2007
+	BIT PPUDATA
 	LDA #$20
-	STA $2006
+	STA PPUADDR
 	LDA #$6C
-	STA $2006
+	STA PPUADDR
 	
 	LDA #$9B ; ⏸
-	STA $2007
+	STA PPUDATA
 	LDA #$F9 ; P
-	STA $2007
+	STA PPUDATA
 	LDA #$EA ; A
-	STA $2007
+	STA PPUDATA
 	LDA #$FD ; U
-	STA $2007
+	STA PPUDATA
 	LDA #$FF ; Z
-	STA $2007
+	STA PPUDATA
 	LDA #$EA ; A
-	STA $2007
+	STA PPUDATA
 	
 	LDA #<PETLAPalenieGumy
 	STA wskaznikPetli
@@ -1186,19 +1205,19 @@ NMIPauza:
 	
 	; wyłącz pauze
 	
-	BIT $2007
+	BIT PPUDATA
 	LDA #$20
-	STA $2006
+	STA PPUADDR
 	LDA #$6C
-	STA $2006
+	STA PPUADDR
 	
 	LDA #$00
-	STA $2007 ; ⏸
-	STA $2007 ; P
-	STA $2007 ; A
-	STA $2007 ; U
-	STA $2007 ; Z
-	STA $2007 ; A
+	STA PPUDATA ; ⏸
+	STA PPUDATA ; P
+	STA PPUDATA ; A
+	STA PPUDATA ; U
+	STA PPUDATA ; Z
+	STA PPUDATA ; A
 	
 	LDA #%00000111
 	STA wlaczMuzyke
@@ -1466,15 +1485,15 @@ NMIAnimacjaRozbijanychLinii:
 
 	TAY
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA PozycjaLiniiWPPUH, Y
-	STA $2006
+	STA PPUADDR
 
 	CLC
 	LDA PozycjaLiniiWPPUL, Y
 	ADC blokAnimacji
 
-	STA $2006
+	STA PPUADDR
 
 	LDA klatkaAnimacji
 	LSR
@@ -1498,7 +1517,7 @@ NMIAnimacjaRozbijanychLinii:
 	LDA RozbitaLiniaTemtrisNapis, Y
 :
 
-	STA $2007
+	STA PPUDATA
 
 	JMP :---------
 
@@ -1573,23 +1592,23 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
 :
 	LDY zapisLinii
 	
-	BIT $2007
+	BIT PPUDATA
 	LDA PozycjaLiniiWPPUH, Y
-	STA $2006
+	STA PPUADDR
 	LDA PozycjaLiniiWPPUL, Y
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
-	STA $2007
-	STA $2007
-	STA $2007
-	STA $2007
-	STA $2007
-	STA $2007
-	STA $2007
-	STA $2007
-	STA $2007
+	STA PPUDATA
+	STA PPUDATA
+	STA PPUDATA
+	STA PPUDATA
+	STA PPUDATA
+	STA PPUDATA
+	STA PPUDATA
+	STA PPUDATA
+	STA PPUDATA
+	STA PPUDATA
 	
 	LDA odczytLinii
 	CMP zapisLinii
@@ -1736,8 +1755,8 @@ NMILadowanieKoniecGry:
 
 	; wyzerowac PPU
 	LDA #$40
-	STA $2000
-	STA $2001
+	STA PPUCTRL
+	STA PPUMASK
 
 	; wyzeruj sprite'y
 	LDX #$00
@@ -1761,11 +1780,11 @@ NMILadowanieKoniecGry:
 	STA int+1
 
 	; wybierz nametable 0
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$20
-	STA $2006
+	STA PPUADDR
 	LDA #$00
-	STA $2006
+	STA PPUADDR
 
 	; zeruj rejestry i zmienne
 	LDX #$00
@@ -1774,7 +1793,7 @@ NMILadowanieKoniecGry:
 	; wczytaj GrafikaTloKoniecGryKlatka1
 :
 	LDA (int), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	CPX #$03
 	BNE :+
@@ -1790,15 +1809,15 @@ NMILadowanieKoniecGry:
 
 	; wyzeruj scrollowanie
 	LDA #$00
-	STA $2005
-	STA $2005
+	STA PPUSCROLL
+	STA PPUSCROLL
 
 	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
-	STA $2000
+	STA PPUCTRL
 
 	; włącz sprite i tlo
 	LDA #%00011110
-	STA $2001
+	STA PPUMASK
 
 	LDA #$54
 	STA temp
@@ -1838,8 +1857,8 @@ NMIKoniecGry:
 
 	; wyzerowac PPU
 	LDA #$40
-	STA $2000
-	STA $2001
+	STA PPUCTRL
+	STA PPUMASK
 
 	; załaduj chr bank 0
 	LDA #$00
@@ -1854,11 +1873,11 @@ NMIKoniecGry:
 	STA int+1
 
 	; wybierz nametable 0
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$20
-	STA $2006
+	STA PPUADDR
 	LDA #$00
-	STA $2006
+	STA PPUADDR
 
 	; zeruj rejestry i zmienne
 	LDX #$00
@@ -1867,7 +1886,7 @@ NMIKoniecGry:
 	; wczytaj GrafikaTloKoniecGryKlatka2
 :
 	LDA (int), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	CPX #$03
 	BNE :+
@@ -1895,15 +1914,15 @@ NMIKoniecGry:
 
 	; wyzeruj scrollowanie
 	LDA #$00
-	STA $2005
-	STA $2005
+	STA PPUSCROLL
+	STA PPUSCROLL
 
 	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
-	STA $2000
+	STA PPUCTRL
 
 	; wlacz sprite i tlo
 	LDA #%00011110
-	STA $2001
+	STA PPUMASK
 
 	; czekaj na naciśnięcie entera który zresetuje gre
 
@@ -1963,19 +1982,19 @@ CzytajKontroler:
 	; odczyt z wejścia
 
 	LDA #$01
-	STA $4016
+	STA JOYPAD1
 	LDX #$00
-	STX $4016
+	STX JOYPAD1
 	
 	; odczytaj odpowiedni kontroler w zależności od obecnego gracza
 :
 	LDA numerGracza
 	CMP #$01
 	BEQ :+
-	LDA $4016
+	LDA JOYPAD1
 	JMP :++
 :
-	LDA $4017
+	LDA JOYPAD2
 :
 	LSR
 	ROR odczytWejscia
@@ -2275,23 +2294,23 @@ StworzKlocek:
 
 	; załaduj palety ($3F10)
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$3F
-	STA $2006
+	STA PPUADDR
 	LDA #$10
-	STA $2006
+	STA PPUADDR
 
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 
 :
@@ -2343,29 +2362,29 @@ StworzNastepnyKlocek:
 	BEQ :+
 	; załaduj paletę spriteów 1 ($3F14)
 	LDA #$3F
-	STA $2006
+	STA PPUADDR
 	LDA #$14
-	STA $2006
+	STA PPUADDR
 	JMP :++
 :
 	; załaduj paletę spriteów 2 ($3F18)
 	LDA #$3F
-	STA $2006
+	STA PPUADDR
 	LDA #$18
-	STA $2006
+	STA PPUADDR
 :
 	
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	INY
 
 	LDA #<DaneKlockow
@@ -2615,11 +2634,11 @@ PostawKlocek:
 	LDY #$FF ; miejsce w danych klocków
 	LDX #$00 ; miejsce w mapie kolizji
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA temp
-	STA $2006
+	STA PPUADDR
 	LDA temp+1
-	STA $2006
+	STA PPUADDR
 
 :
 	INC int
@@ -2648,11 +2667,11 @@ PostawKlocek:
 	ADC #$00
 	STA temp
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA temp
-	STA $2006
+	STA PPUADDR
 	LDA temp+1
-	STA $2006
+	STA PPUADDR
 
 	INX
 	INX
@@ -2663,7 +2682,7 @@ PostawKlocek:
 	CMP #$00
 	BNE :+
 	LDA mapaKolizji, X
-	STA $2007 ; przepisz bajt z mapy kolizji (nie akutalizuj tła)
+	STA PPUDATA ; przepisz bajt z mapy kolizji (nie akutalizuj tła)
 	JMP :--
 :
 	
@@ -2681,7 +2700,7 @@ PostawKlocek:
 	ADC #$20
 :
 	
-	STA $2007 ; przepisz bajt z danych klocków (aktualizuj tło)
+	STA PPUDATA ; przepisz bajt z danych klocków (aktualizuj tło)
 	LDY tempY
 	
 	; dodaj bloki do zmiennej zajętośćPlanszy
@@ -3044,12 +3063,12 @@ SkopiujMapeKolizji:
 
 	; skopiuj siatkę kolizji
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA temp
-	STA $2006
+	STA PPUADDR
 	LDA temp+1
-	STA $2006
-	BIT $2007 ; pierwszy odczyt jest niepoprawny i na złej pozycji
+	STA PPUADDR
+	BIT PPUDATA ; pierwszy odczyt jest niepoprawny i na złej pozycji
 
 	LDY #$00
 
@@ -3059,7 +3078,7 @@ SkopiujMapeKolizji:
 	LDX #$00
 :
 
-	LDA $2007
+	LDA PPUDATA
 	STA mapaKolizji, Y
 
 	INY
@@ -3076,12 +3095,12 @@ SkopiujMapeKolizji:
 	ADC #$00
 	STA temp
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA temp
-	STA $2006
+	STA PPUADDR
 	LDA temp+1
-	STA $2006
-	BIT $2007
+	STA PPUADDR
+	BIT PPUDATA
 
 	CPY #$1E
 	BNE :--
@@ -3096,12 +3115,12 @@ PrzepiszLinie:
 
 	LDY odczytLinii
 
-	BIT $2007
+	BIT PPUDATA
 	LDA PozycjaLiniiWPPUH, Y
-	STA $2006
+	STA PPUADDR
 	LDA PozycjaLiniiWPPUL, Y
-	STA $2006
-	BIT $2007
+	STA PPUADDR
+	BIT PPUDATA
 
 	LDX #$FF ; pozycja w odczycie linii
 
@@ -3109,7 +3128,7 @@ PrzepiszLinie:
 	INX
 	CPX #$0A
 	BEQ :+
-	LDA $2007
+	LDA PPUDATA
 	STA zrzutLinii, X
 	JMP :-
 :
@@ -3147,11 +3166,11 @@ PrzepiszLinie:
 
 	LDY zapisLinii
 
-	BIT $2007
+	BIT PPUDATA
 	LDA PozycjaLiniiWPPUH, Y
-	STA $2006
+	STA PPUADDR
 	LDA PozycjaLiniiWPPUL, Y
-	STA $2006
+	STA PPUADDR
 
 	LDX #$FF ; pozycja w zapisie linii
 
@@ -3160,7 +3179,7 @@ PrzepiszLinie:
 	CPX #$0A
 	BEQ :+
 	LDA zrzutLinii, X
-	STA $2007
+	STA PPUDATA
 	JMP :-
 :
 
@@ -3657,11 +3676,11 @@ PoliczLinieG2:
 
 WyswietlLiczbeLinii1:
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$44
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -3669,7 +3688,7 @@ WyswietlLiczbeLinii1:
 	CLC
 	LDA #$E0
 	ADC liczbaLinii1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -3681,11 +3700,11 @@ WyswietlLiczbeLinii1:
 	
 WyswietlLiczbeLinii2:
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$56
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -3693,7 +3712,7 @@ WyswietlLiczbeLinii2:
 	CLC
 	LDA #$E0
 	ADC liczbaLinii2BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -3753,11 +3772,11 @@ PoliczPunktG2:
 
 WyswietlLiczbePunktow1:
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$A4
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -3765,7 +3784,7 @@ WyswietlLiczbePunktow1:
 	CLC
 	LDA #$E0
 	ADC punkty1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -3777,11 +3796,11 @@ WyswietlLiczbePunktow1:
 	
 WyswietlLiczbePunktow2:
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$B6
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -3789,7 +3808,7 @@ WyswietlLiczbePunktow2:
 	CLC
 	LDA #$E0
 	ADC punkty2BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4041,11 +4060,11 @@ WyswietlStatystki:
 
 	; pumkty
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$CB
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -4053,7 +4072,7 @@ WyswietlStatystki:
 	CLC
 	LDA #$E0
 	ADC punkty1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4063,11 +4082,11 @@ WyswietlStatystki:
 
 	; linie ogółem
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$0B
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -4075,7 +4094,7 @@ WyswietlStatystki:
 	CLC
 	LDA #$E0
 	ADC liczbaLinii1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4085,11 +4104,11 @@ WyswietlStatystki:
 
 	; ilość cheems
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$4B
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -4097,7 +4116,7 @@ WyswietlStatystki:
 	CLC
 	LDA #$E0
 	ADC linieCheems1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4107,11 +4126,11 @@ WyswietlStatystki:
 
 	; ilość doge
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$8B
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -4119,7 +4138,7 @@ WyswietlStatystki:
 	CLC
 	LDA #$E0
 	ADC linieDoge1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4129,11 +4148,11 @@ WyswietlStatystki:
 
 	; ilość buffdoge
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$CB
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -4141,7 +4160,7 @@ WyswietlStatystki:
 	CLC
 	LDA #$E0
 	ADC linieBuffDoge1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4151,11 +4170,11 @@ WyswietlStatystki:
 
 	; ilość temtris
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$23
-	STA $2006
+	STA PPUADDR
 	LDA #$0B
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -4163,7 +4182,7 @@ WyswietlStatystki:
 	CLC
 	LDA #$E0
 	ADC linieTemtris1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4173,11 +4192,11 @@ WyswietlStatystki:
 
 	; czas gry
 	
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$23
-	STA $2006
+	STA PPUADDR
 	LDA #$4B
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -4185,17 +4204,17 @@ WyswietlStatystki:
 	CLC
 	LDA #$E0
 	ADC czasGryBCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$03
 	BNE :+
 	
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$23
-	STA $2006
+	STA PPUADDR
 	LDA #$4F
-	STA $2006
+	STA PPUADDR
 	
 	JMP :-
 :
@@ -4241,11 +4260,11 @@ WyswietlStatystki2Graczy:
 	
 	; napis G1
 	
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$87
-	STA $2006
+	STA PPUADDR
 	
 	LDA temp
 	CMP #$00
@@ -4255,11 +4274,11 @@ WyswietlStatystki2Graczy:
 :
 	LDA #$DE
 :
-	STA $2007
+	STA PPUDATA
 	LDA #$F0
-	STA $2007
+	STA PPUDATA
 	LDA #$E1
-	STA $2007
+	STA PPUDATA
 	LDA numerGracza
 	CMP #$01
 	BEQ :+
@@ -4268,15 +4287,15 @@ WyswietlStatystki2Graczy:
 :
 	LDA #$00
 :
-	STA $2007
+	STA PPUDATA
 	
 	; napis G2
 	
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$8C
-	STA $2006
+	STA PPUADDR
 	
 	LDA temp
 	CMP #$01
@@ -4286,11 +4305,11 @@ WyswietlStatystki2Graczy:
 :
 	LDA #$DE
 :
-	STA $2007
+	STA PPUDATA
 	LDA #$F0
-	STA $2007
+	STA PPUDATA
 	LDA #$E2
-	STA $2007
+	STA PPUDATA
 	LDA numerGracza
 	CMP #$00
 	BEQ :+
@@ -4299,18 +4318,18 @@ WyswietlStatystki2Graczy:
 :
 	LDA #$00
 :
-	STA $2007
+	STA PPUDATA
 	
 	; pumkty G1
 	
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$C6
-	STA $2006
+	STA PPUADDR
 	
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4318,7 +4337,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC punkty1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4328,14 +4347,14 @@ WyswietlStatystki2Graczy:
 	
 	; pumkty G2
 	
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$21
-	STA $2006
+	STA PPUADDR
 	LDA #$CB
-	STA $2006
+	STA PPUADDR
 	
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4343,7 +4362,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC punkty2BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4353,14 +4372,14 @@ WyswietlStatystki2Graczy:
 	
 	; linie ogółem G1
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$06
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4368,7 +4387,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC liczbaLinii1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4378,14 +4397,14 @@ WyswietlStatystki2Graczy:
 
 	; linie ogółem G2
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$0B
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4393,7 +4412,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC liczbaLinii2BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4403,14 +4422,14 @@ WyswietlStatystki2Graczy:
 
 	; ilość cheems G1
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$46
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4418,7 +4437,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC linieCheems1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4428,14 +4447,14 @@ WyswietlStatystki2Graczy:
 
 	; ilość cheems G2
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$4B
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4443,7 +4462,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC linieCheems2BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4453,14 +4472,14 @@ WyswietlStatystki2Graczy:
 
 	; ilość doge G1
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$86
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4468,7 +4487,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC linieDoge1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4478,14 +4497,14 @@ WyswietlStatystki2Graczy:
 
 	; ilość doge G2
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$8B
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4493,7 +4512,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC linieDoge2BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4503,14 +4522,14 @@ WyswietlStatystki2Graczy:
 
 	; ilość buffdoge G1
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$C6
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4518,7 +4537,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC linieBuffDoge1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4528,14 +4547,14 @@ WyswietlStatystki2Graczy:
 
 	; ilość buffdoge G2
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$22
-	STA $2006
+	STA PPUADDR
 	LDA #$CB
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4543,7 +4562,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC linieBuffDoge2BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4553,14 +4572,14 @@ WyswietlStatystki2Graczy:
 
 	; ilość temtris G1
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$23
-	STA $2006
+	STA PPUADDR
 	LDA #$06
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4568,7 +4587,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC linieTemtris1BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4578,14 +4597,14 @@ WyswietlStatystki2Graczy:
 	
 	; ilość temtris G2
 
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$23
-	STA $2006
+	STA PPUADDR
 	LDA #$0B
-	STA $2006
+	STA PPUADDR
 
 	LDA #$00
-	STA $2007
+	STA PPUDATA
 
 	LDX #$00
 
@@ -4593,7 +4612,7 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC linieTemtris2BCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$04
@@ -4603,11 +4622,11 @@ WyswietlStatystki2Graczy:
 
 	; czas gry
 	
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$23
-	STA $2006
+	STA PPUADDR
 	LDA #$4B
-	STA $2006
+	STA PPUADDR
 
 	LDX #$00
 
@@ -4615,17 +4634,17 @@ WyswietlStatystki2Graczy:
 	CLC
 	LDA #$E0
 	ADC czasGryBCD, X
-	STA $2007
+	STA PPUDATA
 
 	INX
 	CPX #$03
 	BNE :+
 	
-	BIT $2002
+	BIT PPUSTATUS
 	LDA #$23
-	STA $2006
+	STA PPUADDR
 	LDA #$4F
-	STA $2006
+	STA PPUADDR
 	
 	JMP :-
 :
@@ -4728,9 +4747,9 @@ CzyNastepnyPoziom:
 
 	; załaduj palete klocków ($3F04)
 	LDA #$3F
-	STA $2006
+	STA PPUADDR
 	LDA #$04
-	STA $2006
+	STA PPUADDR
 
 	LDA #<PaletyPoziomow
 	STA temp
@@ -4758,7 +4777,7 @@ CzyNastepnyPoziom:
 :
 	INY
 	LDA (temp), Y
-	STA $2007
+	STA PPUDATA
 	CPY #$04
 	BNE :-
 
