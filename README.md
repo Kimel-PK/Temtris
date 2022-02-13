@@ -114,7 +114,13 @@ Rzeczy do zrobienia
 - naprawić paletę barw cheemsa
 - jak jakiś grafik się znajdzie to można poprawić wygląd cheemsa albo bloków
 
-## Wersje niestabilne
+## Ekskluzywne materiały dodatkowe
+
+### Muzyka
+
+Pliki midi, które przepisywałem do Excela lub częściowo konwertowałem zewnętrznym programem w C# (który szybko się sypnął) na format obsługiwany przez Temtris.
+
+### Wersje niestabilne
 
 Nie jestem dokładnie pewien co poszło nie tak, ale tak to świetnie wygląda, że zostawiłem te kompilacje rozwalające cały program.
 
@@ -122,3 +128,9 @@ Wystarczy zrobić jedną linię, a cały NES się rozpada.
 
 - Temtris -0.1
 - Temtris -0.2
+
+### Pozostałe pliki
+
+- Konwerter muzyki w Excelu
+- Szkice i concept arty przepisywane do plików `.chr` przy użyciu programu `yychr`
+
