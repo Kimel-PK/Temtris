@@ -1,0 +1,73 @@
+jeśli zegar spadania = 0
+	przesuń klocek w dół
+	RTS
+
+czytaj wejście z kontrolera
+
+DEC zegar kontrolera
+DEC zegar obrotu
+
+czy zegar obrotu = 0
+
+	czy naciśnięto A
+		czy naciśnięto pierwszy raz
+			ustaw zegar na 10
+		czy trzymano
+			ustaw zegar na 4
+		obróć klocek
+		skopiuj siatkę kolozji
+		RTS
+
+	czy naciśnięto B
+		czy naciśnięto pierwszy raz
+			ustaw zegar na 10
+		czy trzymano
+			ustaw zegar na 4
+		obróć klocek
+		skopiuj siatkę kolozji
+		RTS
+
+czy puszczono A
+	ustaw zegar na 0
+czy puszczono B
+	ustaw zegar na 0
+
+czy zegar kontrolera = 0
+
+	czy naciśnięto w prawo
+		czy naciśnięto pierwszy raz
+			ustaw zegar na 10
+		czy trzymano
+			ustaw zegar na 4
+		przesuń klocek
+		skopiuj siatkę kolozji
+		RTS
+
+	czy naciśnięto w lewo
+		czy naciśnięto pierwszy raz
+			ustaw zegar na 10
+		czy trzymano
+			ustaw zegar na 4
+		przesuń klocek
+		skopiuj siatkę kolozji
+		RTS
+
+
+	czy naciśnięto w dół
+		czy naciśnięto pierwszy raz
+			ustaw zegar na 10
+		czy trzymano
+			zapisana wartość --
+			ustaw zegar na zapisaną wartość
+		przesuń klocek
+		skopiuj siatkę kolozji
+		RTS
+	
+czy puszczono w prawo
+	ustaw zegar na 0
+czy puszczono w lewo
+	ustaw zegar na 0
+czy puszczono w dół
+	ustaw zegar na 0
+
+skopiuj siatkę kolozji
