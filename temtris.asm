@@ -48,10 +48,6 @@ zegarKontroleraszybkosc: .res 1
 zegarKontroleraobrot: .res 1
 
 ; zmienne sterujące
-coKlatke: .res 1
-wskaznikPetli: .res 2
-wskaznikNMI: .res 2
-wstrzymajOAMDMA: .res 1
 losowa: .res 2
 trybGry: .res 1
 numerGracza: .res 1
@@ -123,7 +119,7 @@ klatkaAnimacji: .res 1
 blokAnimacji: .res 1
 
 ; pozostała pamięć
-pozostaloBajtow: .res 76
+pozostaloBajtow: .res 82
 
 .segment "STARTUP"
 
@@ -136,16 +132,12 @@ Sponsor:
 
 ; ===================== inicjalizacja =====================
 
-RESET:
+START:
 	SEI ; wylaczyc przerwania
 	CLD ; wylaczyc tryb dziesietny
 	
-	; inicjalizuj APU
-	
 	JSR ZerujAPU
 	
-	LDA #$0F
-	STA APUSTATUS
 	LDA #$40
 	STA JOYPAD2
 	
@@ -153,21 +145,251 @@ RESET:
 	LDX #$FF
 	TXS
 	
+	; rządanie przerwania IRQ
+	LDA #$00
+	STA $4010
+	
+	JSR CzekajNaVBLANK
+	
+	JSR WylaczPPU
+	
+	; czyść dane spriteów
+	LDA #$FF
+	LDX #$00
+:
+	STA $0200, X
 	INX
+	BNE :-
 	
-	; wyzerowac PPU
-	STX PPUCTRL
-	STX PPUMASK
+	JSR TransferOAMDMA
 	
-	STX $4010
+	; załaduj chr bank 1
+	LDA #$01
+	STA $8000
+	
+	; wyczyść palety
+	LDA #$3F
+	STA PPUADDR
+	LDA #$00
+	STA PPUADDR
+	
+	LDX #$00
 	
 :
-	BIT PPUSTATUS
-	BPL :-
+	LDA #$0F
+	STA PPUDATA
+	INX
+	CPX #$20
+	BNE :-
 	
-	TXA
+	; wybierz adres w PPU
+	BIT PPUSTATUS
+	LDA #$20
+	STA PPUADDR
+	LDA #$00
+	STA PPUADDR
+	
+	LDX #$00
+	LDY #$00
+	
+	; wyczyść ekran
+:
+	LDA #$00
+	STA PPUDATA
+	INY
+	CPX #$03
+	BNE :+
+	CPY #$CF
+	BEQ :++
+:
+	CPY #$00
+	BNE :--
+	INX
+	JMP :--
+	
+:
+	
+	; załaduj atrybuty ekranu
+	LDA #<GrafikaTloMenu
+	STA int
+	LDA #>GrafikaTloMenu
+	STA int+1
+	
+	CLC
+	LDA int
+	ADC #$CF
+	STA int
+	LDA int+1
+	ADC #$03
+	STA int+1
+	
+	LDY #$00
+:
+	LDA (int), Y
+	STA PPUDATA
+	INY
+	CPY #$30
+	BNE :-
+	
+	LDA #<GitHub
+	STA int
+	LDA #>GitHub
+	STA int+1
+	
+	; wybierz adres w PPU
+	BIT PPUSTATUS
+	LDA #$21
+	STA PPUADDR
+	LDA #$66
+	STA PPUADDR
+	
+	LDY #$00
+	
+	; napisz link GitHuba
+:
+	LDA (int), Y
+	STA PPUDATA
+	INY
+	CPY #$13
+	BEQ :+
+	JMP :-
+:
+	
+	LDA #$40
+	STA int
+	
+	; wybierz adres w PPU
+	LDA #$21
+	STA temp
+	LDA #$CB
+	STA temp+1
+	
+	LDX #$00
+	LDY #$00
+	
+	; narysuj awatar
+:
+	BIT PPUSTATUS
+	LDA temp
+	STA PPUADDR
+	LDA temp+1
+	STA PPUADDR
+:
+	LDA int
+	STA PPUDATA
+	INC int
+	INX
+	INY
+	CPY #$30
+	BEQ :++
+	
+	CPX #$08
+	BNE :+
+	
+	CLC
+	LDA temp+1
+	ADC #$20
+	STA temp+1
+	LDA temp
+	ADC #$00
+	STA temp
+	
+	LDX #$00
+	
+	JMP :--
+	
+:
+	JMP :--
+:
+	
+	JSR WyzerujScrollowanie
+	
+	LDA #%00010000 ; wybieramy bank 2 z pliku .chr do tła
+	STA PPUCTRL
+	
+	; włacz sprite i tło
+	LDA #%00011110
+	STA PPUMASK
+	
+	LDA #$20
+	STA temp
+	LDA #$04
+	STA temp+1
+	LDX #$00
+	LDY #$00
+	
+:
+	
+	JSR CzytajKontroler
+	JSR WyzerujScrollowanie
+	JSR CzekajNaVBLANK
+	
+	; naciśnij start żeby rozpocząć
+	LDA kontroler
+	AND #%00001000
+	CMP #%00001000
+	BNE :+
+	
+	LDA kontrolerpoprzedni
+	AND #%00001000
+	CMP #%00000000
+	BNE :+
+	
+	JMP LadowanieMenu
+:
+	
+	DEC temp
+	LDA temp
+	CMP #$00
+	BNE :--
+	
+	LDA #%00101111
+	STA $4004
+	LDA #%10111010
+	STA $4005
+	LDA #%11111111
+	STA $4006
+	LDA #%11111111
+	STA $4007
+	
+	JSR GitHubUstawPaleteRozjasnij
+	LDA #$20
+	STA temp
+	
+	DEC temp+1
+	LDA temp+1
+	CMP #$00
+	BNE :--
+	
+	LDY #$B4
+:
+	JSR CzytajKontroler
+	JSR WyzerujScrollowanie
+	JSR CzekajNaVBLANK
+	
+	; naciśnij start żeby rozpocząć
+	LDA kontroler
+	AND #%00001000
+	CMP #%00001000
+	BNE :+
+	
+	LDA kontrolerpoprzedni
+	AND #%00001000
+	CMP #%00000000
+	BNE :+
+	
+	JMP LadowanieMenu
+:
+	
+	DEY
+	CPY #$00
+	BNE :--
+	
+LadowanieMenu:
 	
 	; czyść pamieć
+	LDA #$00
+	LDX #$00
 :
 	STA $0000, X
 	STA $0100, X
@@ -188,14 +410,9 @@ RESET:
 	LDA #$37
 	STA losowa+1
 	
-	; czekaj na VBLANK
-:
-	BIT PPUSTATUS
-	BPL :-
+	JSR CzekajNaVBLANK
 	
-	LDA #$02
-	STA OAMDMA
-	NOP
+	JSR WylaczPPU
 	
 	; załaduj chr bank 0
 	LDA #$00
@@ -215,7 +432,7 @@ RESET:
 	INX
 	CPX #$20
 	BNE :-
-	
+
 	; narysuj tlo menu na ekranie
 	
 	; zapisz wskaznik do zmiennej int
@@ -224,7 +441,7 @@ RESET:
 	LDA #>GrafikaTloMenu
 	STA int+1
 	
-	; wybierz nametable 0
+	; wybierz adres w PPU
 	BIT PPUSTATUS
 	LDA #$20
 	STA PPUADDR
@@ -268,10 +485,7 @@ RESET:
 	LDA #$26
 	STA $0203
 	
-	; włacz przerwania
-	CLI
-	
-	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tła
+	LDA #%00010000 ; wybieramy bank 1 z pliku .chr do tła
 	STA PPUCTRL
 	
 	; włacz sprite i tło
@@ -287,16 +501,6 @@ RESET:
 	STA kontroler
 	STA kontrolerpoprzedni
 	
-	LDA #<NMIMenuGry
-	STA wskaznikNMI
-	LDA #>NMIMenuGry
-	STA wskaznikNMI+1
-	
-	LDA #<PETLAMenu
-	STA wskaznikPetli
-	LDA #>PETLAMenu
-	STA wskaznikPetli+1
-	
 	LDA #$01
 	STA odtwarzajMuzykeLosowo
 	STA grajMuzykeMenu
@@ -307,141 +511,18 @@ RESET:
 	STA wlaczMuzyke
 	
 ; =========================================================
-; ================= główna pętla programu =================
+; ======================== stany gry ======================
 ; =========================================================
-	
-PETLA:
-	
-	; pętla wykonuje sie tylko raz na klatkę
-	
-	; podprogramy wykonujące się za każdym razem
-	
-	LDA coKlatke
-	CMP #$00
-	BEQ :+
-	JMP PETLA
-:
-	
-	JMP (wskaznikPetli)
 
-PowrotDoPETLI:
+StanMenuGry:
 	
+	JSR Losuj
 	JSR CzytajKontroler
-	
-	; odtwarzaj muzyke
 	JSR OdtwarzajMuzyke
 	
-	LDA #$01
-	STA coKlatke
+	JSR CzekajNaVBLANK
 	
-	JMP PETLA
-	
-; ======================= stany gry =======================
-
-PETLAMenu:
-	
-	JSR Losuj
-	
-	JMP PowrotDoPETLI
-
-PETLAGra:
-	
-	JSR Losuj
-	
-	INC zegar
-	INC zegarSpadania
-	
-	LDA zegarSpadania
-	CMP szybkoscSpadania
-	BNE :+
-	LDA #$00
-	STA zegarSpadania
-:
-
-	JSR ObliczPozycjeWPPU
-	
-	LDA wstrzymajOAMDMA
-	CMP #$01
-	BEQ :+
-	JSR RysujKlocek
-:
-	
-	JSR SprawdzKolizje
-	
-	INC zegarCzasGry
-	LDA zegarCzasGry
-	CMP #$3C
-	BNE :+
-	
-	JSR PoliczSekunde
-	LDA #$00
-	STA zegarCzasGry
-:
-	
-	JMP PowrotDoPETLI
-
-PETLAKoniecGry:
-	
-	DEC temp
-	LDA temp
-	CMP #$00
-	BEQ :+
-	
-	JMP PowrotDoPETLI
-:
-	
-	LDA #<NMILadowanieKoniecGry
-	STA wskaznikNMI
-	LDA #>NMILadowanieKoniecGry
-	STA wskaznikNMI+1
-	
-	LDA #<PETLAPalenieGumy
-	STA wskaznikPetli
-	LDA #>PETLAPalenieGumy
-	STA wskaznikPetli+1
-	
-	JMP PowrotDoPETLI
-
-PETLAPalenieGumy:
-	; procesor nie ma nic do roboty
-	JMP PowrotDoPETLI
-
-; =========================================================
-; ========================= VBLANK ========================
-; =========================================================
-
-NMI:
-	
-	; skocz do stanu NMI
-	
-	JMP (wskaznikNMI)
-
-PowrotDoNMI:
-	
-	; zerowanie scrollowania
-	
-	LDA #$00
-	STA PPUSCROLL
-	STA PPUSCROLL
-	
-	LDA #%10010000
-	STA PPUCTRL
-	
-	; ograniczenie pętli do wykonywania się co klatkę
-	
-	LDA #$00
-	STA coKlatke
-	
-	; kopiuj pamięć z $0200 przez OAMDMA
-	LDA #$02
-	STA OAMDMA
-	
-	RTI
-
-; ======================= stany NMI =======================
-
-NMIMenuGry:
-	
+	; naciśnij start żeby rozpocząć
 	LDA kontroler
 	AND #%00001000
 	CMP #%00001000
@@ -452,12 +533,7 @@ NMIMenuGry:
 	CMP #%00000000
 	BNE :+
 	
-	; naciśnij start żeby rozpocząć
-	LDA #<NMILadowanieGry
-	STA wskaznikNMI
-	LDA #>NMILadowanieGry
-	STA wskaznikNMI+1
-	JMP PowrotDoNMI
+	JMP StanLadowanieGry
 	
 :
 	; naciśnij select żeby zmienić tryb gry
@@ -497,14 +573,15 @@ NMIMenuGry:
 	
 :
 	
-	JMP PowrotDoNMI
-
-NMILadowanieGry:
+	; kopiuj pamięć z $0200 przez OAMDMA
+	LDA #$02
+	STA OAMDMA
 	
-	; wyzerowac PPU
-	LDA #$40
-	STA PPUCTRL
-	STA PPUMASK
+	JMP StanMenuGry
+	
+StanLadowanieGry:
+	
+	JSR WylaczPPU
 	
 	; wyzeruj sprite'y
 	LDX #$00
@@ -598,7 +675,7 @@ NMILadowanieGry:
 	LDA #>GrafikaTloGra
 	STA int+1
 	
-	; wybierz nametable 0
+	; wybierz adres w PPU
 	BIT PPUSTATUS
 	LDA #$20
 	STA PPUADDR
@@ -720,12 +797,9 @@ NMILadowanieGry:
 	
 : ; koniec czyszczenia interfejsu drugiego gracza
 	
-	; wyzeruj scrollowanie
-	LDA #$00
-	STA PPUSCROLL
-	STA PPUSCROLL
+	JSR WyzerujScrollowanie
 	
-	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
+	LDA #%00010000 ; wybieramy bank 1 z pliku .chr do tla
 	STA PPUCTRL
 	
 	; wlacz sprite i tlo
@@ -737,29 +811,14 @@ NMILadowanieGry:
 	
 	JSR MuzykaGrajMelodie
 	
-	LDA #<NMIBrakKlocka
-	STA wskaznikNMI
-	LDA #>NMIBrakKlocka
-	STA wskaznikNMI+1
+	JSR CzekajNaVBLANK
 	
-	; czekaj na VBLANK
-:
-	BIT PPUSTATUS
-	BPL :-
+	JMP StanBrakKlocka
 	
-	LDA #<PETLAGra
-	STA wskaznikPetli
-	LDA #>PETLAGra
-	STA wskaznikPetli+1
+StanBrakKlocka:
 	
-	JMP PowrotDoNMI
-
-NMIBrakKlocka:
-	
-	LDA #<PETLAPalenieGumy
-	STA wskaznikPetli
-	LDA #>PETLAPalenieGumy
-	STA wskaznikPetli+1
+	JSR WyzerujScrollowanie
+	JSR CzekajNaVBLANK
 	
 	JSR WyswietlLiczbeLinii1
 	JSR WyswietlLiczbePunktow1
@@ -816,28 +875,16 @@ NMIBrakKlocka:
 :
 	
 	JSR StworzNastepnyKlocek
-
-	LDA #<NMIBrakKlocka2
-	STA wskaznikNMI
-	LDA #>NMIBrakKlocka2
-	STA wskaznikNMI+1
+	JSR WyzerujScrollowanie
 	
-	JMP PowrotDoNMI
+	JSR CzekajNaVBLANK
 	
-NMIBrakKlocka2:
-	
-	JSR ObliczWskaznikDoDanychKlocka
 	JSR StworzKlocek
 	JSR RysujKlocek
+	JSR WyzerujScrollowanie
+	JSR TransferOAMDMA
 	
-	LDA #<NMIBrakKlocka3
-	STA wskaznikNMI
-	LDA #>NMIBrakKlocka3
-	STA wskaznikNMI+1
-	
-	JMP PowrotDoNMI
-
-NMIBrakKlocka3:
+	JSR CzekajNaVBLANK
 	
 	JSR ObliczPozycjeWPPU
 	JSR SkopiujMapeKolizji
@@ -854,34 +901,56 @@ NMIBrakKlocka3:
 	STA temp
 	
 	JSR MuzykaWylaczWszystkieKanaly
-	
-	LDA #<PETLAKoniecGry
-	STA wskaznikPetli
-	LDA #>PETLAKoniecGry
-	STA wskaznikPetli+1
-	
-	LDA #<NMIPalenieGumy
-	STA wskaznikNMI
-	LDA #>NMIPalenieGumy
-	STA wskaznikNMI+1
-	
-	JMP PowrotDoNMI
+	JSR WyzerujScrollowanie
+	JMP StanLadowanieKoniecGry
 	
 :
 	
-	LDA #<NMISpadajacyKlocek
-	STA wskaznikNMI
-	LDA #>NMISpadajacyKlocek
-	STA wskaznikNMI+1
+	JSR WyzerujScrollowanie
 	
-	LDA #<PETLAGra
-	STA wskaznikPetli
-	LDA #>PETLAGra
-	STA wskaznikPetli+1
+	; kopiuj pamięć z $0200 przez OAMDMA
+	LDA #$02
+	STA OAMDMA
 	
-	JMP PowrotDoNMI
-
-NMISpadajacyKlocek:
+	JSR CzytajKontroler
+	JSR OdtwarzajMuzyke
+	
+	JMP StanSpadajacyKlocek
+	
+StanSpadajacyKlocek:
+	
+	JSR WyzerujScrollowanie
+	JSR CzytajKontroler
+	JSR OdtwarzajMuzyke
+	JSR Losuj
+	
+	INC zegar
+	INC zegarSpadania
+	
+	LDA zegarSpadania
+	CMP szybkoscSpadania
+	BNE :+
+	LDA #$00
+	STA zegarSpadania
+:
+	
+	JSR ObliczPozycjeWPPU
+	
+	JSR RysujKlocek
+	
+	JSR SprawdzKolizje
+	
+	INC zegarCzasGry
+	LDA zegarCzasGry
+	CMP #$3C
+	BNE :+
+	
+	JSR PoliczSekunde
+	LDA #$00
+	STA zegarCzasGry
+:
+	
+	JSR CzekajNaVBLANK
 	
 	; przesuń klocek w dół lub umieść
 	
@@ -907,16 +976,11 @@ NMISpadajacyKlocek:
 	
 	JSR SkopiujMapeKolizji
 	
-	JMP PowrotDoNMI
+	JMP StanSpadajacyKlocek
 	
 :
 	
-	LDA #<NMIStawianieKlocka
-	STA wskaznikNMI
-	LDA #>NMIStawianieKlocka
-	STA wskaznikNMI+1
-	
-	JMP PowrotDoNMI
+	JMP StanStawianieKlocka
 	
 :
 	
@@ -948,7 +1012,7 @@ NMISpadajacyKlocek:
 	
 	JSR ObrocKlocekWLewo
 	JSR SkopiujMapeKolizji
-	JMP PowrotDoNMI
+	JMP StanSpadajacyKlocek
 	
 :
 	
@@ -963,7 +1027,7 @@ NMISpadajacyKlocek:
 	
 	JSR ObrocKlocekWPrawo
 	JSR SkopiujMapeKolizji
-	JMP PowrotDoNMI
+	JMP StanSpadajacyKlocek
 	
 :
 	
@@ -1007,7 +1071,7 @@ NMISpadajacyKlocek:
 	
 	JSR PrzesunKlocekWPrawo
 	JSR SkopiujMapeKolizji
-	JMP PowrotDoNMI
+	JMP StanSpadajacyKlocek
 	
 :
 	
@@ -1036,7 +1100,7 @@ NMISpadajacyKlocek:
 	
 	JSR PrzesunKlocekWLewo
 	JSR SkopiujMapeKolizji
-	JMP PowrotDoNMI
+	JMP StanSpadajacyKlocek
 	
 :
 	; duży skok podzielony na dwa małe
@@ -1079,16 +1143,11 @@ NMISpadajacyKlocek:
 	JSR PrzesunKlocekWDol
 	JSR SkopiujMapeKolizji
 	
-	JMP PowrotDoNMI
+	JMP StanSpadajacyKlocek
 	
 :
 	
-	LDA #<NMIStawianieKlocka
-	STA wskaznikNMI
-	LDA #>NMIStawianieKlocka
-	STA wskaznikNMI+1
-	
-	JMP PowrotDoNMI
+	JMP StanStawianieKlocka
 	
 :
 	
@@ -1117,44 +1176,7 @@ NMISpadajacyKlocek:
 	BNE :+
 	
 	; pauza gry
-	
-	LDA #$00
-	STA wlaczMuzyke
-	STA $4002
-	STA $4003
-	STA $400A
-	STA $400B
-	STA $400E
-	STA $400F
-	
-	BIT PPUDATA
-	LDA #$20
-	STA PPUADDR
-	LDA #$6C
-	STA PPUADDR
-	
-	LDA #$9B ; ⏸
-	STA PPUDATA
-	LDA #$F9 ; P
-	STA PPUDATA
-	LDA #$EA ; A
-	STA PPUDATA
-	LDA #$FD ; U
-	STA PPUDATA
-	LDA #$FF ; Z
-	STA PPUDATA
-	LDA #$EA ; A
-	STA PPUDATA
-	
-	LDA #<PETLAPalenieGumy
-	STA wskaznikPetli
-	LDA #>PETLAPalenieGumy
-	STA wskaznikPetli+1
-	
-	LDA #<NMIPauza
-	STA wskaznikNMI
-	LDA #>NMIPauza
-	STA wskaznikNMI+1
+	JMP StanPauza
 	
 :
 	
@@ -1176,144 +1198,86 @@ NMISpadajacyKlocek:
 :
 	
 	JSR SkopiujMapeKolizji
-	JMP PowrotDoNMI
-
-NMIPauza:
 	
-	; czy naciśnięto Start
-	LDA kontroler
-	AND #%00001000
-	CMP #%00001000
-	BNE :+
+	; koniec klatki
 	
-	LDA kontrolerpoprzedni
-	AND #%00001000
-	CMP #%00000000
-	BNE :+
+	; kopiuj pamięć z $0200 przez OAMDMA
+	LDA #$02
+	STA OAMDMA
 	
-	; wyłącz pauze
+	JMP StanSpadajacyKlocek
 	
-	BIT PPUDATA
-	LDA #$20
-	STA PPUADDR
-	LDA #$6C
-	STA PPUADDR
+StanStawianieKlocka:
 	
-	LDA #$00
-	STA PPUDATA ; ⏸
-	STA PPUDATA ; P
-	STA PPUDATA ; A
-	STA PPUDATA ; U
-	STA PPUDATA ; Z
-	STA PPUDATA ; A
-	
-	LDA #%00000111
-	STA wlaczMuzyke
-	
-	LDA #<PETLAGra
-	STA wskaznikPetli
-	LDA #>PETLAGra
-	STA wskaznikPetli+1
-	
-	LDA #<NMISpadajacyKlocek
-	STA wskaznikNMI
-	LDA #>NMISpadajacyKlocek
-	STA wskaznikNMI+1
-	
-:
-	
-	JMP PowrotDoNMI
-
-NMIStawianieKlocka:
-
-	; klocek został postawiony
-
+	JSR OdtwarzajMuzyke
+	JSR CzekajNaVBLANK
 	JSR PostawKlocek
-
+	
 	LDA #$00
 	STA zegarKontrolera
 	STA zegarKontroleraobrot
 	LDA #$05
 	STA zegarKontroleraszybkosc
-
-	LDA #<NMIAktualizacjaPlanszy
-	STA wskaznikNMI
-	LDA #>NMIAktualizacjaPlanszy
-	STA wskaznikNMI+1
-
-	JMP PowrotDoNMI
-
-NMIAktualizacjaPlanszy: ; określ numer linii o jeden niżej niż pierwsza rozbijana
-
-	LDA #<PETLAPalenieGumy
-	STA wskaznikPetli
-	LDA #>PETLAPalenieGumy
-	STA wskaznikPetli+1
-
+	
+	; określ numer linii o jeden niżej niż pierwsza rozbijana
+	
 	; sprawdź czy będzie usuwana jakaś linia
-
+	
 	LDY #$13 ; numer linii którą analizujemy
-
+	
 	; pozycja w PPU lewego dolnego rogu planszy - $232A
-
+	
 	; przesuwamy Y do miejsca rozbicia pierwszej linii - 1
 :
-
+	
 	LDA wypelnienieLinii, Y
 	CMP #$00
 	BNE :+
-
-	LDA #<NMIBrakKlocka
-	STA wskaznikNMI
-	LDA #>NMIBrakKlocka
-	STA wskaznikNMI+1
-
-	LDA #<PETLAGra
-	STA wskaznikPetli
-	LDA #>PETLAGra
-	STA wskaznikPetli+1
-
-	JMP PowrotDoNMI
-
+	
+	JMP StanBrakKlocka
+	
 :
-
+	
 	CMP #$0A
 	BEQ :+
-
+	
 	DEY
 	JMP :--
-
+	
 :
-
+	
 	; istnieje chociaż jedna linia do rozbicia
-
+	
 	INY
-
+	
 	STY odczytLinii
 	STY zapisLinii
-
-	LDA #<NMIAnimacjaRozbijanychLinii
-	STA wskaznikNMI
-	LDA #>NMIAnimacjaRozbijanychLinii
-	STA wskaznikNMI+1
-
-	JMP PowrotDoNMI
-
-NMIAnimacjaRozbijanychLinii:
-
+	
+	JMP StanAnimacjaRozbijanychLinii
+	
+StanAnimacjaRozbijanychLinii:
+	
+	; kopiuj pamięć z $0200 przez OAMDMA
+	LDA #$02
+	STA OAMDMA
+	
+	JSR OdtwarzajMuzyke
+	JSR WyzerujScrollowanie
+	JSR CzekajNaVBLANK
+	
 	; wypełnij po kolei czarnymi kwadratami linie i napisz na niej tekst
-
+	
 	INC klatkaAnimacji
-
+	
 	LDA klatkaAnimacji
 	CMP #$00
 	BNE :++++
-
+	
 	LDA #$00
 	STA blokAnimacji
-
+	
 	; wyczysc sprite
-
+	
 	LDA #$FF
 	STA $0200
 	STA $0201
@@ -1331,7 +1295,7 @@ NMIAnimacjaRozbijanychLinii:
 	STA $020D
 	STA $020E
 	STA $020F
-
+	
 	LDX #$00
 	LDY odczytLinii
 :
@@ -1339,9 +1303,9 @@ NMIAnimacjaRozbijanychLinii:
 	LDA wypelnienieLinii, Y
 	CMP #$0A
 	BNE :+
-
+	
 	STY tempY
-
+	
 	; stworz sprite w tym miejscu
 	CLC
 	TYA
@@ -1363,40 +1327,40 @@ NMIAnimacjaRozbijanychLinii:
 	LDA #$50
 	STA $0200, X
 	INX
-
+	
 	LDY tempY
-
+	
 	INC ileNaRazLinii
-
+	
 	JMP :-
-
+	
 :
 	CMP #$00
 	BEQ :+
-
+	
 	JMP :--
-
+	
 :
-
-	JMP PowrotDoNMI
-
+	
+	JMP StanAnimacjaRozbijanychLinii
+	
 :
 	CMP #$26
 	BNE :+
-
-	JMP PowrotDoNMI
-
+	
+	JMP StanAnimacjaRozbijanychLinii
+	
 :
 	CMP #$27
 	BNE :+
-
+	
 	; koniec animacji, można poczekać chwilkę
-
+	
 	JSR OdtworzDzwiekRozbijanejLinii
-
+	
 	LDA #$FF
 	STA klatkaAnimacji
-
+	
 	STA $0200
 	STA $0201
 	STA $0202
@@ -1413,32 +1377,27 @@ NMIAnimacjaRozbijanychLinii:
 	STA $020D
 	STA $020E
 	STA $020F
-
-	LDA #<NMIAktualizacjaPlanszy2
-	STA wskaznikNMI
-	LDA #>NMIAktualizacjaPlanszy2
-	STA wskaznikNMI+1
-
-	JMP PowrotDoNMI
-
+	
+	JMP StanAktualizacjaPlanszy
+	
 :
 	AND #%00000011
 	CMP #%00000011
 	BEQ :+
-
+	
 	; klatka animacji ++
-
+	
 	INC $0201
 	INC $0205
 	INC $0209
 	INC $020D
-
-	JMP :++++++++++++
-
+	
+	JMP StanAnimacjaRozbijanychLinii
+	
 :
-
+	
 	; zmień na tekst pod spodem
-
+	
 	LDX #$FF
 :
 	INX
@@ -1469,19 +1428,19 @@ NMIAnimacjaRozbijanychLinii:
 	LSR
 	SEC
 	SBC #$05
-
+	
 	TAY
-
+	
 	BIT PPUSTATUS
 	LDA PozycjaLiniiWPPUH, Y
 	STA PPUADDR
-
+	
 	CLC
 	LDA PozycjaLiniiWPPUL, Y
 	ADC blokAnimacji
-
+	
 	STA PPUADDR
-
+	
 	LDA klatkaAnimacji
 	LSR
 	LSR
@@ -1503,15 +1462,15 @@ NMIAnimacjaRozbijanychLinii:
 	BNE :+
 	LDA RozbitaLiniaTemtrisNapis, Y
 :
-
+	
 	STA PPUDATA
-
+	
 	JMP :---------
-
+	
 :
-
+	
 	; pozycja X ++ i klatka animacji $80
-
+	
 	CLC
 	LDA $0203
 	ADC #$08
@@ -1528,54 +1487,59 @@ NMIAnimacjaRozbijanychLinii:
 	LDA $020F
 	ADC #$08
 	STA $020F
-
+	
 	LDA #$80
 	STA $0201
 	STA $0205
 	STA $0209
 	STA $020D
-
+	
 	INC klatkaAnimacji
 	INC blokAnimacji
-
-:
-
-	JMP PowrotDoNMI
-
-NMIAktualizacjaPlanszy2: ; przepisz wszystkie rozbijane linie
-
+	
+	JMP StanAnimacjaRozbijanychLinii
+	
+StanAktualizacjaPlanszy: ; przepisz wszystkie rozbijane linie
+	
+	; kopiuj pamięć z $0200 przez OAMDMA
+	LDA #$02
+	STA OAMDMA
+	
+	JSR WyzerujScrollowanie
+	JSR OdtwarzajMuzyke
+	JSR CzekajNaVBLANK
+	
 	JSR PrzepiszLinie
-
+	
 :
 	LDY odczytLinii
-
+	
 	LDA wypelnienieLinii, Y
 	CMP #$00
 	BNE :+
-
+	
 	DEC odczytLinii
-
-	LDA #<NMIAktualizacjaPlanszy3
-	STA wskaznikNMI
-	LDA #>NMIAktualizacjaPlanszy3
-	STA wskaznikNMI+1
-
-	JMP PowrotDoNMI
-
+	
+	JMP :+++
+	
 :
 	CMP #$0A
 	BNE :+
-
+	
 	; ta linia zostanie rozbita, przesuwamy odczyt wyżej
 	DEC odczytLinii
 	JMP :--
-
+	
 :
-
-	JMP PowrotDoNMI
-
-NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robite, zaaktualizuj zmienną wypelnienieLinii
-
+	
+	JMP StanAktualizacjaPlanszy
+	
+:
+	; wyczyść górę planszy tyle linii ile zostało robite, zaaktualizuj zmienną wypelnienieLinii
+	
+	JSR WyzerujScrollowanie
+	JSR CzekajNaVBLANK
+	
 :
 	LDY zapisLinii
 	
@@ -1584,7 +1548,7 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
 	STA PPUADDR
 	LDA PozycjaLiniiWPPUL, Y
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
 	STA PPUDATA
@@ -1600,19 +1564,19 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
 	LDA odczytLinii
 	CMP zapisLinii
 	BEQ :+
-
+	
 	DEC zapisLinii
 	JMP :-
-
+	
 :
-
+	
 	; jeśli zapis z odczytem są równe zakończ pętlę
-
+	
 	; oblicz ile linii zostało rozbitych i poprzesuwaj tablice wypelnienieLinii
-
+	
 	LDY #$14 ; pozycja odczytu
 	LDX #$14 ; pozycja zapisu
-
+	
 :
 	DEX
 :
@@ -1620,24 +1584,24 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
 	LDA wypelnienieLinii, Y
 	CMP #$0A
 	BNE :+
-
+	
 	JMP :-
-
+	
 :
-
+	
 	; jeśli odczyt trafił na brak jakichkolwiek klocków wyskocz z pętli
 	CMP #$00
 	BEQ :+
-
+	
 	LDA wypelnienieLinii, Y
 	STA wypelnienieLinii, X
-
+	
 	JMP :---
-
+	
 :
-
+	
 	STX tempX
-
+	
 	LDA ileNaRazLinii
 	CMP #$01
 	BNE :++
@@ -1706,45 +1670,121 @@ NMIAktualizacjaPlanszy3: ; wyczyść górę planszy tyle linii ile zostało robi
 	
 	LDA #$00
 	STA ileNaRazLinii
-
+	
 	LDX tempX
-
+	
 	; wyrównaj zapis do odczytu zerując wszystkie śmieci
 	TYA
 	STA temp
-
+	
 	LDA #$00
 :
 	CPX temp
 	BEQ :+
-
+	
 	STA wypelnienieLinii, X
-
+	
 	DEX
-
+	
 	JMP :-
-
+	
 :
-
-	LDA #<PETLAGra
-	STA wskaznikPetli
-	LDA #>PETLAGra
-	STA wskaznikPetli+1
-
-	LDA #<NMIBrakKlocka
-	STA wskaznikNMI
-	LDA #>NMIBrakKlocka
-	STA wskaznikNMI+1
-
-	JMP PowrotDoNMI
-
-NMILadowanieKoniecGry:
-
-	; wyzerowac PPU
-	LDA #$40
-	STA PPUCTRL
-	STA PPUMASK
-
+	
+	JMP StanBrakKlocka
+	
+StanPauza:
+	
+	JSR CzekajNaVBLANK
+	
+	LDA #$00
+	STA wlaczMuzyke
+	STA $4002
+	STA $4003
+	STA $400A
+	STA $400B
+	STA $400E
+	STA $400F
+	
+	BIT PPUDATA
+	LDA #$20
+	STA PPUADDR
+	LDA #$6C
+	STA PPUADDR
+	
+	LDA #$9B ; ⏸
+	STA PPUDATA
+	LDA #$F9 ; P
+	STA PPUDATA
+	LDA #$EA ; A
+	STA PPUDATA
+	LDA #$FD ; U
+	STA PPUDATA
+	LDA #$FF ; Z
+	STA PPUDATA
+	LDA #$EA ; A
+	STA PPUDATA
+	
+	JSR WyzerujScrollowanie
+	
+:
+	JSR CzytajKontroler
+	JSR CzekajNaVBLANK
+	
+	; czy naciśnięto Start
+	LDA kontroler
+	AND #%00001000
+	CMP #%00001000
+	BNE :-
+	
+	LDA kontrolerpoprzedni
+	AND #%00001000
+	CMP #%00000000
+	BNE :-
+	
+	; wyłącz pauze
+	
+	BIT PPUDATA
+	LDA #$20
+	STA PPUADDR
+	LDA #$6C
+	STA PPUADDR
+	
+	LDA #$00
+	STA PPUDATA ; ⏸
+	STA PPUDATA ; P
+	STA PPUDATA ; A
+	STA PPUDATA ; U
+	STA PPUDATA ; Z
+	STA PPUDATA ; A
+	
+	LDA #%00000111
+	STA wlaczMuzyke
+	
+	JMP StanSpadajacyKlocek
+	
+StanLadowanieKoniecGry:
+	
+	JSR CzekajNaVBLANK
+	
+	; czekaj trochę
+	
+	DEC temp
+	LDA temp
+	CMP #$00
+	BEQ :+
+	
+	JMP StanLadowanieKoniecGry
+	
+:
+	
+	LDA #$4F
+	STA temp
+	
+	JSR WyzerujScrollowanie
+	JSR CzekajNaVBLANK
+	
+	JSR WylaczPPU
+	
 	; wyzeruj sprite'y
 	LDX #$00
 :
@@ -1753,30 +1793,30 @@ NMILadowanieKoniecGry:
 	LDA #$00
 	INX
 	BNE :-
-
+	
 	; załaduj chr bank 0
 	LDA #$00
 	STA $8000
-
+	
 	; narysuj tlo końca gry na ekranie
-
+	
 	; zapisz wskaznik do zmiennej int
 	LDA #<GrafikaTloKoniecGryKlatka1
 	STA int
 	LDA #>GrafikaTloKoniecGryKlatka1
 	STA int+1
-
-	; wybierz nametable 0
+	
+	; wybierz adres w PPU
 	BIT PPUSTATUS
 	LDA #$20
 	STA PPUADDR
 	LDA #$00
 	STA PPUADDR
-
+	
 	; zeruj rejestry i zmienne
 	LDX #$00
 	LDY #$00
-
+	
 	; wczytaj GrafikaTloKoniecGryKlatka1
 :
 	LDA (int), Y
@@ -1793,83 +1833,70 @@ NMILadowanieKoniecGry:
 	INC int+1
 	JMP :--
 :
-
-	; wyzeruj scrollowanie
-	LDA #$00
-	STA PPUSCROLL
-	STA PPUSCROLL
-
-	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
+	
+	JSR WyzerujScrollowanie
+	
+	LDA #%00010000 ; wybieramy bank 1 z pliku .chr do tla
 	STA PPUCTRL
-
+	
 	; włącz sprite i tlo
 	LDA #%00011110
 	STA PPUMASK
-
+	
 	LDA #$54
 	STA temp
-
+	
 	JSR MuzykaGrajKoniecGry
-
+	
 	LDA #%00000100
 	STA wlaczMuzyke
-
+	
 	LDA #$00
 	STA odtwarzajMuzykeLosowo
-
-	LDA #<PETLAPalenieGumy
-	STA wskaznikPetli
-	LDA #>PETLAPalenieGumy
-	STA wskaznikPetli+1
-
-	LDA #<NMIKoniecGry
-	STA wskaznikNMI
-	LDA #>NMIKoniecGry
-	STA wskaznikNMI+1
-
-	JMP PowrotDoNMI
-
-NMIKoniecGry:
-
+	
+	JMP StanKoniecGry
+	
+StanKoniecGry:
+	
+	JSR OdtwarzajMuzyke
+	JSR CzekajNaVBLANK
+	
 	; czekaj trochę
-
+	
 	DEC temp
 	LDA temp
 	CMP #$00
 	BEQ :+
-
-	JMP PowrotDoNMI
-
+	
+	JMP StanKoniecGry
+	
 :
-
-	; wyzerowac PPU
-	LDA #$40
-	STA PPUCTRL
-	STA PPUMASK
-
+	
+	JSR WylaczPPU
+	
 	; załaduj chr bank 0
 	LDA #$00
 	STA $8000
-
+	
 	; narysuj tlo końca gry klatka 2 na ekranie
-
+	
 	; zapisz wskaznik do zmiennej int
 	LDA #<GrafikaTloKoniecGryKlatka2
 	STA int
 	LDA #>GrafikaTloKoniecGryKlatka2
 	STA int+1
-
-	; wybierz nametable 0
+	
+	; wybierz adres w PPU
 	BIT PPUSTATUS
 	LDA #$20
 	STA PPUADDR
 	LDA #$00
 	STA PPUADDR
-
+	
 	; zeruj rejestry i zmienne
 	LDX #$00
 	LDY #$00
-
+	
 	; wczytaj GrafikaTloKoniecGryKlatka2
 :
 	LDA (int), Y
@@ -1886,9 +1913,9 @@ NMIKoniecGry:
 	INC int+1
 	JMP :--
 :
-
+	
 	; wypisz punkty na ekran
-
+	
 	LDA trybGry
 	CMP #$01
 	BEQ :+
@@ -1898,74 +1925,121 @@ NMIKoniecGry:
 :
 	JSR WyswietlStatystki2Graczy
 :
-
-	; wyzeruj scrollowanie
-	LDA #$00
-	STA PPUSCROLL
-	STA PPUSCROLL
-
-	LDA #%10010000 ; wybieramy bank 1 z pliku .chr do tla
+	
+	JSR WyzerujScrollowanie
+	
+	LDA #%00010000 ; wybieramy bank 1 z pliku .chr do tla
 	STA PPUCTRL
-
+	
 	; wlacz sprite i tlo
 	LDA #%00011110
 	STA PPUMASK
-
-	; czekaj na naciśnięcie entera który zresetuje gre
-
-	LDA #<NMICzekajNaReset
-	STA wskaznikNMI
-	LDA #>NMICzekajNaReset
-	STA wskaznikNMI+1
-
-	JMP PowrotDoNMI
-
-NMICzekajNaReset:
-
+	
+	JMP StanCzekajNaReset
+	
+StanCzekajNaReset:
+	
+	JSR CzytajKontroler
+	JSR CzekajNaVBLANK
+	JSR OdtwarzajMuzyke
+	
 	LDA kontroler
 	AND #%00001000
 	CMP #%00001000
 	BNE :+
-
-	JMP RESET
-
+	
+	JMP LadowanieMenu
+	
 :
-
-	JMP PowrotDoNMI
-
-NMIPalenieGumy:
-
-	JMP PowrotDoNMI
+	
+	JMP StanCzekajNaReset
 
 ; =========================================================
 ; ====================== podprogramy ======================
 ; =========================================================
 
-ZerujAPU:
+WylaczPPU:
 
+	LDA #$40
+	STA PPUCTRL
+	STA PPUMASK
+	
+	RTS
+
+ZerujAPU:
+	
 	; inizjalizuj $4000-4013
 	LDY #$13
-
+	
 :
 	LDA ZerowanieAPU, Y
 	STA $4000, Y
 	DEY
 	BPL :-
-
+	
+	LDA #$0F
+	STA APUSTATUS
+	
 	RTS
+	
+WyzerujScrollowanie:
+	
+	; wyzeruj scrollowanie
+	LDA #$00
+	STA PPUSCROLL
+	STA PPUSCROLL
+	
+	LDA #%00010000 ; wybieramy bank 1 z pliku .chr do tla
+	STA PPUCTRL
+	
+	RTS
+	
+CzekajNaVBLANK:
+	
+:
+	BIT PPUSTATUS
+	BPL :-
+	
+	RTS
+	
+TransferOAMDMA:
 
+	LDA #$02
+	STA OAMDMA
+	
+	RTS
+	
+GitHubUstawPaleteRozjasnij:
+	
+	BIT PPUSTATUS
+	LDA #$3F
+	STA PPUADDR
+	LDA #$00
+	STA PPUADDR
+	
+	LDX #$00
+:
+	LDA GitHubPalety, Y
+	STA PPUDATA
+	INY
+	INX
+	CPX #$08
+	BNE :-
+	
+	RTS
+	
 ; Odczyt z kontrolera 1
 CzytajKontroler:
-
+	
 	; skopiuj wartości do zmiennej kontrolerpoprzedni
-
+	
 	LDA kontroler
 	STA kontrolerpoprzedni
 	LDA #$00
 	STA kontroler
-
+	
 	; odczyt z wejścia
-
+	
 	LDA #$01
 	STA JOYPAD1
 	LDX #$00
@@ -1986,7 +2060,7 @@ CzytajKontroler:
 	INX
 	CPX #$08
 	BNE :---
-
+	
 	; Prawo
 	LDA #%10000000
 	AND odczytWejscia
@@ -2043,13 +2117,13 @@ CzytajKontroler:
 	ORA kontroler
 	STA kontroler
 :
-
+	
 	RTS
-
+	
 ; ================ generator liczb losowych ===============
 
 Losuj:
-
+	
 	LDX #$08
 	LDA losowa
 :
@@ -2062,13 +2136,13 @@ Losuj:
 	BNE :--
 	STA losowa
 	CMP #$00
-
+	
 	RTS
 
 ; ================== dodatkowe obliczenia =================
 
 ObliczPozycjeWPPU:
-
+	
 	; odczyt pozycji Y
 	LDA pozycjaKlockaY
 	CLC
@@ -2080,7 +2154,7 @@ ObliczPozycjeWPPU:
 	LSR A
 	LSR A
 	STA pozycjaPPUH
-
+	
 	; odczyt pozycji X
 	LDA pozycjaKlockaX
 	SEC
@@ -2089,11 +2163,11 @@ ObliczPozycjeWPPU:
 	LSR A
 	LSR A
 	STA pozycjaPPUL
-
+	
 	LDA #$00
 	LDX pozycjaPPUH
 	LDY #$20
-
+	
 	; obliczenia
 :
 	CPX #$00
@@ -2107,9 +2181,9 @@ ObliczPozycjeWPPU:
 	DEX
 	INY
 	JMP :--
-
+	
 :
-
+	
 	CLC
 	ADC pozycjaPPUL
 	BCS :+
@@ -2117,19 +2191,19 @@ ObliczPozycjeWPPU:
 :
 	INY
 :
-
+	
 	STY pozycjaPPUH
 	STA pozycjaPPUL
-
+	
 	RTS
-
+	
 ObliczWskaznikDoDanychKlocka:
-
+	
 	LDA #<DaneKlockow
 	STA pozycjaDanychKlocka
 	LDA #>DaneKlockow
 	STA pozycjaDanychKlocka+1
-
+	
 	CLC
 	LDA numerKlocka
 	ROL A
@@ -2139,7 +2213,7 @@ ObliczWskaznikDoDanychKlocka:
 	INY
 	LDA (pozycjaDanychKlocka), Y
 	STA temp+1
-
+	
 	CLC
 	LDA obrotKlocka
 	AND #%00000011
@@ -2150,22 +2224,22 @@ ObliczWskaznikDoDanychKlocka:
 	INY
 	LDA (temp), Y
 	STA pozycjaDanychKlocka+1
-
+	
 	RTS
-
+	
 ; ===================== ruch klockiem =====================
-
+	
 PrzesunKlocekWLewo:
-
+	
 	; sprawdź kolizje
-
+	
 	LDA kolizja
 	AND #%00000100
 	CMP #%00000100
 	BNE :+
 	RTS
 :
-
+	
 	LDA pozycjaKlockaX
 	SEC
 	SBC #$08
@@ -2177,41 +2251,41 @@ PrzesunKlocekWLewo:
 	INC zegarKontroleraobrot
 	
 	RTS
-
+	
 PrzesunKlocekWDol:
 	
 	; sprawdź kolizje
-
+	
 	LDA kolizja
 	AND #%00000010
 	CMP #%00000010
 	BNE :+
 	RTS
 :
-
+	
 	CLC
 	LDA pozycjaKlockaY
 	ADC #$08
 	STA pozycjaKlockaY
-
+	
 	LDA #$00
 	STA zegarSpadania
-
+	
 	INC pozycjaLiniiKlocka
-
+	
 	RTS
-
+	
 PrzesunKlocekWPrawo:
-
+	
 	; sprawdź kolizje
-
+	
 	LDA kolizja
 	AND #%00000001
 	CMP #%00000001
 	BNE :+
 	RTS
 :
-
+	
 	CLC
 	LDA pozycjaKlockaX
 	ADC #$08
@@ -2221,14 +2295,14 @@ PrzesunKlocekWPrawo:
 	; nie da się już wcisnąć klocka w ścianę ponieważ nie można obróbić go w następnej klatce zaraz po ruchu
 	INC zegarKontroleraobrot
 	INC zegarKontroleraobrot
-
+	
 	RTS
-
+	
 ObrocKlocekWPrawo:
 	; Zgodnie ze wskazówkami zegara
-
+	
 	; sprawdź kolizje
-
+	
 	LDA kolizja
 	AND #%00001000
 	CMP #%00001000
@@ -2245,16 +2319,16 @@ ObrocKlocekWPrawo:
 :
 	RTS
 :
-
+	
 	INC obrotKlocka
-
+	
 	RTS
-
+	
 ObrocKlocekWLewo:
 	; Przeciwnie do ruchu wskazówek zegara
-
+	
 	; sprawdź kolizje
-
+	
 	LDA kolizja
 	AND #%00010000
 	CMP #%00010000
@@ -2271,40 +2345,40 @@ ObrocKlocekWLewo:
 :
 	RTS
 :
-
+	
 	DEC obrotKlocka
-
+	
 	RTS
-
+	
 ; =================== tworzenie klocków ===================
-
+	
 StworzKlocek:
-
+	
 	LDA trybGry
 	CMP #$01
 	BEQ :+
-
+	
 	; zmień paletę
-
+	
 	LDA #<DaneKlockowPalety
 	STA temp
 	LDA #>DaneKlockowPalety
 	STA temp+1
-
+	
 	CLC
 	LDA numerKlocka
 	ROL A
 	ROL A
 	TAY
-
+	
 	; załaduj palety ($3F10)
-
+	
 	BIT PPUSTATUS
 	LDA #$3F
 	STA PPUADDR
 	LDA #$10
 	STA PPUADDR
-
+	
 	LDA (temp), Y
 	STA PPUDATA
 	INY
@@ -2317,27 +2391,25 @@ StworzKlocek:
 	LDA (temp), Y
 	STA PPUDATA
 	INY
-
+	
 :
-
+	
 	; wyzeruj pozycje
-
+	
 	LDA #$2F
 	STA pozycjaKlockaY
 	LDA #$68
 	STA pozycjaKlockaX
-
+	
 	LDA #$00
 	STA obrotKlocka
-
+	
 	STA pozycjaLiniiKlocka
-
-	STA wstrzymajOAMDMA
-
+	
 	RTS
-
+	
 StworzNastepnyKlocek:
-
+	
 	; ustawienie w int następnego klocka uwzględniając graczy
 	LDA numerGracza
 	CMP #$01
@@ -2348,20 +2420,20 @@ StworzNastepnyKlocek:
 	LDA numerNastepnegoKlocka2
 :
 	STA int
-
+	
 	; zmień paletę
-
+	
 	LDA #<DaneKlockowPalety
 	STA temp
 	LDA #>DaneKlockowPalety
 	STA temp+1
-
+	
 	CLC
 	LDA int
 	ROL A
 	ROL A
 	TAY
-
+	
 	LDA numerGracza
 	CMP #$01
 	BEQ :+
@@ -2391,12 +2463,12 @@ StworzNastepnyKlocek:
 	LDA (temp), Y
 	STA PPUDATA
 	INY
-
+	
 	LDA #<DaneKlockow
 	STA pozycjaDanychNastepnegoKlocka
 	LDA #>DaneKlockow
 	STA pozycjaDanychNastepnegoKlocka+1
-
+	
 	CLC
 	LDA int
 	ROL A
@@ -2406,48 +2478,48 @@ StworzNastepnyKlocek:
 	INY
 	LDA (pozycjaDanychNastepnegoKlocka), Y
 	STA temp+1
-
+	
 	LDY #$00
 	LDA (temp), Y
 	STA pozycjaDanychNastepnegoKlocka
 	INY
 	LDA (temp), Y
 	STA pozycjaDanychNastepnegoKlocka+1
-
+	
 	; stwórz sprite'y
-
+	
 	LDA #$28
 	STA temp+1
 	LDA #$18
 	STA temp
-
+	
 	LDX #$00 ; pozycja w OAM ($0210)
 	LDY #$FF ; pozycja w DanychKlocków
-
+	
 :
 	INY
 	CPY #$10
 	BEQ :++++
-
+	
 	CLC
 	LDA temp
 	ADC #$08
 	STA temp
-
+	
 	LDA temp
 	CMP #$40
 	BNE :+
-
+	
 	LDA #$20
 	STA temp
-
+	
 	CLC
 	LDA temp+1
 	ADC #$08
 	STA temp+1
-
+	
 :
-
+	
 	LDA (pozycjaDanychNastepnegoKlocka), Y
 	CMP #$00
 	BEQ :--
@@ -2493,75 +2565,77 @@ StworzNastepnyKlocek:
 	ADC #$90
 	STA $0220, X
 	INX
-
+	
 :
 	
 	JMP :----
-
+	
 :
 	
+	JSR TransferOAMDMA
+	
 	RTS
-
+	
 ; ====================== rysuj klocek =====================
-
+	
 RysujKlocek:
 	
 	JSR ObliczWskaznikDoDanychKlocka
-
+	
 	LDA pozycjaKlockaX
 	SEC
 	SBC #$08
 	STA temp
 	LDA pozycjaKlockaY
 	STA temp+1
-
+	
 	; stwórz sprite'y
-
+	
 	LDA #$FF
 	STA int ; mod 4
-
+	
 	LDX #$00 ; wskaźnik na OAM ($0200)
 	LDY #$FF ; wskaźnik na DaneKlocków
-
+	
 	; może i nie optymalnie ale działa
-
+	
 :
 	INY
 :
 	INC int
 	CPY #$10
 	BEQ :+++
-
+	
 	LDA int
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$FF
 	STA int
-
+	
 	LDA temp
 	SEC
 	SBC #$20
 	STA temp
-
+	
 	CLC
 	LDA temp+1
 	ADC #$08
 	STA temp+1
-
+	
 	JMP :-
-
+	
 :
-
+	
 	CLC
 	LDA temp
 	ADC #$08
 	STA temp
-
+	
 	LDA (pozycjaDanychKlocka), Y
 	CMP #$00
 	BEQ :---
-
+	
 	; zapisz pozycje Y
 	LDA temp+1
 	STA $0200, X
@@ -2575,12 +2649,12 @@ RysujKlocek:
 	CPY #$00
 	BEQ :+
 	CLC
-	ADC #$20
+	ADC #$10
 	LDY numerGracza
 	CPY #$00
 	BEQ :+
 	CLC
-	ADC #$20
+	ADC #$10
 :
 	LDY tempY
 	
@@ -2596,17 +2670,17 @@ RysujKlocek:
 	INX
 	
 	JMP :----
-
+	
 :
 	
 	RTS
-
+	
 ; ==================== stawianie klocka ===================
-
+	
 PostawKlocek:
-
+	
 	; odtwórz dźwięk
-
+	
 	LDA #%01011111
 	STA $4004
 	LDA #%11111111
@@ -2615,14 +2689,14 @@ PostawKlocek:
 	STA $4006
 	LDA #%01111111
 	STA $4007
-
+	
 	LDA pozycjaPPUH
 	STA temp
 	LDA pozycjaPPUL
 	STA temp+1
-
+	
 	DEC pozycjaLiniiKlocka
-
+	
 	CLC
 	INC temp+1
 	ADC #$01
@@ -2630,40 +2704,40 @@ PostawKlocek:
 	LDA temp
 	ADC #$00
 	STA temp
-
+	
 	; przepisz tę samą liczbę jako tło
-
+	
 	LDA #$FF
 	STA int ; mod 4
-
+	
 	LDY #$FF ; miejsce w danych klocków
 	LDX #$00 ; miejsce w mapie kolizji
-
+	
 	BIT PPUSTATUS
 	LDA temp
 	STA PPUADDR
 	LDA temp+1
 	STA PPUADDR
-
+	
 :
 	INC int
 	INX
 	INY
-
+	
 	CPY #$10
 	BEQ :++++
-
+	
 	LDA int
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA int
-
+	
 	INC pozycjaLiniiKlocka
-
+	
 	; przesuń na następny rząd
-
+	
 	CLC
 	LDA temp+1
 	ADC #$20
@@ -2671,18 +2745,18 @@ PostawKlocek:
 	LDA temp
 	ADC #$00
 	STA temp
-
+	
 	BIT PPUSTATUS
 	LDA temp
 	STA PPUADDR
 	LDA temp+1
 	STA PPUADDR
-
+	
 	INX
 	INX
-
+	
 :
-
+	
 	LDA (pozycjaDanychKlocka), Y
 	CMP #$00
 	BNE :+
@@ -2697,12 +2771,12 @@ PostawKlocek:
 	CPY #$00
 	BEQ :+
 	CLC
-	ADC #$A0
+	ADC #$10
 	LDY numerGracza
 	CPY #$00
 	BEQ :+
 	CLC
-	ADC #$20
+	ADC #$10
 :
 	
 	STA PPUDATA ; przepisz bajt z danych klocków (aktualizuj tło)
@@ -2719,9 +2793,6 @@ PostawKlocek:
 	JMP :----
 	
 :
-	
-	LDA #$01
-	STA wstrzymajOAMDMA
 	
 	; usuń spritey
 	
@@ -2746,23 +2817,25 @@ PostawKlocek:
 	LDA #$00
 	STA zegarSpadania
 	
+	JSR WyzerujScrollowanie
+	
 	RTS
-
+	
 ; ================== sprawdzanie kolizji ==================
-
+	
 SprawdzKolizje:
-
+	
 	; zeruj wykrywanie kolizji
 	LDA #%00000000 ; %XYZBALDP kolizja - X - koniec gry, Y - kolizja po obrocie w prawo z przesunieciem, Z - kolizja po obrocie w lewo z przesunieciem, B - przy obrocie w lewo, A - przy obrocie w prawo, L - z lewej, D - z dołu, P - z prawej)
 	STA kolizja
-
+	
 	; sprawdzanie kolizji z lewej strony
-
+	
 	LDX #$FF ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
 	STA temp ; mod 4
-
+	
 :
 	INX
 	INY
@@ -2771,37 +2844,37 @@ SprawdzKolizje:
 	LDA temp
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA temp
 	INX
 	INX
-
+	
 :
 	CPY #$10
 	BEQ :+
-
+	
 	LDA (pozycjaDanychKlocka), Y
 	CMP #$00
 	BEQ :--
-
+	
 	LDA mapaKolizji, X
 	CMP #$00
 	BEQ :--
-
+	
 	LDA kolizja
 	ORA #%00000100
 	STA kolizja
-
+	
 :
-
+	
 	; sprawdzanie kolizji u dołu
-
+	
 	LDX #$06 ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
 	STA temp ; mod 4
-
+	
 :
 	INX
 	INY
@@ -2809,37 +2882,37 @@ SprawdzKolizje:
 	LDA temp
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA temp
 	INX
 	INX
-
+	
 :
 	CPY #$10
 	BEQ :+
-
+	
 	LDA (pozycjaDanychKlocka), Y
 	CMP #$00
 	BEQ :--
-
+	
 	LDA mapaKolizji, X
 	CMP #$00
 	BEQ :--
-
+	
 	LDA kolizja
 	ORA #%00000010
 	STA kolizja
-
+	
 :
-
+	
 	; sprawdzanie kolizji z prawej strony
-
+	
 	LDX #$01 ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
 	STA temp ; mod 4
-
+	
 :
 	INX
 	INY
@@ -2847,42 +2920,42 @@ SprawdzKolizje:
 	LDA temp
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA temp
 	INX
 	INX
-
+	
 :
 	CPY #$10
 	BEQ :+
-
+	
 	LDA (pozycjaDanychKlocka), Y
 	CMP #$00
 	BEQ :--
-
+	
 	LDA mapaKolizji, X
 	CMP #$00
 	BEQ :--
-
+	
 	LDA kolizja
 	ORA #%00000001
 	STA kolizja
-
+	
 :
-
+	
 	; sprawdzanie kolizji po obrocie zgodnie z ruchem wskazówek
 	
 	LDA pozycjaDanychKlocka
 	STA int
 	LDA pozycjaDanychKlocka+1
 	STA int+1
-
+	
 	LDA obrotKlocka
 	AND #%00000011
 	CMP #%00000011
 	BNE :+
-
+	
 	LDA int
 	SEC
 	SBC #$30
@@ -2891,9 +2964,9 @@ SprawdzKolizje:
 	SBC #$00
 	STA int+1
 	JMP :++
-
+	
 :
-
+	
 	CLC
 	LDA int
 	ADC #$10
@@ -2901,14 +2974,14 @@ SprawdzKolizje:
 	LDA int+1
 	ADC #$00
 	STA int+1
-
+	
 :
-
+	
 	LDX #$00 ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
 	STA temp ; mod 4
-
+	
 :
 	INX
 	INY
@@ -2916,42 +2989,42 @@ SprawdzKolizje:
 	LDA temp
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA temp
 	INX
 	INX
-
+	
 :
 	CPY #$10
 	BEQ :+
-
+	
 	LDA (int), Y
 	CMP #$00
 	BEQ :--
-
+	
 	LDA mapaKolizji, X
 	CMP #$00
 	BEQ :--
-
+	
 	LDA kolizja
 	ORA #%00001000
 	STA kolizja
-
+	
 :
-
+	
 	; sprawdzanie kolizji po obrocie przeciwnie do ruchu wskazówek
-
+	
 	LDA pozycjaDanychKlocka
 	STA int
 	LDA pozycjaDanychKlocka+1
 	STA int+1
-
+	
 	LDA obrotKlocka
 	AND #%00000011
 	CMP #%00000000
 	BNE :+
-
+	
 	CLC
 	LDA int
 	ADC #$30
@@ -2962,7 +3035,7 @@ SprawdzKolizje:
 	JMP :++
 	
 :
-
+	
 	LDA int
 	SEC
 	SBC #$10
@@ -2970,14 +3043,14 @@ SprawdzKolizje:
 	LDA int+1
 	SBC #$00
 	STA int+1
-
+	
 :
-
+	
 	LDX #$00 ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
 	STA temp ; mod 4
-
+	
 :
 	INX
 	INY
@@ -2985,42 +3058,42 @@ SprawdzKolizje:
 	LDA temp
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA temp
 	INX
 	INX
-
+	
 :
 	CPY #$10
 	BEQ :+
-
+	
 	LDA (int), Y
 	CMP #$00
 	BEQ :--
-
+	
 	LDA mapaKolizji, X
 	CMP #$00
 	BEQ :--
-
+	
 	LDA kolizja
 	ORA #%00010000
 	STA kolizja
-
+	
 :
-
+	
 	; sprawdzanie kolizji po obrocie zgodnie z ruchem wskazówek z przesunięciem
 	
 	LDA pozycjaDanychKlocka
 	STA int
 	LDA pozycjaDanychKlocka+1
 	STA int+1
-
+	
 	LDA obrotKlocka
 	AND #%00000011
 	CMP #%00000011
 	BNE :+
-
+	
 	LDA int
 	SEC
 	SBC #$30
@@ -3029,9 +3102,9 @@ SprawdzKolizje:
 	SBC #$00
 	STA int+1
 	JMP :++
-
+	
 :
-
+	
 	CLC
 	LDA int
 	ADC #$10
@@ -3039,14 +3112,14 @@ SprawdzKolizje:
 	LDA int+1
 	ADC #$00
 	STA int+1
-
+	
 :
-
+	
 	LDX #$FF ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
 	STA temp ; mod 4
-
+	
 :
 	INX
 	INY
@@ -3054,42 +3127,42 @@ SprawdzKolizje:
 	LDA temp
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA temp
 	INX
 	INX
-
+	
 :
 	CPY #$10
 	BEQ :+
-
+	
 	LDA (int), Y
 	CMP #$00
 	BEQ :--
-
+	
 	LDA mapaKolizji, X
 	CMP #$00
 	BEQ :--
-
+	
 	LDA kolizja
 	ORA #%00100000
 	STA kolizja
 	
 :
-
+	
 	; sprawdzanie kolizji po obrocie przeciwnie do ruchu wskazówek z przesunięciem
 	
 	LDA pozycjaDanychKlocka
 	STA int
 	LDA pozycjaDanychKlocka+1
 	STA int+1
-
+	
 	LDA obrotKlocka
 	AND #%00000011
 	CMP #%00000011
 	BNE :+
-
+	
 	LDA int
 	SEC
 	SBC #$30
@@ -3098,9 +3171,9 @@ SprawdzKolizje:
 	SBC #$00
 	STA int+1
 	JMP :++
-
+	
 :
-
+	
 	CLC
 	LDA int
 	ADC #$10
@@ -3108,14 +3181,14 @@ SprawdzKolizje:
 	LDA int+1
 	ADC #$00
 	STA int+1
-
+	
 :
-
+	
 	LDX #$FF ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
 	STA temp ; mod 4
-
+	
 :
 	INX
 	INY
@@ -3123,46 +3196,46 @@ SprawdzKolizje:
 	LDA temp
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA temp
 	INX
 	INX
-
+	
 :
 	CPY #$10
 	BEQ :+
-
+	
 	LDA (int), Y
 	CMP #$00
 	BEQ :--
-
+	
 	LDA mapaKolizji, X
 	CMP #$00
 	BEQ :--
-
+	
 	LDA kolizja
 	ORA #%01000000
 	STA kolizja
 	
 :
-
+	
 	RTS
-
+	
 SprawdzKolizjeKoniecGry:
-
+	
 	; zeruj wykrywanie kolizji
 	LDA kolizja
 	AND #%01111111 ; koniec gry (1), niewykorzystane (3), obrót w lewo (1), obrót w prawo (1), lewa (1), dół (1), prawa (1)
 	STA kolizja
-
+	
 	; sprawdzanie kolizji pod klockiem
-
+	
 	LDX #$00 ; miejsce w mapie kolizji
 	LDY #$FF ; miejsce w danych klocków
 	LDA #$FF
 	STA temp ; mod 4
-
+	
 :
 	INX
 	INY
@@ -3171,64 +3244,64 @@ SprawdzKolizjeKoniecGry:
 	LDA temp
 	CMP #$04
 	BNE :+
-
+	
 	LDA #$00
 	STA temp
 	INX
 	INX
-
+	
 :
 	CPY #$10
 	BEQ :+
-
+	
 	LDA (pozycjaDanychKlocka), Y
 	CMP #$00
 	BEQ :--
-
+	
 	LDA mapaKolizji, X
 	CMP #$00
 	BEQ :--
-
+	
 	LDA kolizja
 	ORA #%10000000
 	STA kolizja
-
+	
 :
-
+	
 	RTS
-
+	
 SkopiujMapeKolizji:
-
+	
 	LDA pozycjaPPUH
 	STA temp
 	LDA pozycjaPPUL
 	STA temp+1
-
+	
 	; skopiuj siatkę kolizji
-
+	
 	BIT PPUSTATUS
 	LDA temp
 	STA PPUADDR
 	LDA temp+1
 	STA PPUADDR
 	BIT PPUDATA ; pierwszy odczyt jest niepoprawny i na złej pozycji
-
+	
 	LDY #$00
-
+	
 	; odczytaj tablicę 6 x 5 bajtów
-
+	
 :
 	LDX #$00
 :
-
+	
 	LDA PPUDATA
 	STA mapaKolizji, Y
-
+	
 	INY
 	INX
 	CPX #$06
 	BNE :-
-
+	
 	; przesuń do następnego rzędu
 	CLC
 	LDA temp+1
@@ -3237,36 +3310,36 @@ SkopiujMapeKolizji:
 	LDA temp
 	ADC #$00
 	STA temp
-
+	
 	BIT PPUSTATUS
 	LDA temp
 	STA PPUADDR
 	LDA temp+1
 	STA PPUADDR
 	BIT PPUDATA
-
+	
 	CPY #$1E
 	BNE :--
-
+	
 	RTS
-
+	
 ; ================== przepisywanie linii ==================
-
+	
 PrzepiszLinie:
-
+	
 	; przepisz linię z odczytu do tymczasowej
-
+	
 	LDY odczytLinii
-
+	
 	BIT PPUDATA
 	LDA PozycjaLiniiWPPUH, Y
 	STA PPUADDR
 	LDA PozycjaLiniiWPPUL, Y
 	STA PPUADDR
 	BIT PPUDATA
-
+	
 	LDX #$FF ; pozycja w odczycie linii
-
+	
 :
 	INX
 	CPX #$0A
@@ -3275,7 +3348,7 @@ PrzepiszLinie:
 	STA zrzutLinii, X
 	JMP :-
 :
-
+	
 	LDA wypelnienieLinii-1, Y
 	CMP #$0A
 	BNE :++
@@ -3304,19 +3377,19 @@ PrzepiszLinie:
 	JSR ZmienGrafikeRozbitaDolG1
 	JSR ZmienGrafikeRozbitaDolG2
 :
-
+	
 	; przepisz tymczasową na zapis
-
+	
 	LDY zapisLinii
-
+	
 	BIT PPUDATA
 	LDA PozycjaLiniiWPPUH, Y
 	STA PPUADDR
 	LDA PozycjaLiniiWPPUL, Y
 	STA PPUADDR
-
+	
 	LDX #$FF ; pozycja w zapisie linii
-
+	
 :
 	INX
 	CPX #$0A
@@ -3325,311 +3398,311 @@ PrzepiszLinie:
 	STA PPUDATA
 	JMP :-
 :
-
+	
 	DEC odczytLinii
 	DEC zapisLinii
-
+	
 	RTS
-
+	
 ZmienGrafikeRozbitaGora:
-
+	
 	LDX #$FF
-
+	
 :
 	INX
 	CPX #$0A
 	BNE :+
 	RTS
 :
-
+	
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
-	; 04 -> 10
-	CMP #$04
+	; 14 -> 10
+	CMP #$14
 	BNE :+
 	LDA #$10
 	STA zrzutLinii, X
 	JMP :--
 :   
-	; 06 -> 03
-	CMP #$06
+	; 16 -> 13
+	CMP #$16
 	BNE :+
-	LDA #$03
+	LDA #$13
 	STA zrzutLinii, X
 	JMP :---
 :
-	; 09 -> 02
-	CMP #$09
+	; 19 -> 12
+	CMP #$19
 	BNE :+
-	LDA #$02
+	LDA #$12
 	STA zrzutLinii, X
 	JMP :----
 :
-	; 0A -> 01
-	CMP #$0A
+	; 1A -> 11
+	CMP #$1A
 	BNE :+
-	LDA #$01
+	LDA #$11
 	STA zrzutLinii, X
 	JMP :-----
 :
-	; 0C -> 08
-	CMP #$0C
+	; 1C -> 18
+	CMP #$1C
 	BNE :+
-	LDA #$08
+	LDA #$18
 	STA zrzutLinii, X
 	JMP :------
 :
-	; 0D -> 05
-	CMP #$0D
+	; 1D -> 15
+	CMP #$1D
 	BNE :+
-	LDA #$05
+	LDA #$15
 	STA zrzutLinii, X
 	JMP :-------
 :
-	; 0E -> 07
-	CMP #$0E
+	; 1E -> 17
+	CMP #$1E
 	BNE :+
-	LDA #$07
+	LDA #$17
 	STA zrzutLinii, X
 	JMP :--------
 :
-	; 0F -> 0B
-	CMP #$0F
+	; 1F -> 1B
+	CMP #$1F
 	BNE :+
-	LDA #$0B
+	LDA #$1B
 	STA zrzutLinii, X
 	JMP :---------
 :
-
+	
 	JMP :----------
 	
 ZmienGrafikeRozbitaGoraG1:
-
+	
 	LDX #$FF
-
+	
 :
 	INX
 	CPX #$0A
 	BNE :+
 	RTS
 :
-
+	
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
-	; A4 -> B0
-	CMP #$A4
+	; 24 -> 20
+	CMP #$24
 	BNE :+
-	LDA #$B0
+	LDA #$20
 	STA zrzutLinii, X
 	JMP :--
 :   
-	; A6 -> A3
-	CMP #$A6
+	; 26 -> 23
+	CMP #$26
 	BNE :+
-	LDA #$A3
+	LDA #$23
 	STA zrzutLinii, X
 	JMP :---
 :
-	; A9 -> A2
-	CMP #$A9
+	; 29 -> 22
+	CMP #$29
 	BNE :+
-	LDA #$A2
+	LDA #$22
 	STA zrzutLinii, X
 	JMP :----
 :
-	; AA -> A1
-	CMP #$AA
+	; 2A -> 21
+	CMP #$2A
 	BNE :+
-	LDA #$A1
+	LDA #$21
 	STA zrzutLinii, X
 	JMP :-----
 :
-	; AC -> A8
-	CMP #$AC
+	; 2C -> 28
+	CMP #$2C
 	BNE :+
-	LDA #$A8
+	LDA #$28
 	STA zrzutLinii, X
 	JMP :------
 :
-	; AD -> A5
-	CMP #$AD
+	; 2D -> 25
+	CMP #$2D
 	BNE :+
-	LDA #$A5
+	LDA #$25
 	STA zrzutLinii, X
 	JMP :-------
 :
-	; AE -> A7
-	CMP #$AE
+	; 2E -> 27
+	CMP #$2E
 	BNE :+
-	LDA #$A7
+	LDA #$27
 	STA zrzutLinii, X
 	JMP :--------
 :
-	; AF -> AB
-	CMP #$AF
+	; 2F -> 2B
+	CMP #$2F
 	BNE :+
-	LDA #$AB
+	LDA #$2B
 	STA zrzutLinii, X
 	JMP :---------
 :
-
+	
 	JMP :----------
-
+	
 ZmienGrafikeRozbitaGoraG2:
-
+	
 	LDX #$FF
-
+	
 :
 	INX
 	CPX #$0A
 	BNE :+
 	RTS
 :
-
+	
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
-	; C4 -> D0
-	CMP #$C4
+	; 34 -> 30
+	CMP #$34
 	BNE :+
-	LDA #$D0
+	LDA #$30
 	STA zrzutLinii, X
 	JMP :--
 :   
-	; C6 -> C3
-	CMP #$C6
+	; 36 -> 33
+	CMP #$36
 	BNE :+
-	LDA #$C3
+	LDA #$33
 	STA zrzutLinii, X
 	JMP :---
 :
-	; C9 -> C2
-	CMP #$C9
+	; 39 -> 32
+	CMP #$39
 	BNE :+
-	LDA #$C2
+	LDA #$32
 	STA zrzutLinii, X
 	JMP :----
 :
-	; CA -> C1
-	CMP #$CA
+	; 3A -> 31
+	CMP #$3A
 	BNE :+
-	LDA #$C1
+	LDA #$31
 	STA zrzutLinii, X
 	JMP :-----
 :
-	; CC -> C8
-	CMP #$CC
+	; 3C -> 38
+	CMP #$3C
 	BNE :+
-	LDA #$C8
+	LDA #$38
 	STA zrzutLinii, X
 	JMP :------
 :
-	; CD -> C5
-	CMP #$CD
+	; 3D -> 35
+	CMP #$3D
 	BNE :+
-	LDA #$C5
+	LDA #$35
 	STA zrzutLinii, X
 	JMP :-------
 :
-	; CE -> C7
-	CMP #$CE
+	; 3E -> 37
+	CMP #$3E
 	BNE :+
-	LDA #$C7
+	LDA #$37
 	STA zrzutLinii, X
 	JMP :--------
 :
-	; CF -> CB
-	CMP #$CF
+	; 3F -> 3B
+	CMP #$3F
 	BNE :+
-	LDA #$CB
+	LDA #$3B
 	STA zrzutLinii, X
 	JMP :---------
 :
-
+	
 	JMP :----------
-
+	
 ZmienGrafikeRozbitaDol:
-
+	
 	LDX #$FF
-
+	
 :
 	INX
 	CPX #$0A
 	BNE :+
 	RTS
 :
-
+	
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
-	; 03 -> 10
-	CMP #$03
+	; 13 -> 10
+	CMP #$13
 	BNE :+
 	LDA #$10
 	STA zrzutLinii, X
 	JMP :--
 :   
-	; 06 -> 04
-	CMP #$06
+	; 16 -> 14
+	CMP #$16
 	BNE :+
-	LDA #$04
+	LDA #$14
 	STA zrzutLinii, X
 	JMP :---
 :
-	; 07 -> 01
-	CMP #$07
+	; 17 -> 11
+	CMP #$17
 	BNE :+
-	LDA #$01
+	LDA #$11
 	STA zrzutLinii, X
 	JMP :----
 :
-	; 08 -> 02
-	CMP #$08
+	; 18 -> 12
+	CMP #$18
 	BNE :+
-	LDA #$02
+	LDA #$12
 	STA zrzutLinii, X
 	JMP :-----
 :
-	; 0B -> 05
-	CMP #$0B
+	; 1B -> 15
+	CMP #$1B
 	BNE :+
-	LDA #$05
+	LDA #$15
 	STA zrzutLinii, X
 	JMP :------
 :
-	; 0C -> 09
-	CMP #$0C
+	; 1C -> 19
+	CMP #$1C
 	BNE :+
-	LDA #$09
+	LDA #$19
 	STA zrzutLinii, X
 	JMP :-------
 :
-	; 0E -> 0A
-	CMP #$0E
+	; 1E -> 1A
+	CMP #$1E
 	BNE :+
-	LDA #$0A
+	LDA #$1A
 	STA zrzutLinii, X
 	JMP :--------
 :
-	; 0F -> 0D
-	CMP #$0F
+	; 1F -> 1D
+	CMP #$1F
 	BNE :+
-	LDA #$0D
+	LDA #$1D
 	STA zrzutLinii, X
 	JMP :---------
 :
-
+	
 	JMP :----------
-
+	
 ZmienGrafikeRozbitaDolG1:
-
+	
 	LDX #$FF
-
+	
 :
 	INX
 	CPX #$0A
 	BNE :+
 	RTS
 :
-
+	
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
 	; A3 -> B0
@@ -3688,20 +3761,20 @@ ZmienGrafikeRozbitaDolG1:
 	STA zrzutLinii, X
 	JMP :---------
 :
-
+	
 	JMP :----------
 	
 ZmienGrafikeRozbitaDolG2:
-
+	
 	LDX #$FF
-
+	
 :
 	INX
 	CPX #$0A
 	BNE :+
 	RTS
 :
-
+	
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
 	; C3 -> D0
@@ -3760,133 +3833,133 @@ ZmienGrafikeRozbitaDolG2:
 	STA zrzutLinii, X
 	JMP :---------
 :
-
+	
 	JMP :----------
-
+	
 ; =========================================================
 ; ================ liczenie punktów i linii ===============
 ; =========================================================
-
+	
 PoliczLinieG1:
-
+	
 	INC liczbaLiniiNastepnyPoziom
 	INC liczbaLinii1BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA liczbaLinii1BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA liczbaLinii1BCD, X
 	DEX
 	INC liczbaLinii1BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
 	
 PoliczLinieG2:
-
+	
 	INC liczbaLiniiNastepnyPoziom
 	INC liczbaLinii2BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA liczbaLinii2BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA liczbaLinii2BCD, X
 	DEX
 	INC liczbaLinii2BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
-
+	
 WyswietlLiczbeLinii1:
-
+	
 	BIT PPUSTATUS
 	LDA #$21
 	STA PPUADDR
 	LDA #$44
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC liczbaLinii1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	RTS
 	
 WyswietlLiczbeLinii2:
-
+	
 	BIT PPUSTATUS
 	LDA #$21
 	STA PPUADDR
 	LDA #$56
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC liczbaLinii2BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	RTS
-
+	
 PoliczPunktG1:
 	
 	INC punkty1BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA punkty1BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA punkty1BCD, X
 	DEX
 	INC punkty1BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
 	
 PoliczPunktG2:
@@ -3894,247 +3967,247 @@ PoliczPunktG2:
 	INC punkty2BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA punkty2BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA punkty2BCD, X
 	DEX
 	INC punkty2BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
-
+	
 WyswietlLiczbePunktow1:
-
+	
 	BIT PPUSTATUS
 	LDA #$21
 	STA PPUADDR
 	LDA #$A4
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC punkty1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	RTS
 	
 WyswietlLiczbePunktow2:
-
+	
 	BIT PPUSTATUS
 	LDA #$21
 	STA PPUADDR
 	LDA #$B6
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC punkty2BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	RTS
-
+	
 PoliczLinieCheems1:
-
+	
 	JSR PoliczPunktG1
-
+	
 	INC linieCheems1BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA linieCheems1BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA linieCheems1BCD, X
 	DEX
 	INC linieCheems1BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
 	
 PoliczLinieCheems2:
-
+	
 	JSR PoliczPunktG2
-
+	
 	INC linieCheems2BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA linieCheems2BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA linieCheems2BCD, X
 	DEX
 	INC linieCheems2BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
-
+	
 PoliczLinieDoge1:
-
+	
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
-
+	
 	INC linieDoge1BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA linieDoge1BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA linieDoge1BCD, X
 	DEX
 	INC linieDoge1BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
 	
 PoliczLinieDoge2:
-
+	
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
-
+	
 	INC linieDoge2BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA linieDoge2BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA linieDoge2BCD, X
 	DEX
 	INC linieDoge2BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
-
+	
 PoliczLinieBuffDoge1:
-
+	
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
-
+	
 	INC linieBuffDoge1BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA linieBuffDoge1BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA linieBuffDoge1BCD, X
 	DEX
 	INC linieBuffDoge1BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
 	
 PoliczLinieBuffDoge2:
-
+	
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
-
+	
 	INC linieBuffDoge2BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA linieBuffDoge2BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA linieBuffDoge2BCD, X
 	DEX
 	INC linieBuffDoge2BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
-
+	
 PoliczLinieTemtris1:
-
+	
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
@@ -4143,31 +4216,31 @@ PoliczLinieTemtris1:
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
 	JSR PoliczPunktG1
-
+	
 	INC linieTemtris1BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA linieTemtris1BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA linieTemtris1BCD, X
 	DEX
 	INC linieTemtris1BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
 	
 PoliczLinieTemtris2:
-
+	
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
@@ -4176,163 +4249,163 @@ PoliczLinieTemtris2:
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
 	JSR PoliczPunktG2
-
+	
 	INC linieTemtris2BCD+3
 	
 	LDX #$03
-
+	
 :
 	LDA linieTemtris2BCD, X
 	CMP #$0A
 	BNE :+
-
+	
 	LDA #$00
 	STA linieTemtris2BCD, X
 	DEX
 	INC linieTemtris2BCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :-
 :
-
+	
 	RTS
-
+	
 WyswietlStatystki:
-
+	
 	; pumkty
-
+	
 	BIT PPUSTATUS
 	LDA #$21
 	STA PPUADDR
 	LDA #$CB
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC punkty1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; linie ogółem
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$0B
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC liczbaLinii1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość cheems
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$4B
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieCheems1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość doge
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$8B
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieDoge1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość buffdoge
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$CB
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieBuffDoge1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość temtris
-
+	
 	BIT PPUSTATUS
 	LDA #$23
 	STA PPUADDR
 	LDA #$0B
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieTemtris1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; czas gry
 	
 	BIT PPUSTATUS
@@ -4340,15 +4413,15 @@ WyswietlStatystki:
 	STA PPUADDR
 	LDA #$4B
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC czasGryBCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$03
 	BNE :+
@@ -4365,11 +4438,11 @@ WyswietlStatystki:
 	BEQ :+
 	JMP :--
 :
-
+	
 	RTS
-
+	
 WyswietlStatystki2Graczy:
-
+	
 	; sprawdź kto ma więcej punktów
 	
 	LDA #$01
@@ -4473,15 +4546,15 @@ WyswietlStatystki2Graczy:
 	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC punkty1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
@@ -4498,15 +4571,15 @@ WyswietlStatystki2Graczy:
 	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC punkty2BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
@@ -4514,224 +4587,224 @@ WyswietlStatystki2Graczy:
 :
 	
 	; linie ogółem G1
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$06
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC liczbaLinii1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; linie ogółem G2
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$0B
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC liczbaLinii2BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość cheems G1
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$46
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieCheems1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość cheems G2
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$4B
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieCheems2BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość doge G1
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$86
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieDoge1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość doge G2
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$8B
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieDoge2BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość buffdoge G1
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$C6
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieBuffDoge1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość buffdoge G2
-
+	
 	BIT PPUSTATUS
 	LDA #$22
 	STA PPUADDR
 	LDA #$CB
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieBuffDoge2BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; ilość temtris G1
-
+	
 	BIT PPUSTATUS
 	LDA #$23
 	STA PPUADDR
 	LDA #$06
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieTemtris1BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
@@ -4739,30 +4812,30 @@ WyswietlStatystki2Graczy:
 :
 	
 	; ilość temtris G2
-
+	
 	BIT PPUSTATUS
 	LDA #$23
 	STA PPUADDR
 	LDA #$0B
 	STA PPUADDR
-
+	
 	LDA #$00
 	STA PPUDATA
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC linieTemtris2BCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$04
 	BEQ :+
 	JMP :-
 :
-
+	
 	; czas gry
 	
 	BIT PPUSTATUS
@@ -4770,15 +4843,15 @@ WyswietlStatystki2Graczy:
 	STA PPUADDR
 	LDA #$4B
 	STA PPUADDR
-
+	
 	LDX #$00
-
+	
 :
 	CLC
 	LDA #$E0
 	ADC czasGryBCD, X
 	STA PPUDATA
-
+	
 	INX
 	CPX #$03
 	BNE :+
@@ -4795,16 +4868,16 @@ WyswietlStatystki2Graczy:
 	BEQ :+
 	JMP :--
 :
-
+	
 	RTS
-
+	
 OdtworzDzwiekRozbijanejLinii:
-
+	
 	; odtwórz dźwięk
 	LDA ileNaRazLinii
 	CMP #$01
 	BNE :+
-
+	
 	LDA #%11001111
 	STA $4004
 	LDA #%11010010
@@ -4813,12 +4886,12 @@ OdtworzDzwiekRozbijanejLinii:
 	STA $4006
 	LDA #%11111000
 	STA $4007
-
+	
 	JMP :++++
 :
 	CMP #$02
 	BNE :+
-
+	
 	LDA #%00001111
 	STA $4004
 	LDA #%11111010
@@ -4827,12 +4900,12 @@ OdtworzDzwiekRozbijanejLinii:
 	STA $4006
 	LDA #%11111001
 	STA $4007
-
+	
 	JMP :+++
 :
 	CMP #$03
 	BNE :+
-
+	
 	LDA #%10001111
 	STA $4004
 	LDA #%10011010
@@ -4841,7 +4914,7 @@ OdtworzDzwiekRozbijanejLinii:
 	STA $4006
 	LDA #%11111001
 	STA $4007
-
+	
 	JMP :++
 :
 	LDA #%01001111
@@ -4853,13 +4926,13 @@ OdtworzDzwiekRozbijanejLinii:
 	LDA #%11111000
 	STA $4007
 :
-
+	
 	RTS
-
+	
 ; =========================================================
 ; ======================== poziomy ========================
 ; =========================================================
-
+	
 CzyNastepnyPoziom:
 	
 	; jeśli liczba linii jest większa niż 30
@@ -4872,7 +4945,7 @@ CzyNastepnyPoziom:
 	
 	STA liczbaLiniiNastepnyPoziom
 	DEC liczbaLiniiNastepnyPoziom
-
+	
 	INC poziom
 	LDA poziom
 	CMP #$10
@@ -4880,30 +4953,30 @@ CzyNastepnyPoziom:
 	LDA #$00
 	STA poziom
 :
-
+	
 	LDA #$00
 	STA liczbaLiniiNastepnyPoziom
-
+	
 	LDA trybGry
 	CMP #$01
 	BEQ :++++
-
+	
 	; załaduj palete klocków ($3F04)
 	LDA #$3F
 	STA PPUADDR
 	LDA #$04
 	STA PPUADDR
-
+	
 	LDA #<PaletyPoziomow
 	STA temp
 	LDA #>PaletyPoziomow
 	STA temp+1
-
+	
 	LDX #$00
 :
 	CPX poziom
 	BEQ :+
-
+	
 	CLC
 	LDA temp
 	ADC #$04
@@ -4911,11 +4984,11 @@ CzyNastepnyPoziom:
 	LDA temp+1
 	ADC #$00
 	STA temp+1
-
+	
 	INX
 	JMP :-
 :
-
+	
 	LDY #$FF
 :
 	INY
@@ -4923,30 +4996,30 @@ CzyNastepnyPoziom:
 	STA PPUDATA
 	CPY #$04
 	BNE :-
-
+	
 :
-
+	
 	LDA szybkoscSpadania
 	CMP #$08
 	BEQ :+
-
+	
 	SEC
 	SBC #$04
 	STA szybkoscSpadania
 :
-
+	
 	RTS
-
+	
 ; =========================================================
 ; ======================= czas gry ========================
 ; =========================================================
-
+	
 PoliczSekunde:
 	
 	INC czasGryBCD+4
 	
 	LDX #$04
-
+	
 :
 	CPX #$03
 	BNE :+
@@ -4963,61 +5036,61 @@ PoliczSekunde:
 	STA czasGryBCD, X
 	DEX
 	INC czasGryBCD, X
-
+	
 	CPX #$00
 	BEQ :+
-
+	
 	JMP :---
 :
 	
 	RTS
-
+	
 ; =========================================================
 ; =================== odtwarzanie muzyki ==================
 ; =========================================================
-
+	
 OdtwarzajMuzyke:
-
+	
 	LDA wlaczMuzyke
 	AND #%00000100
 	CMP #%00000100
 	BNE :+
-
+	
 	JSR OdtwarzaczMuzykiKanalP
-
+	
 :
 	LDA wlaczMuzyke
 	AND #%00000010
 	CMP #%00000010
 	BNE :+
-
+	
 	JSR OdtwarzaczMuzykiKanalT
-
+	
 :
 	LDA wlaczMuzyke
 	AND #%00000001
 	CMP #%00000001
 	BNE :+
-
+	
 	JSR OdtwarzaczMuzykiKanalN
-
+	
 :
-
+	
 	RTS
-
+	
 OdtwarzaczMuzykiKanalP:
 	
 	; =============== kanał 1 - fala kwadratowa ===============
-
+	
 	LDA zegarMuzykiP
 	CMP #$00
 	BEQ :+
 	DEC zegarMuzykiP
 	RTS
 :
-
+	
 	LDY #$00
-
+	
 	LDA (wskaznikDoMuzykiP), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
 	AND #%11111000
 	CMP #%11111000
@@ -5026,9 +5099,9 @@ OdtwarzaczMuzykiKanalP:
 	LDA (wskaznikDoMuzykiP), Y
 	CMP #$AE
 	BNE :++++
-
+	
 	; kod końca bloku
-
+	
 	CLC
 	LDA odtwarzanaMuzykaP
 	ADC #$02
@@ -5036,25 +5109,25 @@ OdtwarzaczMuzykiKanalP:
 	LDA odtwarzanaMuzykaP+1
 	ADC #$00
 	STA odtwarzanaMuzykaP+1
-
+	
 	LDY #$00
-
+	
 	LDA (odtwarzanaMuzykaP), Y
 	AND #%11111000
 	CMP #%11111000
 	BNE :+++
-
+	
 	INY
 	LDA (odtwarzanaMuzykaP), Y ; podwójne sprawdzenie końca bloku
 	CMP #$AE
 	BNE :+++
-
+	
 	; kod końca bloku, graj następną lub wyłącz muzykę
-
+	
 	LDA odtwarzajMuzykeLosowo
 	CMP #$00
 	BEQ :++
-
+	
 	LDA grajMuzykeMenu
 	CMP #$01
 	BNE :+
@@ -5062,11 +5135,11 @@ OdtwarzaczMuzykiKanalP:
 	RTS
 :
 	JSR MuzykaGrajMelodie
-
+	
 	RTS
-
+	
 :
-
+	
 	LDA #$00
 	STA wlaczMuzyke
 	STA $4000
@@ -5081,35 +5154,35 @@ OdtwarzaczMuzykiKanalP:
 	STA $400D
 	STA $400E
 	STA $400F
-
+	
 	RTS
-
+	
 :
-
+	
 	LDY #$00
-
+	
 	LDA (odtwarzanaMuzykaP), Y
 	STA wskaznikDoMuzykiP
 	INY
 	LDA (odtwarzanaMuzykaP), Y
 	STA wskaznikDoMuzykiP+1
-
+	
 	JMP :----
-
+	
 :
 	CMP #%11101000
 	BNE :+
-
+	
 	; pauza w odtwarzaniu
-
+	
 	LDA #$00
 	STA $4002
 	STA $4003
-
+	
 	INY
 	LDA (wskaznikDoMuzykiP), Y
 	STA zegarMuzykiP
-
+	
 	CLC
 	LDA wskaznikDoMuzykiP
 	ADC #$02
@@ -5117,22 +5190,22 @@ OdtwarzaczMuzykiKanalP:
 	LDA wskaznikDoMuzykiP+1
 	ADC #$00
 	STA wskaznikDoMuzykiP+1
-
+	
 	JMP :++++
-
+	
 :
 	CMP #%10101000
 	BNE :+
-
+	
 	; wykryto bajt modyfikacji - kolejne 2 bajty zmienią ustawienia kanału
-
+	
 	INY
 	LDA (wskaznikDoMuzykiP), Y
 	STA $4000
 	INY
 	LDA (wskaznikDoMuzykiP), Y
 	STA $4001
-
+	
 	CLC
 	LDA wskaznikDoMuzykiP
 	ADC #$03
@@ -5140,18 +5213,18 @@ OdtwarzaczMuzykiKanalP:
 	LDA wskaznikDoMuzykiP+1
 	ADC #$00
 	STA wskaznikDoMuzykiP+1
-
+	
 	JMP :------
-
+	
 :
 	CMP #%10111000
 	BNE :+
-
+	
 	; przewiń o X bajtów
-
+	
 	INY
 	LDA (wskaznikDoMuzykiP), Y
-
+	
 	CLC
 	LDA wskaznikDoMuzykiP
 	SBC temp
@@ -5159,13 +5232,13 @@ OdtwarzaczMuzykiKanalP:
 	LDA wskaznikDoMuzykiP+1
 	SBC #$00
 	STA wskaznikDoMuzykiP+1
-
+	
 	JMP :-------
-
+	
 :
-
+	
 	LDY #$00
-
+	
 	; przesuń o licznik muzyki
 	LDA (wskaznikDoMuzykiP), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
 	STA $4003
@@ -5175,7 +5248,7 @@ OdtwarzaczMuzykiKanalP:
 	INY
 	LDA (wskaznikDoMuzykiP), Y ; odczytujemy długość w klatkach CPU
 	STA zegarMuzykiP
-
+	
 	CLC
 	LDA wskaznikDoMuzykiP
 	ADC #$03
@@ -5183,7 +5256,7 @@ OdtwarzaczMuzykiKanalP:
 	LDA wskaznikDoMuzykiP+1
 	ADC #$00
 	STA wskaznikDoMuzykiP+1
-
+	
 :
 	
 	DEC zegarMuzykiP
@@ -5221,9 +5294,9 @@ OdtwarzaczMuzykiKanalT:
 	LDA odtwarzanaMuzykaT+1
 	ADC #$00
 	STA odtwarzanaMuzykaT+1
-
+	
 	LDY #$00
-
+	
 	LDA (odtwarzanaMuzykaT), Y
 	CMP #$FF
 	BNE :+
@@ -5231,47 +5304,47 @@ OdtwarzaczMuzykiKanalT:
 	LDA (odtwarzanaMuzykaT), Y ; podwójne sprawdzenie końca bloku
 	CMP #$AE
 	BNE :++
-
+	
 	; kod końca bloku, wyłącz kanał
-
+	
 	LDA wlaczMuzyke
 	AND #%11111101
 	STA wlaczMuzyke
-
+	
 	LDA #$00
 	STA $4008
 	STA $4009
 	STA $400A
 	STA $400B
-
+	
 	RTS
-
+	
 :
-
+	
 	LDY #$00
-
+	
 	LDA (odtwarzanaMuzykaT), Y
 	STA wskaznikDoMuzykiT
 	INY
 	LDA (odtwarzanaMuzykaT), Y
 	STA wskaznikDoMuzykiT+1
-
+	
 	JMP :--
-
+	
 :
 	CMP #%11101000
 	BNE :+
-
+	
 	; pauza w odtwarzaniu
-
+	
 	LDA #$00
 	STA $400A
 	STA $400B
-
+	
 	INY
 	LDA (wskaznikDoMuzykiT), Y
 	STA zegarMuzykiT
-
+	
 	CLC
 	LDA wskaznikDoMuzykiT
 	ADC #$02
@@ -5279,19 +5352,19 @@ OdtwarzaczMuzykiKanalT:
 	LDA wskaznikDoMuzykiT+1
 	ADC #$00
 	STA wskaznikDoMuzykiT+1
-
+	
 	JMP :++++
-
+	
 :
 	CMP #%10101000
 	BNE :+
-
+	
 	; wykryto bajt modyfikacji - kolejne 2 bajty zmienią ustawienia kanału
-
+	
 	INY
 	LDA (wskaznikDoMuzykiT), Y
 	STA $4008
-
+	
 	CLC
 	LDA wskaznikDoMuzykiT
 	ADC #$02
@@ -5299,18 +5372,18 @@ OdtwarzaczMuzykiKanalT:
 	LDA wskaznikDoMuzykiT+1
 	ADC #$00
 	STA wskaznikDoMuzykiT+1
-
+	
 	JMP :----
-
+	
 :
 	CMP #%10111000
 	BNE :+
-
+	
 	; przewiń o X bajtów
-
+	
 	INY
 	LDA (wskaznikDoMuzykiT), Y
-
+	
 	CLC
 	LDA wskaznikDoMuzykiT
 	SBC temp
@@ -5318,13 +5391,13 @@ OdtwarzaczMuzykiKanalT:
 	LDA wskaznikDoMuzykiT+1
 	SBC #$00
 	STA wskaznikDoMuzykiT+1
-
+	
 	JMP :-----
-
+	
 :
-
+	
 	LDY #$00
-
+	
 	; przesuń o licznik muzyki
 	LDA (wskaznikDoMuzykiT), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
 	STA $400B
@@ -5334,7 +5407,7 @@ OdtwarzaczMuzykiKanalT:
 	INY
 	LDA (wskaznikDoMuzykiT), Y ; odczytujemy długość w klatkach CPU
 	STA zegarMuzykiT
-
+	
 	CLC
 	LDA wskaznikDoMuzykiT
 	ADC #$03
@@ -5342,26 +5415,26 @@ OdtwarzaczMuzykiKanalT:
 	LDA wskaznikDoMuzykiT+1
 	ADC #$00
 	STA wskaznikDoMuzykiT+1
-
+	
 :
-
+	
 	DEC zegarMuzykiT
-
+	
 	RTS
-
+	
 OdtwarzaczMuzykiKanalN:
 	
 	; ====================== kanał 4 szum =====================
-
+	
 	LDA zegarMuzykiN
 	CMP #$00
 	BEQ :+
 	DEC zegarMuzykiN
 	RTS
 :
-
+	
 	LDY #$00
-
+	
 	LDA (wskaznikDoMuzykiN), Y ; odczytujemy 5 nieużywanych i 3 wysokie bity tonu
 	AND #%01110000
 	CMP #%01110000
@@ -5370,9 +5443,9 @@ OdtwarzaczMuzykiKanalN:
 	LDA (wskaznikDoMuzykiN), Y
 	CMP #$AE
 	BNE :++
-
+	
 	; kod końca bloku
-
+	
 	CLC
 	LDA odtwarzanaMuzykaN
 	ADC #$02
@@ -5380,59 +5453,59 @@ OdtwarzaczMuzykiKanalN:
 	LDA odtwarzanaMuzykaN+1
 	ADC #$00
 	STA odtwarzanaMuzykaN+1
-
+	
 	LDY #$00
-
+	
 	LDA (odtwarzanaMuzykaN), Y
 	AND #%01110000
 	CMP #%01110000
 	BNE :+
-
+	
 	INY
 	LDA (odtwarzanaMuzykaN), Y
 	CMP #$AE
 	BNE :+
-
+	
 	; kod końca bloku, wyłącz kanał
-
+	
 	LDA wlaczMuzyke
 	AND #%11111110
 	STA wlaczMuzyke
-
+	
 	LDA #$00
 	STA $400C
 	STA $400D
 	STA $400E
 	STA $400F
-
+	
 	RTS
-
+	
 :
-
+	
 	LDY #$00
-
+	
 	LDA (odtwarzanaMuzykaN), Y
 	STA wskaznikDoMuzykiN
 	INY
 	LDA (odtwarzanaMuzykaN), Y
 	STA wskaznikDoMuzykiN+1
-
+	
 	JMP :--
-
+	
 :
 	CMP #%00110000
 	BNE :+
-
+	
 	; pauza w odtwarzaniu
-
+	
 	LDA #$00
 	STA $400E
 	STA $400F
-
+	
 	INY
 	LDA (wskaznikDoMuzykiN), Y
 	STA zegarMuzykiN
-
+	
 	CLC
 	LDA wskaznikDoMuzykiN
 	ADC #$02
@@ -5440,19 +5513,19 @@ OdtwarzaczMuzykiKanalN:
 	LDA wskaznikDoMuzykiN+1
 	ADC #$00
 	STA wskaznikDoMuzykiN+1
-
+	
 	JMP :++++
-
+	
 :
 	CMP #%00010000
 	BNE :+
-
+	
 	; wykryto bajt modyfikacji - kolejne 2 bajty zmienią ustawienia kanału
-
+	
 	INY
 	LDA (wskaznikDoMuzykiN), Y
 	STA $400C
-
+	
 	CLC
 	LDA wskaznikDoMuzykiN
 	ADC #$02
@@ -5460,20 +5533,20 @@ OdtwarzaczMuzykiKanalN:
 	LDA wskaznikDoMuzykiN+1
 	ADC #$00
 	STA wskaznikDoMuzykiN+1
-
+	
 	JMP :----
-
+	
 :
 	CMP #%00100000
 	BNE :+
-
+	
 	; przewiń o X bajtów
-
+	
 	INY
 	LDA (wskaznikDoMuzykiN), Y
-
+	
 	STA temp
-
+	
 	CLC
 	LDA wskaznikDoMuzykiN
 	SBC temp
@@ -5481,13 +5554,13 @@ OdtwarzaczMuzykiKanalN:
 	LDA wskaznikDoMuzykiN+1
 	SBC #$00
 	STA wskaznikDoMuzykiN+1
-
+	
 	JMP :-----
-
+	
 :
-
+	
 	LDY #$00
-
+	
 	; przesuń o licznik muzyki
 	LDA (wskaznikDoMuzykiN), Y ; odczytujemy wysokość
 	STA $400E
@@ -5497,7 +5570,7 @@ OdtwarzaczMuzykiKanalN:
 	INY
 	LDA (wskaznikDoMuzykiN), Y ; odczytujemy długość dla zegara
 	STA zegarMuzykiN
-
+	
 	CLC
 	LDA wskaznikDoMuzykiN
 	ADC #$03
@@ -5505,87 +5578,87 @@ OdtwarzaczMuzykiKanalN:
 	LDA wskaznikDoMuzykiN+1
 	ADC #$00
 	STA wskaznikDoMuzykiN+1
-
+	
 :
-
+	
 	DEC zegarMuzykiN
-
+	
 	RTS
-
+	
 MuzykaWylaczWszystkieKanaly:
-
+	
 	LDA #%00000000
 	STA wlaczMuzyke
 	STA zegarMuzykiP
 	STA zegarMuzykiT
 	STA zegarMuzykiN
-
+	
 	STA $4000
 	STA $4001
 	STA $4002
 	STA $4003
 	STA $4008
-
+	
 	RTS
-
+	
 MuzykaGrajMelodie:
-
+	
 	; zerowanie zegarów
-
+	
 	LDA #$00
 	STA zegarMuzykiP
 	STA zegarMuzykiT
 	STA zegarMuzykiN
-
+	
 	LDA #$07
 	STA wlaczMuzyke
-
+	
 	; wylosuj melodię
 	
 	LDA losowa
 	AND #%00000011
 	CMP #$00
 	BNE :+
-
+	
 	; załaduj Never Gonna Give You Up
 	
 	LDA #<Never_Gonna_Give_You_Up_Kanal_P
 	STA odtwarzanaMuzykaP
 	LDA #>Never_Gonna_Give_You_Up_Kanal_P
 	STA odtwarzanaMuzykaP+1
-
+	
 	LDA #<Never_Gonna_Give_You_Up_Kanal_T
 	STA odtwarzanaMuzykaT
 	LDA #>Never_Gonna_Give_You_Up_Kanal_T
 	STA odtwarzanaMuzykaT+1
-
+	
 	LDA #<Never_Gonna_Give_You_Up_Kanal_N
 	STA odtwarzanaMuzykaN
 	LDA #>Never_Gonna_Give_You_Up_Kanal_N
 	STA odtwarzanaMuzykaN+1
-
+	
 	JMP :++++
 :
 	CMP #$01
 	BNE :+
-
+	
 	; załaduj Together Forever
 	
 	LDA #<TogetherForeverKanalP
 	STA odtwarzanaMuzykaP
 	LDA #>TogetherForeverKanalP
 	STA odtwarzanaMuzykaP+1
-
+	
 	LDA #<TogetherForeverKanalT
 	STA odtwarzanaMuzykaT
 	LDA #>TogetherForeverKanalT
 	STA odtwarzanaMuzykaT+1
-
+	
 	LDA #<TogetherForeverKanalN
 	STA odtwarzanaMuzykaN
 	LDA #>TogetherForeverKanalN
 	STA odtwarzanaMuzykaN+1
-
+	
 	JMP :+++
 :
 	CMP #$02
@@ -5595,12 +5668,12 @@ MuzykaGrajMelodie:
 	STA odtwarzanaMuzykaP
 	LDA #>Song_For_Denise_kanal_P
 	STA odtwarzanaMuzykaP+1
-
+	
 	LDA #<Song_For_Denise_kanal_T
 	STA odtwarzanaMuzykaT
 	LDA #>Song_For_Denise_kanal_T
 	STA odtwarzanaMuzykaT+1
-
+	
 	LDA #<Song_For_Denise_kanal_N
 	STA odtwarzanaMuzykaN
 	LDA #>Song_For_Denise_kanal_N
@@ -5613,40 +5686,40 @@ MuzykaGrajMelodie:
 	STA odtwarzanaMuzykaP
 	LDA #>Szanty_Bitwa_Kanal_P
 	STA odtwarzanaMuzykaP+1
-
+	
 	LDA #<Szanty_Bitwa_Kanal_T
 	STA odtwarzanaMuzykaT
 	LDA #>Szanty_Bitwa_Kanal_T
 	STA odtwarzanaMuzykaT+1
-
+	
 	LDA #<Szanty_Bitwa_Kanal_N
 	STA odtwarzanaMuzykaN
 	LDA #>Szanty_Bitwa_Kanal_N
 	STA odtwarzanaMuzykaN+1
 	
 :
-
+	
 	LDY #$00
 	LDA (odtwarzanaMuzykaP), Y
 	STA wskaznikDoMuzykiP
 	INY
 	LDA (odtwarzanaMuzykaP), Y
 	STA wskaznikDoMuzykiP+1
-
+	
 	LDY #$00
 	LDA (odtwarzanaMuzykaT), Y
 	STA wskaznikDoMuzykiT
 	INY
 	LDA (odtwarzanaMuzykaT), Y
 	STA wskaznikDoMuzykiT+1
-
+	
 	LDY #$00
 	LDA (odtwarzanaMuzykaN), Y
 	STA wskaznikDoMuzykiN
 	INY
 	LDA (odtwarzanaMuzykaN), Y
 	STA wskaznikDoMuzykiN+1
-
+	
 	RTS
 
 MuzykaGrajIntro:
@@ -5713,6 +5786,14 @@ MuzykaGrajKoniecGry:
 
 ; ==================== dane zewnętrzne ====================
 
+GitHub:
+	.byte $F0, $F2, $FC, $F1, $FD, $EB, $0F, $EC, $F8, $F6, $0E, $F4, $F2, $F6, $EE, $F5, $0D, $F9, $F4
+
+GitHubPalety:
+	.byte $0F, $0F, $04, $05, $0F, $0F, $02, $01
+	.byte $0F, $06, $15, $26, $0F, $01, $02, $0C
+	.byte $0F, $07, $16, $27, $0F, $02, $0C, $11
+	.byte $0F, $08, $17, $28, $0F, $01, $12, $21
 ZerowanieAPU:
 	.byte $30, $08, $00, $00
 	.byte $30, $08, $00, $00
@@ -5795,171 +5876,171 @@ DaneKlockowT:
 	.byte <DaneKlockowTObr4, >DaneKlockowTObr4
 
 DaneKlockowKostkaObr1:
-	.byte $00, $07, $08, $00
-	.byte $00, $0A, $09, $00
+	.byte $00, $17, $18, $00
+	.byte $00, $1A, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKostkaObr2:
-	.byte $00, $07, $08, $00
-	.byte $00, $0A, $09, $00
+	.byte $00, $17, $18, $00
+	.byte $00, $1A, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKostkaObr3:
-	.byte $00, $07, $08, $00
-	.byte $00, $0A, $09, $00
+	.byte $00, $17, $18, $00
+	.byte $00, $1A, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKostkaObr4:
-	.byte $00, $07, $08, $00
-	.byte $00, $0A, $09, $00
+	.byte $00, $17, $18, $00
+	.byte $00, $1A, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowDlugiObr1:
-	.byte $01, $05, $05, $02
+	.byte $11, $15, $15, $12
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowDlugiObr2:
-	.byte $00, $03, $00, $00
-	.byte $00, $06, $00, $00
-	.byte $00, $06, $00, $00
-	.byte $00, $04, $00, $00
+	.byte $00, $13, $00, $00
+	.byte $00, $16, $00, $00
+	.byte $00, $16, $00, $00
+	.byte $00, $14, $00, $00
 
 DaneKlockowDlugiObr3:
-	.byte $01, $05, $05, $02
+	.byte $11, $15, $15, $12
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowDlugiObr4:
-	.byte $00, $03, $00, $00
-	.byte $00, $06, $00, $00
-	.byte $00, $06, $00, $00
-	.byte $00, $04, $00, $00
+	.byte $00, $13, $00, $00
+	.byte $00, $16, $00, $00
+	.byte $00, $16, $00, $00
+	.byte $00, $14, $00, $00
 
 DaneKlockowLObr1:
-	.byte $00, $07, $05, $02
-	.byte $00, $04, $00, $00
+	.byte $00, $17, $15, $12
+	.byte $00, $14, $00, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowLObr2:
-	.byte $00, $01, $08, $00
-	.byte $00, $00, $06, $00
-	.byte $00, $00, $04, $00
+	.byte $00, $11, $18, $00
+	.byte $00, $00, $16, $00
+	.byte $00, $00, $14, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowLObr3:
-	.byte $00, $00, $00, $03
-	.byte $00, $01, $05, $09
+	.byte $00, $00, $00, $13
+	.byte $00, $11, $15, $19
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowLObr4:
-	.byte $00, $03, $00, $00
-	.byte $00, $06, $00, $00
-	.byte $00, $0A, $02, $00
+	.byte $00, $13, $00, $00
+	.byte $00, $16, $00, $00
+	.byte $00, $1A, $12, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeLObr1:
-	.byte $00, $01, $05, $08
-	.byte $00, $00, $00, $04
+	.byte $00, $11, $15, $18
+	.byte $00, $00, $00, $14
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeLObr2:
-	.byte $00, $00, $03, $00
-	.byte $00, $00, $06, $00
-	.byte $00, $01, $09, $00
+	.byte $00, $00, $13, $00
+	.byte $00, $00, $16, $00
+	.byte $00, $11, $19, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeLObr3:
-	.byte $00, $03, $00, $00
-	.byte $00, $0A, $05, $02
+	.byte $00, $13, $00, $00
+	.byte $00, $1A, $15, $12
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeLObr4:
-	.byte $00, $07, $02, $00
-	.byte $00, $06, $00, $00
-	.byte $00, $04, $00, $00
+	.byte $00, $17, $12, $00
+	.byte $00, $16, $00, $00
+	.byte $00, $14, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKrzesloObr1:
-	.byte $00, $01, $08, $00
-	.byte $00, $00, $0A, $02
+	.byte $00, $11, $18, $00
+	.byte $00, $00, $1A, $12
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKrzesloObr2:
-	.byte $00, $00, $03, $00
-	.byte $00, $07, $09, $00
-	.byte $00, $04, $00, $00
+	.byte $00, $00, $13, $00
+	.byte $00, $17, $19, $00
+	.byte $00, $14, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKrzesloObr3:
-	.byte $00, $01, $08, $00
-	.byte $00, $00, $0A, $02
+	.byte $00, $11, $18, $00
+	.byte $00, $00, $1A, $12
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKrzesloObr4:
-	.byte $00, $00, $03, $00
-	.byte $00, $07, $09, $00
-	.byte $00, $04, $00, $00
+	.byte $00, $00, $13, $00
+	.byte $00, $17, $19, $00
+	.byte $00, $14, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr1:
-	.byte $00, $00, $07, $02
-	.byte $00, $01, $09, $00
+	.byte $00, $00, $17, $12
+	.byte $00, $11, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr2:
-	.byte $00, $03, $00, $00
-	.byte $00, $0A, $08, $00
-	.byte $00, $00, $04, $00
+	.byte $00, $13, $00, $00
+	.byte $00, $1A, $18, $00
+	.byte $00, $00, $14, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr3:
-	.byte $00, $00, $07, $02
-	.byte $00, $01, $09, $00
+	.byte $00, $00, $17, $12
+	.byte $00, $11, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr4:
-	.byte $00, $03, $00, $00
-	.byte $00, $0A, $08, $00
-	.byte $00, $00, $04, $00
+	.byte $00, $13, $00, $00
+	.byte $00, $1A, $18, $00
+	.byte $00, $00, $14, $00
 	.byte $00, $00, $00, $00
 	
 DaneKlockowTObr1:
-	.byte $00, $01, $0B, $02
-	.byte $00, $00, $04, $00
+	.byte $00, $11, $1B, $12
+	.byte $00, $00, $14, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowTObr2:
-	.byte $00, $00, $03, $00
-	.byte $00, $01, $0C, $00
-	.byte $00, $00, $04, $00
+	.byte $00, $00, $13, $00
+	.byte $00, $11, $1C, $00
+	.byte $00, $00, $14, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowTObr3:
-	.byte $00, $00, $03, $00
-	.byte $00, $01, $0D, $02
+	.byte $00, $00, $13, $00
+	.byte $00, $11, $1D, $12
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowTObr4:
-	.byte $00, $03, $00, $00
-	.byte $00, $0E, $02, $00
-	.byte $00, $04, $00, $00
+	.byte $00, $13, $00, $00
+	.byte $00, $1E, $12, $00
+	.byte $00, $14, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowPalety:
@@ -12426,8 +12507,8 @@ KoniecGry_P_melodia:
 .byte "Koniec ROM"
 
 .segment "VECTORS"
-	.word NMI
-	.word RESET
+	.byte $FF, $FF
+	.word START
 
 .segment "CHARS"
 	.incbin "grafika/temtris.chr"
