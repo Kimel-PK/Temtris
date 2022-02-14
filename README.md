@@ -23,7 +23,6 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 ### Planowane zmiany
 
 - [ ] naprawienie ostatniego błędu z umieszczaniem klocków
-- [ ] optymalizacja tła
 
 Znane błędy
 
@@ -133,4 +132,3 @@ Wystarczy zrobić jedną linię, a cały NES się rozpada.
 
 - Konwerter muzyki w Excelu
 - Szkice i concept arty przepisywane do plików `.chr` przy użyciu programu `yychr`
-

@@ -130,14 +130,6 @@ pozostaloBajtow: .res 76
 Sponsor:
 	.byte "Sponsor projektu: r/Rudzia      "
 
-; ========================= ściąga ========================
-
-; OAM
-; 1 bajt - pozycja Y
-; 2 bajt - bank, numer płytki (7)
-; 3 bajt - lustro w pionie, lustro w poziomie, priorytet, (3) nieużywane, (2) paleta
-; 4 bajt - pozycja X
-
 ; =========================================================
 ; ===================== główny program ====================
 ; =========================================================
@@ -4984,60 +4976,6 @@ PoliczSekunde:
 ; =================== odtwarzanie muzyki ==================
 ; =========================================================
 
-; ściąga
-
-; KANAŁ 1 - PULSE
-
-; $4000	 DDLC VVVV 	Duty (D), envelope loop / length counter halt (L), constant volume (C), volume/envelope (V)
-; $4001	 EPPP NSSS 	Sweep unit: enabled (E), period (P), negate (N), shift (S)
-; $4002	 TTTT TTTT 	Timer low (T)
-; $4003	 LLLL LTTT 	Length counter load (L), timer high (T)
-
-; KANAŁ 3 - TRIANGLE
-
-; $4008 	CRRR RRRR 	Length counter halt / linear counter control (C), linear counter load (R)
-; $4009 	---- ---- 	Unused
-; $400A 	TTTT TTTT 	Timer low (T)
-; $400B 	LLLL LTTT 	Length counter load (L), timer high (T)
-
-; KANAŁ 4 - NOISE
-
-; $400C 	--LC VVVV 	Envelope loop / length counter halt (L), constant volume (C), volume/envelope (V)
-; $400D	 	---- ----   Unused
-; $400E 	L--- PPPP 	Loop noise (L), noise period (P)
-; $400F 	LLLL L--- 	Length counter load (L)
-
-; wydarzenia kanałów P i T
-
-; modyfikuj ustawienia
-; #%10101--- #%DDLCVVVV #%EPPPNSSS
-
-; skocz o X bajtów w tył
-; #%10111--- #%XXXXXXXX
-; X - ilość bajtów
-
-; pauza w odtwarzaniu
-; #%11101--- #%TTTTTTTT
-
-; zakończ blok
-; #%11111--- (następny bit to musi być $AE)
-
-; wydarzenia kanału N
-
-; modyfikuj ustawienia
-; #%-001---- #%--LCVVVV
-
-; skocz o X bajtów w tył
-; #%-010---- #%XXXXXXXX
-
-; pauza w odtwarzaniu
-; #%-011---- #%TTTTTTTT
-
-; zakończ blok
-; #%-111----
-
-; kod
-
 OdtwarzajMuzyke:
 
 	LDA wlaczMuzyke
@@ -5803,7 +5741,7 @@ GrafikaTloKoniecGryKlatka1:
 	.incbin "grafika/KoniecGryKlatka1.nam"
 
 GrafikaTloKoniecGryKlatka2:
-	.incbin "grafika/KoniecGryKlatka2.nam" ; !! do skompresowania
+	.incbin "grafika/KoniecGryKlatka2.nam"
 
 DaneKlockow:
 	.byte <DaneKlockowKostka, >DaneKlockowKostka
