@@ -133,3 +133,4 @@ Wystarczy zrobić jedną linię, a cały NES się rozpada.
 
 - Konwerter muzyki w Excelu
 - Szkice i concept arty przepisywane do plików `.chr` przy użyciu programu `yychr`
+- Ściąga z adresami i opisami rejestrów
