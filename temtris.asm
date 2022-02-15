@@ -4,7 +4,7 @@
 .byte $1A ; MS-DOS EOF
 .byte $02 ; rozmiar PRG ROM
 .byte $02 ; rozmiar CHR ROM
-.byte %01101000 ; %MMMMvTsm - M - mapper bity niskie, v - 4 ekranowy VRAM, T - trainer, s - bateria, m - mirroring
+.byte %00111000 ; %MMMMvTsm - M - mapper bity niskie, v - 4 ekranowy VRAM, T - trainer, s - bateria, m - mirroring
 .byte %00000000 ; %MMMM---- - M - mapper bity wysokie
 .byte $00
 .byte $00
@@ -38,10 +38,9 @@ temp: .res 2
 int: .res 2
 tempX: .res 1
 tempY: .res 1
-odczytWejscia: .res 1
 
 ; zmienne zarządzania wejściem
-kontroler: .res 1 ; RLDUSsBA
+kontroler: .res 1 ; ABsSUDLR
 kontrolerpoprzedni: .res 1
 zegarKontrolera: .res 1
 zegarKontroleraszybkosc: .res 1
@@ -52,7 +51,6 @@ losowa: .res 2
 trybGry: .res 1
 numerGracza: .res 1
 pauza: .res 1
-zegar: .res 1
 zegarSpadania: .res 1
 szybkoscSpadania: .res 1
 poziom: .res 1
@@ -119,7 +117,7 @@ klatkaAnimacji: .res 1
 blokAnimacji: .res 1
 
 ; pozostała pamięć
-pozostaloBajtow: .res 82
+pozostaloBajtow: .res 84
 
 .segment "STARTUP"
 
@@ -318,20 +316,23 @@ START:
 	LDX #$00
 	LDY #$00
 	
-:
+	LDA #$00
+	STA numerGracza
+	STA tempY
 	
+:
 	JSR CzytajKontroler
 	JSR WyzerujScrollowanie
 	JSR CzekajNaVBLANK
 	
 	; naciśnij start żeby rozpocząć
 	LDA kontroler
-	AND #%00001000
-	CMP #%00001000
+	AND #%00010000
+	CMP #%00010000
 	BNE :+
 	
 	LDA kontrolerpoprzedni
-	AND #%00001000
+	AND #%00010000
 	CMP #%00000000
 	BNE :+
 	
@@ -361,7 +362,7 @@ START:
 	CMP #$00
 	BNE :--
 	
-	LDY #$B4
+	LDX #$B4
 :
 	JSR CzytajKontroler
 	JSR WyzerujScrollowanie
@@ -369,20 +370,20 @@ START:
 	
 	; naciśnij start żeby rozpocząć
 	LDA kontroler
-	AND #%00001000
-	CMP #%00001000
+	AND #%00010000
+	CMP #%00010000
 	BNE :+
 	
 	LDA kontrolerpoprzedni
-	AND #%00001000
+	AND #%00010000
 	CMP #%00000000
 	BNE :+
 	
 	JMP LadowanieMenu
 :
 	
-	DEY
-	CPY #$00
+	DEX
+	CPX #$00
 	BNE :--
 	
 LadowanieMenu:
@@ -398,9 +399,6 @@ LadowanieMenu:
 	STA $0500, X
 	STA $0600, X
 	STA $0700, X
-	LDA #$FF
-	STA $0200, X ; pamiec kopiowana co klatke do OAM
-	LDA #$00
 	INX
 	BNE :-
 	
@@ -524,12 +522,12 @@ StanMenuGry:
 	
 	; naciśnij start żeby rozpocząć
 	LDA kontroler
-	AND #%00001000
-	CMP #%00001000
+	AND #%00010000
+	CMP #%00010000
 	BNE :+
 	
 	LDA kontrolerpoprzedni
-	AND #%00001000
+	AND #%00010000
 	CMP #%00000000
 	BNE :+
 	
@@ -538,12 +536,12 @@ StanMenuGry:
 :
 	; naciśnij select żeby zmienić tryb gry
 	LDA kontroler
-	AND #%00000100
-	CMP #%00000100
+	AND #%00100000
+	CMP #%00100000
 	BNE :++
 	
 	LDA kontrolerpoprzedni
-	AND #%00000100
+	AND #%00100000
 	CMP #%00000000
 	BNE :++
 	
@@ -818,6 +816,7 @@ StanLadowanieGry:
 StanBrakKlocka:
 	
 	JSR WyzerujScrollowanie
+	JSR OdtwarzajMuzyke
 	JSR CzekajNaVBLANK
 	
 	JSR WyswietlLiczbeLinii1
@@ -876,6 +875,7 @@ StanBrakKlocka:
 	
 	JSR StworzNastepnyKlocek
 	JSR WyzerujScrollowanie
+	JSR OdtwarzajMuzyke
 	
 	JSR CzekajNaVBLANK
 	
@@ -883,10 +883,10 @@ StanBrakKlocka:
 	JSR RysujKlocek
 	JSR WyzerujScrollowanie
 	JSR TransferOAMDMA
+	JSR OdtwarzajMuzyke
 	
 	JSR CzekajNaVBLANK
 	
-	JSR ObliczPozycjeWPPU
 	JSR SkopiujMapeKolizji
 	JSR SprawdzKolizjeKoniecGry
 	
@@ -913,7 +913,6 @@ StanBrakKlocka:
 	STA OAMDMA
 	
 	JSR CzytajKontroler
-	JSR OdtwarzajMuzyke
 	
 	JMP StanSpadajacyKlocek
 	
@@ -923,8 +922,9 @@ StanSpadajacyKlocek:
 	JSR CzytajKontroler
 	JSR OdtwarzajMuzyke
 	JSR Losuj
+	JSR RysujKlocek
+	JSR SprawdzKolizje
 	
-	INC zegar
 	INC zegarSpadania
 	
 	LDA zegarSpadania
@@ -933,12 +933,6 @@ StanSpadajacyKlocek:
 	LDA #$00
 	STA zegarSpadania
 :
-	
-	JSR ObliczPozycjeWPPU
-	
-	JSR RysujKlocek
-	
-	JSR SprawdzKolizje
 	
 	INC zegarCzasGry
 	LDA zegarCzasGry
@@ -966,16 +960,7 @@ StanSpadajacyKlocek:
 	; w przeciwnym wypadku przesuń
 	JSR PrzesunKlocekWDol
 	
-	INC zegarKontrolera
-	INC zegarKontrolera
-	
-	; oszukać przeznaczenie i bugi
-	; nie da się już wcisnąć klocka w podłogę bo zaraz po opadnięciu nie można się ruszyć
-	INC zegarKontroleraobrot
-	INC zegarKontroleraobrot
-	
 	JSR SkopiujMapeKolizji
-	
 	JMP StanSpadajacyKlocek
 	
 :
@@ -1003,8 +988,8 @@ StanSpadajacyKlocek:
 	
 	; czy naciśnięto B
 	LDA kontroler
-	AND #%00000010
-	CMP #%00000010
+	AND #%01000000
+	CMP #%01000000
 	BNE :+
 	
 	LDA #$0A
@@ -1018,8 +1003,8 @@ StanSpadajacyKlocek:
 	
 	; czy naciśnięto A
 	LDA kontroler
-	AND #%00000001
-	CMP #%00000001
+	AND #%10000000
+	CMP #%10000000
 	BNE :+
 	
 	LDA #$0A
@@ -1033,7 +1018,7 @@ StanSpadajacyKlocek:
 	
 	; czy puszczono A lub B
 	LDA kontroler
-	AND #%00000011
+	AND #%11000000
 	CMP #%00000000
 	BNE :+
 	
@@ -1048,12 +1033,12 @@ StanSpadajacyKlocek:
 	
 	; czy naciśnięto R
 	LDA kontroler
-	AND #%10000000
-	CMP #%10000000
+	AND #%00000001
+	CMP #%00000001
 	BNE :+++
 	
 	LDA kontrolerpoprzedni
-	AND #%10000000
+	AND #%00000001
 	CMP #%00000000
 	BNE :+
 	
@@ -1077,12 +1062,12 @@ StanSpadajacyKlocek:
 	
 	; czy naciśnięto L
 	LDA kontroler
-	AND #%01000000
-	CMP #%01000000
+	AND #%00000010
+	CMP #%00000010
 	BNE :++++
 	
 	LDA kontrolerpoprzedni
-	AND #%01000000
+	AND #%00000010
 	CMP #%00000000
 	BNE :+
 	
@@ -1109,12 +1094,12 @@ StanSpadajacyKlocek:
 	
 	; czy naciśnięto D
 	LDA kontroler
-	AND #%00100000
-	CMP #%00100000
+	AND #%00000100
+	CMP #%00000100
 	BNE :++++
 	
 	LDA kontrolerpoprzedni
-	AND #%00100000
+	AND #%00000100
 	CMP #%00000000
 	BNE :+
 	
@@ -1153,7 +1138,7 @@ StanSpadajacyKlocek:
 	
 	; czy puszczono L, R lub D
 	LDA kontroler
-	AND #%11100000
+	AND #%00000111
 	CMP #%00000000
 	BNE :+
 	
@@ -1166,12 +1151,12 @@ StanSpadajacyKlocek:
 	
 	; czy naciśnięto Start
 	LDA kontroler
-	AND #%00001000
-	CMP #%00001000
+	AND #%00010000
+	CMP #%00010000
 	BNE :+
 	
 	LDA kontrolerpoprzedni
-	AND #%00001000
+	AND #%00010000
 	CMP #%00000000
 	BNE :+
 	
@@ -1182,12 +1167,12 @@ StanSpadajacyKlocek:
 	
 	; czy naciśnieto Select
 	LDA kontroler
-	AND #%00000100
-	CMP #%00000100
+	AND #%00100000
+	CMP #%00100000
 	BNE :+
 	
 	LDA kontrolerpoprzedni
-	AND #%00000100
+	AND #%00100000
 	CMP #%00000000
 	BNE :+
 	
@@ -1220,13 +1205,11 @@ StanStawianieKlocka:
 	STA zegarKontroleraszybkosc
 	
 	; określ numer linii o jeden niżej niż pierwsza rozbijana
-	
 	; sprawdź czy będzie usuwana jakaś linia
 	
 	LDY #$13 ; numer linii którą analizujemy
 	
 	; pozycja w PPU lewego dolnego rogu planszy - $232A
-	
 	; przesuwamy Y do miejsca rozbicia pierwszej linii - 1
 :
 	
@@ -1261,8 +1244,8 @@ StanAnimacjaRozbijanychLinii:
 	LDA #$02
 	STA OAMDMA
 	
-	JSR OdtwarzajMuzyke
 	JSR WyzerujScrollowanie
+	JSR OdtwarzajMuzyke
 	JSR CzekajNaVBLANK
 	
 	; wypełnij po kolei czarnymi kwadratami linie i napisz na niej tekst
@@ -1276,25 +1259,7 @@ StanAnimacjaRozbijanychLinii:
 	LDA #$00
 	STA blokAnimacji
 	
-	; wyczysc sprite
-	
-	LDA #$FF
-	STA $0200
-	STA $0201
-	STA $0202
-	STA $0203
-	STA $0204
-	STA $0205
-	STA $0206
-	STA $0207
-	STA $0208
-	STA $0209
-	STA $020A
-	STA $020B
-	STA $020C
-	STA $020D
-	STA $020E
-	STA $020F
+	JSR WyczyscSpritey
 	
 	LDX #$00
 	LDY odczytLinii
@@ -1361,22 +1326,7 @@ StanAnimacjaRozbijanychLinii:
 	LDA #$FF
 	STA klatkaAnimacji
 	
-	STA $0200
-	STA $0201
-	STA $0202
-	STA $0203
-	STA $0204
-	STA $0205
-	STA $0206
-	STA $0207
-	STA $0208
-	STA $0209
-	STA $020A
-	STA $020B
-	STA $020C
-	STA $020D
-	STA $020E
-	STA $020F
+	JSR WyczyscSpritey
 	
 	JMP StanAktualizacjaPlanszy
 	
@@ -1711,7 +1661,7 @@ StanPauza:
 	LDA #$6C
 	STA PPUADDR
 	
-	LDA #$9B ; ⏸
+	LDA #$0C ; ⏸
 	STA PPUDATA
 	LDA #$F9 ; P
 	STA PPUDATA
@@ -1732,12 +1682,12 @@ StanPauza:
 	
 	; czy naciśnięto Start
 	LDA kontroler
-	AND #%00001000
-	CMP #%00001000
+	AND #%00010000
+	CMP #%00010000
 	BNE :-
 	
 	LDA kontrolerpoprzedni
-	AND #%00001000
+	AND #%00010000
 	CMP #%00000000
 	BNE :-
 	
@@ -1785,14 +1735,7 @@ StanLadowanieKoniecGry:
 	
 	JSR WylaczPPU
 	
-	; wyzeruj sprite'y
-	LDX #$00
-:
-	LDA #$FF
-	STA $0200, X
-	LDA #$00
-	INX
-	BNE :-
+	JSR WyczyscSpritey
 	
 	; załaduj chr bank 0
 	LDA #$00
@@ -1944,8 +1887,8 @@ StanCzekajNaReset:
 	JSR OdtwarzajMuzyke
 	
 	LDA kontroler
-	AND #%00001000
-	CMP #%00001000
+	AND #%00010000
+	CMP #%00010000
 	BNE :+
 	
 	JMP LadowanieMenu
@@ -2011,6 +1954,10 @@ TransferOAMDMA:
 	
 GitHubUstawPaleteRozjasnij:
 	
+	INC $FF
+	
+	LDY tempY
+	
 	BIT PPUSTATUS
 	LDA #$3F
 	STA PPUADDR
@@ -2026,9 +1973,32 @@ GitHubUstawPaleteRozjasnij:
 	CPX #$08
 	BNE :-
 	
+	STY tempY
+	
 	RTS
 	
-; Odczyt z kontrolera 1
+WyczyscSpritey:
+	
+	LDA #$FF
+	STA $0200
+	STA $0201
+	STA $0202
+	STA $0203
+	STA $0204
+	STA $0205
+	STA $0206
+	STA $0207
+	STA $0208
+	STA $0209
+	STA $020A
+	STA $020B
+	STA $020C
+	STA $020D
+	STA $020E
+	STA $020F
+	
+	RTS
+	
 CzytajKontroler:
 	
 	; skopiuj wartości do zmiennej kontrolerpoprzedni
@@ -2038,85 +2008,20 @@ CzytajKontroler:
 	LDA #$00
 	STA kontroler
 	
+	LDY numerGracza
+	
 	; odczyt z wejścia
 	
-	LDA #$01
-	STA JOYPAD1
-	LDX #$00
-	STX JOYPAD1
-	
-	; odczytaj odpowiedni kontroler w zależności od obecnego gracza
+    LDA #$01
+    STA JOYPAD1
+    STA kontroler
+    LSR A
+    STA JOYPAD1
 :
-	LDA numerGracza
-	CMP #$01
-	BEQ :+
-	LDA JOYPAD1
-	JMP :++
-:
-	LDA JOYPAD2
-:
-	LSR
-	ROR odczytWejscia
-	INX
-	CPX #$08
-	BNE :---
-	
-	; Prawo
-	LDA #%10000000
-	AND odczytWejscia
-	BEQ :+
-	ORA kontroler
-	STA kontroler
-:
-	; Lewo
-	LDA #%01000000
-	AND odczytWejscia
-	BEQ :+
-	ORA kontroler
-	STA kontroler
-:
-	; Dół
-	LDA #%00100000
-	AND odczytWejscia
-	BEQ :+
-	ORA kontroler
-	STA kontroler
-:
-	; Góra
-	LDA #%00010000
-	AND odczytWejscia
-	BEQ :+
-	ORA kontroler
-	STA kontroler
-:
-	; Start
-	LDA #%00001000
-	AND odczytWejscia
-	BEQ :+
-	ORA kontroler
-	STA kontroler
-:
-	; Select
-	LDA #%00000100
-	AND odczytWejscia
-	BEQ :+
-	ORA kontroler
-	STA kontroler
-:
-	; B
-	LDA #%00000010
-	AND odczytWejscia
-	BEQ :+
-	ORA kontroler
-	STA kontroler
-:
-	; A
-	LDA #%00000001
-	AND odczytWejscia
-	BEQ :+
-	ORA kontroler
-	STA kontroler
-:
+    LDA JOYPAD1, Y
+    LSR A
+    ROL kontroler
+    BCC :-
 	
 	RTS
 	
@@ -2245,11 +2150,6 @@ PrzesunKlocekWLewo:
 	SBC #$08
 	STA pozycjaKlockaX
 	
-	; oszukać przeznaczenie i bugi
-	; nie da się już wcisnąć klocka w ścianę ponieważ nie można obróbić go w następnej klatce zaraz po ruchu
-	INC zegarKontroleraobrot
-	INC zegarKontroleraobrot
-	
 	RTS
 	
 PrzesunKlocekWDol:
@@ -2290,11 +2190,6 @@ PrzesunKlocekWPrawo:
 	LDA pozycjaKlockaX
 	ADC #$08
 	STA pozycjaKlockaX
-	
-	; oszukać przeznaczenie i bugi
-	; nie da się już wcisnąć klocka w ścianę ponieważ nie można obróbić go w następnej klatce zaraz po ruchu
-	INC zegarKontroleraobrot
-	INC zegarKontroleraobrot
 	
 	RTS
 	
@@ -2794,30 +2689,10 @@ PostawKlocek:
 	
 :
 	
-	; usuń spritey
-	
-	LDA #$FF
-	STA $0200
-	STA $0201
-	STA $0202
-	STA $0203
-	STA $0204
-	STA $0205
-	STA $0206
-	STA $0207
-	STA $0208
-	STA $0209
-	STA $020A
-	STA $020B
-	STA $020C
-	STA $020D
-	STA $020E
-	STA $020F
+	JSR WyczyscSpritey
 	
 	LDA #$00
 	STA zegarSpadania
-	
-	JSR WyzerujScrollowanie
 	
 	RTS
 	
@@ -3272,6 +3147,8 @@ SprawdzKolizjeKoniecGry:
 	
 SkopiujMapeKolizji:
 	
+	JSR ObliczPozycjeWPPU
+	
 	LDA pozycjaPPUH
 	STA temp
 	LDA pozycjaPPUL
@@ -3705,59 +3582,59 @@ ZmienGrafikeRozbitaDolG1:
 	
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
-	; A3 -> B0
-	CMP #$A3
+	; 23 -> 20
+	CMP #$23
 	BNE :+
-	LDA #$B0
+	LDA #$20
 	STA zrzutLinii, X
 	JMP :--
 :   
-	; A6 -> A4
-	CMP #$A6
+	; 26 -> 24
+	CMP #$26
 	BNE :+
-	LDA #$A4
+	LDA #$24
 	STA zrzutLinii, X
 	JMP :---
 :
-	; A7 -> A1
-	CMP #$A7
+	; 27 -> 21
+	CMP #$27
 	BNE :+
-	LDA #$A1
+	LDA #$21
 	STA zrzutLinii, X
 	JMP :----
 :
-	; A8 -> A2
-	CMP #$A8
+	; 28 -> 22
+	CMP #$28
 	BNE :+
-	LDA #$A2
+	LDA #$22
 	STA zrzutLinii, X
 	JMP :-----
 :
-	; AB -> A5
-	CMP #$AB
+	; 2B -> 25
+	CMP #$2B
 	BNE :+
-	LDA #$A5
+	LDA #$25
 	STA zrzutLinii, X
 	JMP :------
 :
-	; AC -> A9
-	CMP #$AC
+	; 2C -> 29
+	CMP #$2C
 	BNE :+
-	LDA #$A9
+	LDA #$29
 	STA zrzutLinii, X
 	JMP :-------
 :
-	; AE -> AA
-	CMP #$AE
+	; 2E -> 2A
+	CMP #$2E
 	BNE :+
-	LDA #$AA
+	LDA #$2A
 	STA zrzutLinii, X
 	JMP :--------
 :
-	; AF -> AD
-	CMP #$AF
+	; 2F -> 2D
+	CMP #$2F
 	BNE :+
-	LDA #$AD
+	LDA #$2D
 	STA zrzutLinii, X
 	JMP :---------
 :
@@ -3777,59 +3654,59 @@ ZmienGrafikeRozbitaDolG2:
 	
 	; zamień wygląd klocków
 	LDA zrzutLinii, X
-	; C3 -> D0
-	CMP #$C3
+	; 33 -> 30
+	CMP #$33
 	BNE :+
-	LDA #$D0
+	LDA #$30
 	STA zrzutLinii, X
 	JMP :--
 :   
-	; C6 -> C4
-	CMP #$C6
+	; 36 -> 34
+	CMP #$36
 	BNE :+
-	LDA #$C4
+	LDA #$34
 	STA zrzutLinii, X
 	JMP :---
 :
-	; C7 -> C1
-	CMP #$C7
+	; 37 -> 31
+	CMP #$37
 	BNE :+
-	LDA #$C1
+	LDA #$31
 	STA zrzutLinii, X
 	JMP :----
 :
-	; C8 -> C2
-	CMP #$C8
+	; 38 -> 32
+	CMP #$38
 	BNE :+
-	LDA #$C2
+	LDA #$32
 	STA zrzutLinii, X
 	JMP :-----
 :
-	; CB -> C5
-	CMP #$CB
+	; 3B -> 35
+	CMP #$3B
 	BNE :+
-	LDA #$C5
+	LDA #$35
 	STA zrzutLinii, X
 	JMP :------
 :
-	; CC -> C9
-	CMP #$CC
+	; 3C -> 39
+	CMP #$3C
 	BNE :+
-	LDA #$C9
+	LDA #$39
 	STA zrzutLinii, X
 	JMP :-------
 :
-	; CE -> CA
-	CMP #$CE
+	; 3E -> 3A
+	CMP #$3E
 	BNE :+
-	LDA #$CA
+	LDA #$3A
 	STA zrzutLinii, X
 	JMP :--------
 :
-	; CF -> CD
-	CMP #$CF
+	; 3F -> 3D
+	CMP #$3F
 	BNE :+
-	LDA #$CD
+	LDA #$3D
 	STA zrzutLinii, X
 	JMP :---------
 :
@@ -5788,12 +5665,13 @@ MuzykaGrajKoniecGry:
 
 GitHub:
 	.byte $F0, $F2, $FC, $F1, $FD, $EB, $0F, $EC, $F8, $F6, $0E, $F4, $F2, $F6, $EE, $F5, $0D, $F9, $F4
-
+	
 GitHubPalety:
 	.byte $0F, $0F, $04, $05, $0F, $0F, $02, $01
 	.byte $0F, $06, $15, $26, $0F, $01, $02, $0C
 	.byte $0F, $07, $16, $27, $0F, $02, $0C, $11
 	.byte $0F, $08, $17, $28, $0F, $01, $12, $21
+	
 ZerowanieAPU:
 	.byte $30, $08, $00, $00
 	.byte $30, $08, $00, $00
@@ -7315,6 +7193,7 @@ TogetherForeverKanalP:
 	.byte <TF_P_46, >TF_P_46
 	.byte <TF_P_59, >TF_P_59
 	.byte <TF_P_60, >TF_P_60
+	.byte <Pauza60klatek, >Pauza60klatek
 	
 	.byte %11111000, $AE
 	
