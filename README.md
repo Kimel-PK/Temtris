@@ -6,9 +6,27 @@ Kod gry został napisany całkowicie od zera, grafika jest inspirowana Tetrisem 
 
 Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
+## Uruchamianie
+
+### ROM
+
+Do uruchomienia ROMu potrzebny będzie dowolny emulator NES.
+
+[Pobierz najnowszą wersję ROMu](https://github.com/Kimel-PK/Temtris/releases)
+
+### GitHub Pages
+
+Dzięki emulatorowi działającemu w JavaScripcie gra w Temtris możliwa jest przez przeglądarkę!
+
+[Uruchom Temtris w przeglądarce](https://kimel-pk.github.io/Temtris/)
+
+[Repozytorium emulatora JSNES](https://github.com/bfirsh/jsnes)
+
+> Uwaga! Obecnie Temtris w przeglądarce działa tylko w Firefoxie :(
+
 ## Status projektu
 
-Status: W trakcie prac
+Status: Ostatnie szlify
 
 Szacowany postęp projektu: 98%
 
@@ -22,7 +40,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 ### Planowane zmiany
 
-- [ ] naprawienie ostatniego błędu z umieszczaniem klocków
+- [X] naprawienie ostatniego błędu z umieszczaniem klocków
 - [X] dodanie ne początek ekranu z linkiem do GitHuba i awatarem
 
 Znane błędy
