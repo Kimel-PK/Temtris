@@ -3,8 +3,22 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 		<title>Temtris Demo</title>
+		<link rel="stylesheet" href="style.css">
+		<script type="text/javascript" src="jsnes.min.js"></script>
+		<script type="text/javascript" src="jsnes.min.js.map"></script>
+		<script type="text/javascript" src="nes-embed.js"></script>
+		<script>window.onload = function(){nes_load_url("nes-canvas", "temtris.nes");}</script>
 	</head>
 	<body>
-		Temtris
+		<div class="przyciemniacz"></div>
+		<div class="logo">
+			<img src="logo.png" />
+		</div>
+		<div class="emulator">
+			<canvas id="nes-canvas" width="256" height="240"/>
+		</div>
+		<div class="kontroler">
+		<img src="kontroler.png" />
+		</div>
 	</body>
 </html>
