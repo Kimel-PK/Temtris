@@ -22,8 +22,6 @@ Dzięki emulatorowi działającemu w JavaScripcie autorstwa [Bena Firshmana](htt
 
 [Repozytorium emulatora JSNES](https://github.com/bfirsh/jsnes)
 
-> Uwaga! Obecnie Temtris w przeglądarce działa tylko w Firefoxie :(
-
 ## Status projektu
 
 Status: Ostatnie szlify
