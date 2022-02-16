@@ -16,7 +16,7 @@ Do uruchomienia ROMu potrzebny będzie dowolny emulator NES.
 
 ### GitHub Pages
 
-Dzięki emulatorowi działającemu w JavaScripcie gra w Temtris możliwa jest przez przeglądarkę!
+Dzięki emulatorowi działającemu w JavaScripcie autorstwa [Bena Firshmana](https://github.com/bfirsh) gra w Temtris możliwa jest przez przeglądarkę!
 
 [Uruchom Temtris w przeglądarce](https://kimel-pk.github.io/Temtris/)
 
