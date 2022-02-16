@@ -24,9 +24,9 @@ Dzięki emulatorowi działającemu w JavaScripcie autorstwa [Bena Firshmana](htt
 
 ## Status projektu
 
-Status: Ostatnie szlify
+Status: Ostatnie testy
 
-Szacowany postęp projektu: 98%
+Szacowany postęp projektu: 99%
 
 ## Trailer
 
