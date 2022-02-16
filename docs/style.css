@@ -39,6 +39,18 @@ body {
 	object-fit: contain;
 }
 
+.start {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+}
+
+.start img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
 .emulator {
 	position: relative;
 	margin: 1% auto;
