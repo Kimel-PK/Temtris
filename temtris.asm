@@ -647,6 +647,20 @@ StanLadowanieGry:
 	; ustaw numer gracza na 2 (zostanie zmieniony po załadowaniu gry na 1)
 	INC numerGracza
 	
+	; losuj pierwszy klocek dla gracza 1
+:
+	LDA losowa
+	AND #%00000111
+	CMP #%00000111
+	BNE :+
+	JSR Losuj
+	JMP :-
+:
+	
+	STA numerNastepnegoKlocka1
+	
+	JSR Losuj
+	
 	; losuj pierwszy klocek dla gracza 2
 :
 	LDA losowa
@@ -856,6 +870,7 @@ StanBrakKlocka:
 	STA numerKlocka
 	
 	; wylosuj następny klocek
+	JSR Losuj
 :
 	LDA losowa
 	AND #%00000111

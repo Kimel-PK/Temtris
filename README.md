@@ -40,6 +40,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 - [X] naprawienie ostatniego błędu z umieszczaniem klocków
 - [X] dodanie ne początek ekranu z linkiem do GitHuba i awatarem
+- [X] losowy klocek na początek gry
 
 Znane błędy
 
