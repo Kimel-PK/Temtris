@@ -48,9 +48,9 @@ Głównym priorytetem jest usunięcie wszystkich błędów. Wszystkie przewidzia
 
 Zmiany
 
-- [X] rezygnacja z przerwań procesora na rzecz aktywnego oczekiwania na VBLANK
-- [X] dodanie ne początek ekranu z linkiem do GitHuba i awatarem
-- [X] losowy klocek na początek gry
+- rezygnacja z przerwań procesora na rzecz aktywnego oczekiwania na VBLANK
+- dodanie ne początek ekranu z linkiem do GitHuba i awatarem
+- losowy klocek na początek gry
 
 Znane błędy
 
