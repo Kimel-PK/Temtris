@@ -24,9 +24,13 @@ Dzięki emulatorowi działającemu w JavaScripcie autorstwa [Bena Firshmana](htt
 
 ## Status projektu
 
-Status: Ostatnie testy
+Status: Cyberpunk 2077 na premierę
 
-Szacowany postęp projektu: 99%
+Faza radości z ukończonego projektu: zaplanowana
+
+Faza testowania: 30%
+
+Faza projektowania: zakończona!
 
 ## Trailer
 
@@ -34,21 +38,26 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 [Obejrzyj trailer w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
 
-## W trakcie prac: Wersja 1.5
+## Faza testowania
 
-### Planowane zmiany
+Głównym priorytetem jest usunięcie wszystkich błędów. Wszystkie przewidziane funkcjonalności zostały już zaimplementowane.
 
-- [X] naprawienie ostatniego błędu z umieszczaniem klocków
+## Wersje stabilne
+
+### Wersja 1.5
+
+Zmiany
+
+- [X] rezygnacja z przerwań procesora na rzecz aktywnego oczekiwania na VBLANK
 - [X] dodanie ne początek ekranu z linkiem do GitHuba i awatarem
 - [X] losowy klocek na początek gry
 
 Znane błędy
 
-- kiedy agresywnie wciskamy wszystkie przyciski podczas umieszczania klocka czasem coś idzie nie tak z przepisywaniem danych do tła
+- kiedy gra toczy się przy samej górze istnieje szansa na błąd, który zeruje pamięć (wyłącza dźwięk, klocki nie losują się, błędne dane o zapełnieniu planszy)
+- istnieje możliwość "wepchnięcia" jednego klocka w drugi
 
-## Wersje stabilne
-
-## Wersja 1.4.1
+### Wersja 1.4.1
 
 Zmiany
 
@@ -57,7 +66,7 @@ Zmiany
 - dodanie możliwości pominięcia melodii
 - naprawienie błędu animacji i liczenia punktów podczas rozbijania linii między którymi jest przerwa
 - obrót przy ścianie powinien powodować odsunięcie od ściany i obrót klocka
-- Wyświetlenie czasu gry na ekranie końca gry
+- wyświetlenie czasu gry na ekranie końca gry
 
 ### Wersja 1.4
 
