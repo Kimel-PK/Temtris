@@ -32,11 +32,40 @@ Faza testowania: 30%
 
 Faza projektowania: zakończona!
 
+## Dołącz do testów
+
+Wiem, że regularnie pojawiają się błędy u każdego tylko nie u mnie. Prawdopodobnie chodzi o inny styl gry, którego nie potrafię odtworzyć.
+
+Jeśli chcesz pomóc naprawić Temtris możesz mi bardzo pomóc!
+
+1. Pobierz emulator z narzędziami developerskimi FCEUX  
+    [Link do pobierania emulatora ze strony projektu](https://fceux.com/web/download.html)
+
+2. Pobierz plik Temtris.nes  
+    [Link do pobierania najnowszej wersji 1.5](https://github.com/Kimel-PK/Temtris/releases/download/1.5/Temtris.1.5.nes)
+
+3. Uruchom FCEUX i otwórz Temtris (File -> Open...)
+4. Włącz nagrywanie wejścia użytkownika (File -> Movie -> Record Movie...)
+5. Wpisz dowolną nazwę pliki i wybierz `OK`
+6. Zagraj i spróbuj doprowadzić do glitchy
+7. Zakończ nagrywanie wejścia (File -> Movie -> Stop Movie)
+8. Plik `.fm2` został zapisany w folderze instalacyjnym FCEUX i podfolderze `/movies`
+9. Utwórz nowy wątek na GitHubie i załącz nagrany plik  
+    [Link do tworzenia nowego wątku w repozytorium](https://github.com/Kimel-PK/Temtris/issues/new)
+
+Dziękuję za pomoc :smile:!
+
 ## Trailer
 
 https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-86cd-e9affed738ba.mp4
 
 [Obejrzyj trailer w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
+
+## Game Genie
+
+Lista kodów zmieniających działanie gry
+
+- `POGEIG` - Zatrzymuje samoczynne opadanie klocków
 
 ## Faza testowania
 
