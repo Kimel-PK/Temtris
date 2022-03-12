@@ -66,6 +66,9 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 Lista kodów zmieniających działanie gry
 
 - `POGEIG` - Zatrzymuje samoczynne opadanie klocków
+- `IALPUP` - Następny poziom co 5 linii (czasem nawet szybciej)
+- `LTGETT` - Wyłącza animację rozbijania linii
+- `LVAETT` - Rozbijanie linii generuje artefakty na ekranie
 
 ## Faza testowania
 
