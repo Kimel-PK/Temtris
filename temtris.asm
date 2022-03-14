@@ -1566,6 +1566,7 @@ StanAktualizacjaPlanszy: ; przepisz wszystkie rozbijane linie
 :
 	
 	STX tempX
+	STY tempY
 	
 	LDA ileNaRazLinii
 	CMP #$01
@@ -1637,6 +1638,7 @@ StanAktualizacjaPlanszy: ; przepisz wszystkie rozbijane linie
 	STA ileNaRazLinii
 	
 	LDX tempX
+	LDY tempY
 	
 	; wyrównaj zapis do odczytu zerując wszystkie śmieci
 	TYA

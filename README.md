@@ -28,7 +28,7 @@ Status: Cyberpunk 2077 na premierę
 
 Faza radości z ukończonego projektu: zaplanowana
 
-Faza testowania: 30%
+Faza testowania: 45%
 
 Faza projektowania: zakończona!
 
@@ -65,16 +65,29 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 Lista kodów zmieniających działanie gry
 
+### Przydatne kody
+
 - `POGEIG` - Zatrzymuje samoczynne opadanie klocków
-- `IALPUP` - Następny poziom co 5 linii (czasem nawet szybciej)
+- `IALPNP` - Następny poziom co 5 linii (czasem nawet szybciej)
+
+### Kody rozwalające gre
+
+- `YVIEYI` - Rozwala muzykę
 - `LTGETT` - Wyłącza animację rozbijania linii
 - `LVAETT` - Rozbijanie linii generuje artefakty na ekranie
+- `LVIETT` - Rozbijanie linii powoli psuje palety tła
 
 ## Faza testowania
 
 Głównym priorytetem jest usunięcie wszystkich błędów. Wszystkie przewidziane funkcjonalności zostały już zaimplementowane.
 
 ## Wersje stabilne
+
+### Łatka 1.5.1
+
+Zmiany
+
+- naprawiono błąd czyszczenia pamięci związany z jednoczesnym rozbijaniem linii, zmianą poziomu oraz wysokim stanem zapełnienia planszy
 
 ### Wersja 1.5
 
