@@ -24,7 +24,7 @@ Dzięki emulatorowi działającemu w JavaScripcie autorstwa [Bena Firshmana](htt
 
 ## Status projektu
 
-Status: Cyberpunk 2077 na premierę
+Status: Cyberpunk 2077 po pierwszym patchu
 
 Faza radości z ukończonego projektu: zaplanowana
 
