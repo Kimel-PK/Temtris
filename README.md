@@ -87,13 +87,13 @@ Głównym priorytetem jest usunięcie wszystkich błędów. Wszystkie przewidzia
 
 Zmiany
 
-- naprawiono błąd umożliwiający wciśnięcie klocka w inny klocek
+- naprawiono błąd umożliwiający wciśnięcie klocka w inny klocek (dzięki [@michalzuch](https://github.com/michalzuch) :heart:!)
 
 ### Łatka 1.5.1
 
 Zmiany
 
-- naprawiono błąd czyszczenia pamięci związany z jednoczesnym rozbijaniem linii, zmianą poziomu oraz wysokim stanem zapełnienia planszy
+- naprawiono błąd czyszczenia pamięci związany z jednoczesnym rozbijaniem linii, zmianą poziomu oraz wysokim stanem zapełnienia planszy (dzięki [@KonradSiuta](https://github.com/KonradSiuta) :heart:!)
 
 ### Wersja 1.5
 
