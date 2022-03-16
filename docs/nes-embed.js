@@ -66,10 +66,6 @@ function keyboard(callback, event){
 			callback(1, jsnes.Controller.BUTTON_B); break;
 		case 76: // A
 			callback(1, jsnes.Controller.BUTTON_A); break;
-		case 16: // Select
-			callback(1, jsnes.Controller.BUTTON_SELECT); break;
-		case 13: // Return
-			callback(1, jsnes.Controller.BUTTON_START); break;
 			
 		case 71: // UP
 			callback(2, jsnes.Controller.BUTTON_UP); break;
@@ -83,10 +79,14 @@ function keyboard(callback, event){
 			callback(2, jsnes.Controller.BUTTON_B); break;
 		case 88: // A
 			callback(2, jsnes.Controller.BUTTON_A); break;
+		
 		case 16: // Select
+			callback(1, jsnes.Controller.BUTTON_SELECT);
 			callback(2, jsnes.Controller.BUTTON_SELECT); break;
 		case 13: // Return
+			callback(1, jsnes.Controller.BUTTON_START);
 			callback(2, jsnes.Controller.BUTTON_START); break;
+			
 			
 		default: break;
 	}
