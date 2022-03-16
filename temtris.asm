@@ -2225,7 +2225,11 @@ ObrocKlocekWPrawo:
 	CMP #%00000001
 	BNE :+
 	
-	JSR PrzesunKlocekWLewo
+	LDA pozycjaKlockaX
+	SEC
+	SBC #$08
+	STA pozycjaKlockaX
+	
 	INC obrotKlocka
 	
 :
@@ -2251,7 +2255,11 @@ ObrocKlocekWLewo:
 	CMP #%00000001
 	BNE :+
 	
-	JSR PrzesunKlocekWLewo
+	LDA pozycjaKlockaX
+	SEC
+	SBC #$08
+	STA pozycjaKlockaX
+	
 	DEC obrotKlocka
 	
 :
@@ -3052,26 +3060,26 @@ SprawdzKolizje:
 	
 	LDA obrotKlocka
 	AND #%00000011
-	CMP #%00000011
+	CMP #%00000000
 	BNE :+
 	
+	CLC
 	LDA int
-	SEC
-	SBC #$30
+	ADC #$30
 	STA int
 	LDA int+1
-	SBC #$00
+	ADC #$00
 	STA int+1
 	JMP :++
 	
 :
 	
-	CLC
 	LDA int
-	ADC #$10
+	SEC
+	SBC #$10
 	STA int
 	LDA int+1
-	ADC #$00
+	SBC #$00
 	STA int+1
 	
 :

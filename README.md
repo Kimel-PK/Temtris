@@ -24,11 +24,11 @@ Dzięki emulatorowi działającemu w JavaScripcie autorstwa [Bena Firshmana](htt
 
 ## Status projektu
 
-Status: Cyberpunk 2077 po pierwszym patchu
+Status: Czy to już koniec?
 
 Faza radości z ukończonego projektu: zaplanowana
 
-Faza testowania: 45%
+Faza testowania: 95%
 
 Faza projektowania: zakończona!
 
@@ -68,20 +68,26 @@ Lista kodów zmieniających działanie gry
 ### Przydatne kody
 
 - `POGEIG` - Zatrzymuje samoczynne opadanie klocków
-- `IALPNP` - Następny poziom co 5 linii (czasem nawet szybciej)
+- `IALONP` - Następny poziom co 5 linii (czasem nawet szybciej)
 
 ### Kody rozwalające gre
 
 - `YVIEYI` - Rozwala muzykę
 - `LTGETT` - Wyłącza animację rozbijania linii
 - `LVAETT` - Rozbijanie linii generuje artefakty na ekranie
-- `LVIETT` - Rozbijanie linii powoli psuje palety tła
+- `LVYAPT` - Powolna degradacja ekranu
 
 ## Faza testowania
 
 Głównym priorytetem jest usunięcie wszystkich błędów. Wszystkie przewidziane funkcjonalności zostały już zaimplementowane.
 
 ## Wersje stabilne
+
+### Łatka 1.5.2
+
+Zmiany
+
+- naprawiono błąd umożliwiający wciśnięcie klocka w inny klocek
 
 ### Łatka 1.5.1
 
@@ -205,3 +211,4 @@ Wystarczy zrobić jedną linię, a cały NES się rozpada.
 - Konwerter muzyki w Excelu
 - Szkice i concept arty przepisywane do plików `.chr` przy użyciu programu `yychr`
 - Ściąga z adresami i opisami rejestrów
+- skrypt `Temtris debug.lua` do emulatora FCEUX
