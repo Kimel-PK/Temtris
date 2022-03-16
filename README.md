@@ -127,8 +127,8 @@ Zmiany
 - dodanie muzyki Together Forever
 - dodanie muzyki Szanty Bitwa
 - dodanie muzyki Song For Denise
-- Naprawiono bug: nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1))
-- Naprawiono bug: powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2))
+- Naprawiono bug: nie trafienie w wielokrotność 30 linii powoduje pominięcie osiągnięcia następnego poziomu ([#1](../../issues/1)) (dzięki [@SzymenL0K0](https://github.com/SzymenL0K0) :heart:!)
+- Naprawiono bug: powrót do menu po zakończeniu gry kończy się rozpoczęciem nowej gry ([#2](../../issues/2)) (dzięki [@SzymenL0K0](https://github.com/SzymenL0K0) :heart:!)
 - Naprawiono bug: jeśli klocek zostanie przesunięty w lewo lub w prawo, a następną klatką będzie jego obrót to kolizja zostanie zignorowana
 
 Znane problemy
