@@ -6,6 +6,12 @@ Kod gry został napisany całkowicie od zera, grafika jest inspirowana Tetrisem 
 
 Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
 
+## Trailer
+
+https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-86cd-e9affed738ba.mp4
+
+[Obejrzyj trailer w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
+
 ## Uruchamianie
 
 ### ROM
@@ -54,12 +60,6 @@ Jeśli chcesz pomóc naprawić Temtris możesz mi bardzo pomóc!
     [Link do tworzenia nowego wątku w repozytorium](https://github.com/Kimel-PK/Temtris/issues/new)
 
 Dziękuję za pomoc :smile:!
-
-## Trailer
-
-https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-86cd-e9affed738ba.mp4
-
-[Obejrzyj trailer w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
 
 ## Game Genie
 
