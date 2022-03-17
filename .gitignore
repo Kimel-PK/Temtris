@@ -1,7 +1,7 @@
-temtris.dbg
-temtris.nes.deb
-temtris.nes.0.nl
-temtris.o
+*.dbg
+*.nes.deb
+*.nes.0.nl
+*.o
 fceux64.lnk
 HxD64.lnk
 yychr.lnk
