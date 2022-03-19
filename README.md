@@ -83,6 +83,12 @@ Głównym priorytetem jest usunięcie wszystkich błędów. Wszystkie przewidzia
 
 ## Wersje stabilne
 
+### Łatka 1.5.3
+
+Zmiany
+
+- naprawiono błąd, który powodował niepoprawne odtwarzanie drugiej ścieżki muzyki w niektórych przypadkach
+
 ### Łatka 1.5.2
 
 Zmiany

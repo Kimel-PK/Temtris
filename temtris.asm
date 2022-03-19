@@ -12156,6 +12156,9 @@ SB_P_6:
 	
 ; ================== Szanty Bitwa kanał T =================
 
+; magiczne przesunięcie w ROMie naprawiające niedoskonałość odtwarzacza, który interpretuje zwykły adres jako koniec odtwarzanego bloku
+.byte $45
+
 Szanty_Bitwa_Kanal_T:
 	.byte <SB_T_INICJALIZACJA, >SB_T_INICJALIZACJA
 	
