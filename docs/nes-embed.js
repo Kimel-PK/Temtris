@@ -23,11 +23,38 @@ var nes = new jsnes.NES({
 	},
 });
 
+// https://stackoverflow.com/questions/3448347/how-to-scale-an-imagedata-in-html-canvas
+function scaleImageData(imageData, scale) {
+	var scaled = canvas_ctx.createImageData(imageData.width * scale, imageData.height * scale);
+	
+	for(var row = 0; row < imageData.height; row++) {
+		for(var col = 0; col < imageData.width; col++) {
+			var sourcePixel = [
+				imageData.data[(row * imageData.width + col) * 4 + 0],
+				imageData.data[(row * imageData.width + col) * 4 + 1],
+				imageData.data[(row * imageData.width + col) * 4 + 2],
+				imageData.data[(row * imageData.width + col) * 4 + 3]
+			];
+		for(var y = 0; y < scale; y++) {
+			var destRow = row * scale + y;
+			for(var x = 0; x < scale; x++) {
+				var destCol = col * scale + x;
+					for(var i = 0; i < 4; i++) {
+			  			scaled.data[(destRow * scaled.width + destCol) * 4 + i] = sourcePixel[i];
+					}
+				}
+			}
+		}
+	}
+  
+	return scaled;
+}
+
 function onAnimationFrame(){
 	window.requestAnimationFrame(onAnimationFrame);
 	
 	image.data.set(framebuffer_u8);
-	canvas_ctx.putImageData(image, 0, 0);
+	canvas_ctx.putImageData(scaleImageData (image, 2.0), 0, 0);
 }
 
 function audio_remain(){
