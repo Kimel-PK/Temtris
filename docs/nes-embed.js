@@ -13,10 +13,10 @@ var audio_samples_R = new Float32Array(SAMPLE_COUNT);
 var audio_write_cursor = 0, audio_read_cursor = 0;
 
 var nes = new jsnes.NES({
-	onFrame: function(framebuffer_24){
+	onFrame: function(framebuffer_24) {
 		for(var i = 0; i < FRAMEBUFFER_SIZE; i++) framebuffer_u32[i] = 0xFF000000 | framebuffer_24[i];
 	},
-	onAudioSample: function(l, r){
+	onAudioSample: function(l, r) {
 		audio_samples_L[audio_write_cursor] = l;
 		audio_samples_R[audio_write_cursor] = r;
 		audio_write_cursor = (audio_write_cursor + 1) & SAMPLE_MASK;
@@ -35,33 +35,33 @@ function scaleImageData(imageData, scale) {
 				imageData.data[(row * imageData.width + col) * 4 + 2],
 				imageData.data[(row * imageData.width + col) * 4 + 3]
 			];
-		for(var y = 0; y < scale; y++) {
-			var destRow = row * scale + y;
-			for(var x = 0; x < scale; x++) {
-				var destCol = col * scale + x;
+			for(var y = 0; y < scale; y++) {
+				var destRow = row * scale + y;
+				for(var x = 0; x < scale; x++) {
+					var destCol = col * scale + x;
 					for(var i = 0; i < 4; i++) {
-			  			scaled.data[(destRow * scaled.width + destCol) * 4 + i] = sourcePixel[i];
+						scaled.data[(destRow * scaled.width + destCol) * 4 + i] = sourcePixel[i];
 					}
 				}
 			}
 		}
 	}
-  
+	
 	return scaled;
 }
 
-function onAnimationFrame(){
+function onAnimationFrame() {
 	window.requestAnimationFrame(onAnimationFrame);
 	
 	image.data.set(framebuffer_u8);
 	canvas_ctx.putImageData(scaleImageData (image, 2.0), 0, 0);
 }
 
-function audio_remain(){
+function audio_remain() {
 	return (audio_write_cursor - audio_read_cursor) & SAMPLE_MASK;
 }
 
-function audio_callback(event){
+function audio_callback(event) {
 	var dst = event.outputBuffer;
 	var len = dst.length;
 	
@@ -79,8 +79,8 @@ function audio_callback(event){
 	audio_read_cursor = (audio_read_cursor + len) & SAMPLE_MASK;
 }
 
-function keyboard(callback, event){
-	switch(event.keyCode){
+function keyboard(callback, event) {
+	switch(event.keyCode) {
 		case 38: // UP
 			callback(1, jsnes.Controller.BUTTON_UP); break;
 		case 40: // Down
@@ -114,12 +114,11 @@ function keyboard(callback, event){
 			callback(1, jsnes.Controller.BUTTON_START);
 			callback(2, jsnes.Controller.BUTTON_START); break;
 			
-			
 		default: break;
 	}
 }
 
-function nes_init(canvas_id){
+function nes_init(canvas_id) {
 	var canvas = document.getElementById(canvas_id);
 	canvas_ctx = canvas.getContext("2d");
 	image = canvas_ctx.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -144,12 +143,12 @@ function nes_boot(rom_data){
 	window.requestAnimationFrame(onAnimationFrame);
 }
 
-function nes_load_data(canvas_id, rom_data){
+function nes_load_data(canvas_id, rom_data) {
 	nes_init(canvas_id);
 	nes_boot(rom_data);
 }
 
-function nes_load_url(canvas_id, path){
+function nes_load_url(canvas_id, path) {
 	nes_init(canvas_id);
 	
 	var req = new XMLHttpRequest();
@@ -159,7 +158,7 @@ function nes_load_url(canvas_id, path){
 	
 	req.onload = function() {
 		if (this.status === 200) {
-		nes_boot(this.responseText);
+			nes_boot(this.responseText);
 		} else if (this.status === 0) {
 			// Aborted, so ignore error
 		} else {
