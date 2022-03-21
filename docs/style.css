@@ -75,3 +75,63 @@ body {
 	width: 100%;
 	object-fit: contain;
 }
+
+.slider-container {
+	width: 512px;
+	position: absolute;
+	bottom: 20px;
+	right: calc(50% - 256px);
+}
+
+.slider-container span.material-icons {
+	color: white;
+	font-size: 2em;
+	display: inline-block;
+}
+
+.slider {
+	-webkit-appearance: none;
+	appearance: none;
+	display: inline-block;
+	width: 440px;
+	height: 32px;
+	background: #3f3f3f;
+	outline: none;
+	-webkit-transition: .2s;
+	transition: opacity .2s;
+}
+
+.slider::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 40px;
+	height: 40px;
+	border: 2px solid #402c00;
+	border-radius: 50%;
+	background: url('cheems volume.png');
+	background-position: center;
+	background-size: contain;
+	cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+	width: 40px;
+	height: 40px;
+	border: 2px solid #402c00;
+	border-radius: 50%;
+	background: url('cheems volume.png');
+	background-position: center;
+	background-size: contain;
+	cursor: pointer;
+}
+
+@media only screen and (max-width: 512px) {
+	.slider-container {
+		width: 100%;
+		right: 0;
+	}
+	
+	.slider {
+		width: calc(100% - 6em);
+	}
+}
