@@ -7,12 +7,25 @@
 		<script type="text/javascript" src="jsnes.min.js"></script>
 		<script type="text/javascript" src="jsnes.min.js.map"></script>
 		<script type="text/javascript" src="nes-embed.js"></script>
+		<link rel="icon" href="favicon.ico" type="image/x-icon" />
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 		<script>
 			window.onload = function () {
 				document.getElementById("start").addEventListener ("click", function () {
 					const e = document.getElementById("start")
 					e.parentElement.removeChild(e);
 					nes_load_url("nes-canvas", "Temtris 1.5.3.nes");
+				});
+				
+				let hideSlider;
+				
+				document.addEventListener ("mousemove", function () {
+					document.getElementById("volume-container").style.opacity = 1;
+					clearTimeout (hideSlider);
+					
+					hideSlider = setTimeout(function () {
+						document.getElementById("volume-container").style.opacity = 0;
+					}, 2000);
 				});
 			}
 		</script>
@@ -27,7 +40,12 @@
 			<div id="start" class="start">
 				<img src="start.png" />
 			</div>
-			<canvas id="nes-canvas" width="512" height="480"/>
+			<canvas id="nes-canvas" width="512" height="480"></canvas>
+			<div class="slider-container" id="volume-container">
+				<span class="material-icons">volume_down</span>
+				<input type="range" min="0" max="256" value="160" class="slider" id="volume" onkeydown="event.preventDefault()">
+				<span class="material-icons">volume_up</span>
+			</div>
 		</div>
 		<div class="kontroler">
 		<img src="kontroler.png" />

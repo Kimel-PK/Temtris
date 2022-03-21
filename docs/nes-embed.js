@@ -12,9 +12,12 @@ var audio_samples_L = new Float32Array(SAMPLE_COUNT);
 var audio_samples_R = new Float32Array(SAMPLE_COUNT);
 var audio_write_cursor = 0, audio_read_cursor = 0;
 
+var volume = 160;
+
 var nes = new jsnes.NES({
 	onFrame: function(framebuffer_24) {
 		for(var i = 0; i < FRAMEBUFFER_SIZE; i++) framebuffer_u32[i] = 0xFF000000 | framebuffer_24[i];
+		nes.papu.setMasterVolume(volume);
 	},
 	onAudioSample: function(l, r) {
 		audio_samples_L[audio_write_cursor] = l;
@@ -136,6 +139,11 @@ function nes_init(canvas_id) {
 	var script_processor = audio_ctx.createScriptProcessor(AUDIO_BUFFERING, 0, 2);
 	script_processor.onaudioprocess = audio_callback;
 	script_processor.connect(audio_ctx.destination);
+	
+	volume = document.getElementById("volume").value;
+	document.getElementById ("volume").addEventListener ("input", function () {
+		volume = document.getElementById("volume").value;
+	});
 }
 
 function nes_boot(rom_data){
