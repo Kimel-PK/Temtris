@@ -4,7 +4,9 @@ Projekt gry Tetris w assemblerze cc65 dla konsoli Nintendo Entertainment System.
 
 Kod gry został napisany całkowicie od zera, grafika jest inspirowana Tetrisem Tengen. Gościnnie wystąpili Shiba Inu Cheems oraz Owczarek Niemiecki Argo.
 
-Sponsor projektu: <https://www.reddit.com/r/Rudzia/>
+Po odliczeniu najdłuższych przerw, prace nad projektem trwały około 5 miesięcy. Odliczając mniejsze przerwy, można by było powiedzieć, że całość zajęła 3 miesiące regularnej pracy.
+
+Sponsor projektu: [r/Rudzia](https://www.reddit.com/r/Rudzia)
 
 ## Trailer
 
@@ -30,19 +32,35 @@ Dzięki emulatorowi działającemu w JavaScripcie autorstwa [Bena Firshmana](htt
 
 ## Status projektu
 
-Status: Czy to już koniec?
+Status: Oczekuje na premierę
 
-Faza radości z ukończonego projektu: zaplanowana
+Faza radości z ukończonego projektu: startuje od 1 kwietnia 2022
 
-Faza testowania: 95%
+Faza testowania: zakończona!
 
 Faza projektowania: zakończona!
 
-## Dołącz do testów
+## Game Genie
 
-Wiem, że regularnie pojawiają się błędy u każdego tylko nie u mnie. Prawdopodobnie chodzi o inny styl gry, którego nie potrafię odtworzyć.
+Lista kodów zmieniających działanie gry
 
-Jeśli chcesz pomóc naprawić Temtris możesz mi bardzo pomóc!
+### Przydatne kody
+
+- `POGEIG` - Zatrzymuje samoczynne opadanie klocków
+- `IALONP` - Następny poziom co 5 linii (czasem nawet szybciej)
+
+### Kody rozwalające gre
+
+- `YVIEYI` - Rozwala muzykę
+- `LTGETT` - Wyłącza animację rozbijania linii
+- `LVAETT` - Rozbijanie linii generuje artefakty na ekranie
+- `LVYAPT` - Powolna degradacja ekranu
+
+## Zgłoś błąd
+
+Mimo, że projekt został ukończony, nie wykluczam, że trafią się jeszcze jakieś błędy.
+
+Jeśli wiesz jak doprowadzić do jakiegoś błędu i chcesz pomóc naprawić Temtrisa:
 
 1. Pobierz emulator z narzędziami developerskimi FCEUX  
     [Link do pobierania emulatora ze strony projektu](https://fceux.com/web/download.html)
@@ -61,27 +79,7 @@ Jeśli chcesz pomóc naprawić Temtris możesz mi bardzo pomóc!
 
 Dziękuję za pomoc :smile:!
 
-## Game Genie
-
-Lista kodów zmieniających działanie gry
-
-### Przydatne kody
-
-- `POGEIG` - Zatrzymuje samoczynne opadanie klocków
-- `IALONP` - Następny poziom co 5 linii (czasem nawet szybciej)
-
-### Kody rozwalające gre
-
-- `YVIEYI` - Rozwala muzykę
-- `LTGETT` - Wyłącza animację rozbijania linii
-- `LVAETT` - Rozbijanie linii generuje artefakty na ekranie
-- `LVYAPT` - Powolna degradacja ekranu
-
-## Faza testowania
-
-Głównym priorytetem jest usunięcie wszystkich błędów. Wszystkie przewidziane funkcjonalności zostały już zaimplementowane.
-
-## Wersje stabilne
+## Lista zmian
 
 ### Łatka 1.5.3
 
