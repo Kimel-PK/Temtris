@@ -34,9 +34,9 @@ Dzięki emulatorowi działającemu w JavaScripcie autorstwa [Bena Firshmana](htt
 
 ## Status projektu
 
-Status: Oczekuje na premierę
+Status: Zakończony
 
-Faza radości z ukończonego projektu: startuje od 1 kwietnia 2022
+Faza radości z ukończonego projektu: Trwa
 
 Faza testowania: zakończona!
 
