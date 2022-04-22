@@ -2,6 +2,16 @@
 
 Projekt gry Tetris w assemblerze cc65 dla konsoli Nintendo Entertainment System.
 
+> Uwaga!
+> 
+> Tetris jest zarejestrowanym znakiem handlowym należącym do firmy The Tetris Company, Inc.  
+> Wykorzystanie w projekcie gameplayu, grafiki oraz zbliżonej nazwy służy jedynie celom edukacyjnym, z których nie czerpię żadnych korzyści materialnych!
+> 
+> Warning!
+> 
+> Tetris is a registered trademark of The Tetris Company, Inc.  
+> The use of gameplay, graphics and a similar name in the project serves only educational purposes, from which I do not derive any material benefits!
+
 Kod gry został napisany całkowicie od zera, grafika jest inspirowana Tetrisem Tengen. Gościnnie wystąpili Shiba Inu Cheems oraz Owczarek Niemiecki Argo.
 
 Po odliczeniu najdłuższych przerw, prace nad projektem trwały około 5 miesięcy. Odliczając mniejsze przerwy, można by było powiedzieć, że całość zajęła 3 miesiące regularnej pracy.
