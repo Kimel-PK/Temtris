@@ -24,7 +24,7 @@ https://user-images.githubusercontent.com/57668948/146060510-e85c6ff3-d19b-48a2-
 
 Tetris theme (Korobiejniki) remix - autorstwa [DJFloop](https://www.youtube.com/channel/UCviI_n3HN0SbWlbVHHKg6Cg)
 
-[Obejrzyj trailer w serwisie YouTube](https://youtu.be/FPVM0gv1Cn8)
+[Obejrzyj trailer w serwisie YouTube](https://youtu.be/gCDkybsxkoM)
 
 ## Uruchamianie
 
