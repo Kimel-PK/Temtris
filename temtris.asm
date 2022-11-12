@@ -3253,31 +3253,15 @@ PrzepiszLinie:
 	
 	LDA wypelnienieLinii-1, Y
 	CMP #$0A
-	BNE :++
-	
-	LDA trybGry
-	CMP #$01
-	BEQ :+
+	BNE :+
 	
 	JSR ZmienGrafikeRozbitaGora
-	JMP :++
-:
-	JSR ZmienGrafikeRozbitaGoraG1
-	JSR ZmienGrafikeRozbitaGoraG2
 :
 	LDA wypelnienieLinii+1, Y
 	CMP #$0A
-	BNE :++
-	
-	LDA trybGry
-	CMP #$01
-	BEQ :+
+	BNE :+
 	
 	JSR ZmienGrafikeRozbitaDol
-	JMP :++
-:
-	JSR ZmienGrafikeRozbitaDolG1
-	JSR ZmienGrafikeRozbitaDolG2
 :
 	
 	; przepisz tymczasową na zapis
@@ -3317,210 +3301,11 @@ ZmienGrafikeRozbitaGora:
 	RTS
 :
 	
-	; zamień wygląd klocków
+	; wyzeruj bit reprezentujący górną krawędź
 	LDA zrzutLinii, X
-	; 14 -> 10
-	CMP #$14
-	BNE :+
-	LDA #$10
+	AND #$F7
 	STA zrzutLinii, X
 	JMP :--
-:   
-	; 16 -> 13
-	CMP #$16
-	BNE :+
-	LDA #$13
-	STA zrzutLinii, X
-	JMP :---
-:
-	; 19 -> 12
-	CMP #$19
-	BNE :+
-	LDA #$12
-	STA zrzutLinii, X
-	JMP :----
-:
-	; 1A -> 11
-	CMP #$1A
-	BNE :+
-	LDA #$11
-	STA zrzutLinii, X
-	JMP :-----
-:
-	; 1C -> 18
-	CMP #$1C
-	BNE :+
-	LDA #$18
-	STA zrzutLinii, X
-	JMP :------
-:
-	; 1D -> 15
-	CMP #$1D
-	BNE :+
-	LDA #$15
-	STA zrzutLinii, X
-	JMP :-------
-:
-	; 1E -> 17
-	CMP #$1E
-	BNE :+
-	LDA #$17
-	STA zrzutLinii, X
-	JMP :--------
-:
-	; 1F -> 1B
-	CMP #$1F
-	BNE :+
-	LDA #$1B
-	STA zrzutLinii, X
-	JMP :---------
-:
-	
-	JMP :----------
-	
-ZmienGrafikeRozbitaGoraG1:
-	
-	LDX #$FF
-	
-:
-	INX
-	CPX #$0A
-	BNE :+
-	RTS
-:
-	
-	; zamień wygląd klocków
-	LDA zrzutLinii, X
-	; 24 -> 20
-	CMP #$24
-	BNE :+
-	LDA #$20
-	STA zrzutLinii, X
-	JMP :--
-:   
-	; 26 -> 23
-	CMP #$26
-	BNE :+
-	LDA #$23
-	STA zrzutLinii, X
-	JMP :---
-:
-	; 29 -> 22
-	CMP #$29
-	BNE :+
-	LDA #$22
-	STA zrzutLinii, X
-	JMP :----
-:
-	; 2A -> 21
-	CMP #$2A
-	BNE :+
-	LDA #$21
-	STA zrzutLinii, X
-	JMP :-----
-:
-	; 2C -> 28
-	CMP #$2C
-	BNE :+
-	LDA #$28
-	STA zrzutLinii, X
-	JMP :------
-:
-	; 2D -> 25
-	CMP #$2D
-	BNE :+
-	LDA #$25
-	STA zrzutLinii, X
-	JMP :-------
-:
-	; 2E -> 27
-	CMP #$2E
-	BNE :+
-	LDA #$27
-	STA zrzutLinii, X
-	JMP :--------
-:
-	; 2F -> 2B
-	CMP #$2F
-	BNE :+
-	LDA #$2B
-	STA zrzutLinii, X
-	JMP :---------
-:
-	
-	JMP :----------
-	
-ZmienGrafikeRozbitaGoraG2:
-	
-	LDX #$FF
-	
-:
-	INX
-	CPX #$0A
-	BNE :+
-	RTS
-:
-	
-	; zamień wygląd klocków
-	LDA zrzutLinii, X
-	; 34 -> 30
-	CMP #$34
-	BNE :+
-	LDA #$30
-	STA zrzutLinii, X
-	JMP :--
-:   
-	; 36 -> 33
-	CMP #$36
-	BNE :+
-	LDA #$33
-	STA zrzutLinii, X
-	JMP :---
-:
-	; 39 -> 32
-	CMP #$39
-	BNE :+
-	LDA #$32
-	STA zrzutLinii, X
-	JMP :----
-:
-	; 3A -> 31
-	CMP #$3A
-	BNE :+
-	LDA #$31
-	STA zrzutLinii, X
-	JMP :-----
-:
-	; 3C -> 38
-	CMP #$3C
-	BNE :+
-	LDA #$38
-	STA zrzutLinii, X
-	JMP :------
-:
-	; 3D -> 35
-	CMP #$3D
-	BNE :+
-	LDA #$35
-	STA zrzutLinii, X
-	JMP :-------
-:
-	; 3E -> 37
-	CMP #$3E
-	BNE :+
-	LDA #$37
-	STA zrzutLinii, X
-	JMP :--------
-:
-	; 3F -> 3B
-	CMP #$3F
-	BNE :+
-	LDA #$3B
-	STA zrzutLinii, X
-	JMP :---------
-:
-	
-	JMP :----------
 	
 ZmienGrafikeRozbitaDol:
 	
@@ -3533,210 +3318,11 @@ ZmienGrafikeRozbitaDol:
 	RTS
 :
 	
-	; zamień wygląd klocków
+	; wyzeruj bit reprezentujący dolną krawędź
 	LDA zrzutLinii, X
-	; 13 -> 10
-	CMP #$13
-	BNE :+
-	LDA #$10
+	AND #$FD
 	STA zrzutLinii, X
 	JMP :--
-:   
-	; 16 -> 14
-	CMP #$16
-	BNE :+
-	LDA #$14
-	STA zrzutLinii, X
-	JMP :---
-:
-	; 17 -> 11
-	CMP #$17
-	BNE :+
-	LDA #$11
-	STA zrzutLinii, X
-	JMP :----
-:
-	; 18 -> 12
-	CMP #$18
-	BNE :+
-	LDA #$12
-	STA zrzutLinii, X
-	JMP :-----
-:
-	; 1B -> 15
-	CMP #$1B
-	BNE :+
-	LDA #$15
-	STA zrzutLinii, X
-	JMP :------
-:
-	; 1C -> 19
-	CMP #$1C
-	BNE :+
-	LDA #$19
-	STA zrzutLinii, X
-	JMP :-------
-:
-	; 1E -> 1A
-	CMP #$1E
-	BNE :+
-	LDA #$1A
-	STA zrzutLinii, X
-	JMP :--------
-:
-	; 1F -> 1D
-	CMP #$1F
-	BNE :+
-	LDA #$1D
-	STA zrzutLinii, X
-	JMP :---------
-:
-	
-	JMP :----------
-	
-ZmienGrafikeRozbitaDolG1:
-	
-	LDX #$FF
-	
-:
-	INX
-	CPX #$0A
-	BNE :+
-	RTS
-:
-	
-	; zamień wygląd klocków
-	LDA zrzutLinii, X
-	; 23 -> 20
-	CMP #$23
-	BNE :+
-	LDA #$20
-	STA zrzutLinii, X
-	JMP :--
-:   
-	; 26 -> 24
-	CMP #$26
-	BNE :+
-	LDA #$24
-	STA zrzutLinii, X
-	JMP :---
-:
-	; 27 -> 21
-	CMP #$27
-	BNE :+
-	LDA #$21
-	STA zrzutLinii, X
-	JMP :----
-:
-	; 28 -> 22
-	CMP #$28
-	BNE :+
-	LDA #$22
-	STA zrzutLinii, X
-	JMP :-----
-:
-	; 2B -> 25
-	CMP #$2B
-	BNE :+
-	LDA #$25
-	STA zrzutLinii, X
-	JMP :------
-:
-	; 2C -> 29
-	CMP #$2C
-	BNE :+
-	LDA #$29
-	STA zrzutLinii, X
-	JMP :-------
-:
-	; 2E -> 2A
-	CMP #$2E
-	BNE :+
-	LDA #$2A
-	STA zrzutLinii, X
-	JMP :--------
-:
-	; 2F -> 2D
-	CMP #$2F
-	BNE :+
-	LDA #$2D
-	STA zrzutLinii, X
-	JMP :---------
-:
-	
-	JMP :----------
-	
-ZmienGrafikeRozbitaDolG2:
-	
-	LDX #$FF
-	
-:
-	INX
-	CPX #$0A
-	BNE :+
-	RTS
-:
-	
-	; zamień wygląd klocków
-	LDA zrzutLinii, X
-	; 33 -> 30
-	CMP #$33
-	BNE :+
-	LDA #$30
-	STA zrzutLinii, X
-	JMP :--
-:   
-	; 36 -> 34
-	CMP #$36
-	BNE :+
-	LDA #$34
-	STA zrzutLinii, X
-	JMP :---
-:
-	; 37 -> 31
-	CMP #$37
-	BNE :+
-	LDA #$31
-	STA zrzutLinii, X
-	JMP :----
-:
-	; 38 -> 32
-	CMP #$38
-	BNE :+
-	LDA #$32
-	STA zrzutLinii, X
-	JMP :-----
-:
-	; 3B -> 35
-	CMP #$3B
-	BNE :+
-	LDA #$35
-	STA zrzutLinii, X
-	JMP :------
-:
-	; 3C -> 39
-	CMP #$3C
-	BNE :+
-	LDA #$39
-	STA zrzutLinii, X
-	JMP :-------
-:
-	; 3E -> 3A
-	CMP #$3E
-	BNE :+
-	LDA #$3A
-	STA zrzutLinii, X
-	JMP :--------
-:
-	; 3F -> 3D
-	CMP #$3F
-	BNE :+
-	LDA #$3D
-	STA zrzutLinii, X
-	JMP :---------
-:
-	
-	JMP :----------
 	
 ; =========================================================
 ; ================ liczenie punktów i linii ===============
@@ -5779,171 +5365,171 @@ DaneKlockowT:
 	.byte <DaneKlockowTObr4, >DaneKlockowTObr4
 
 DaneKlockowKostkaObr1:
-	.byte $00, $17, $18, $00
-	.byte $00, $1A, $19, $00
+	.byte $00, $16, $13, $00
+	.byte $00, $1C, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKostkaObr2:
-	.byte $00, $17, $18, $00
-	.byte $00, $1A, $19, $00
+	.byte $00, $16, $13, $00
+	.byte $00, $1C, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKostkaObr3:
-	.byte $00, $17, $18, $00
-	.byte $00, $1A, $19, $00
+	.byte $00, $16, $13, $00
+	.byte $00, $1C, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKostkaObr4:
-	.byte $00, $17, $18, $00
-	.byte $00, $1A, $19, $00
+	.byte $00, $16, $13, $00
+	.byte $00, $1C, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowDlugiObr1:
-	.byte $11, $15, $15, $12
+	.byte $14, $15, $15, $11
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowDlugiObr2:
-	.byte $00, $13, $00, $00
-	.byte $00, $16, $00, $00
-	.byte $00, $16, $00, $00
-	.byte $00, $14, $00, $00
+	.byte $00, $12, $00, $00
+	.byte $00, $1A, $00, $00
+	.byte $00, $1A, $00, $00
+	.byte $00, $18, $00, $00
 
 DaneKlockowDlugiObr3:
-	.byte $11, $15, $15, $12
+	.byte $14, $15, $15, $11
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowDlugiObr4:
-	.byte $00, $13, $00, $00
-	.byte $00, $16, $00, $00
-	.byte $00, $16, $00, $00
-	.byte $00, $14, $00, $00
+	.byte $00, $12, $00, $00
+	.byte $00, $1A, $00, $00
+	.byte $00, $1A, $00, $00
+	.byte $00, $18, $00, $00
 
 DaneKlockowLObr1:
-	.byte $00, $17, $15, $12
-	.byte $00, $14, $00, $00
+	.byte $00, $16, $15, $11
+	.byte $00, $18, $00, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowLObr2:
-	.byte $00, $11, $18, $00
-	.byte $00, $00, $16, $00
-	.byte $00, $00, $14, $00
+	.byte $00, $14, $13, $00
+	.byte $00, $00, $1A, $00
+	.byte $00, $00, $18, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowLObr3:
-	.byte $00, $00, $00, $13
-	.byte $00, $11, $15, $19
+	.byte $00, $00, $00, $12
+	.byte $00, $14, $15, $19
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowLObr4:
-	.byte $00, $13, $00, $00
-	.byte $00, $16, $00, $00
-	.byte $00, $1A, $12, $00
+	.byte $00, $12, $00, $00
+	.byte $00, $1A, $00, $00
+	.byte $00, $1C, $11, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeLObr1:
-	.byte $00, $11, $15, $18
-	.byte $00, $00, $00, $14
+	.byte $00, $14, $15, $13
+	.byte $00, $00, $00, $18
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeLObr2:
-	.byte $00, $00, $13, $00
-	.byte $00, $00, $16, $00
-	.byte $00, $11, $19, $00
+	.byte $00, $00, $12, $00
+	.byte $00, $00, $1A, $00
+	.byte $00, $14, $19, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeLObr3:
-	.byte $00, $13, $00, $00
-	.byte $00, $1A, $15, $12
+	.byte $00, $12, $00, $00
+	.byte $00, $1C, $15, $11
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeLObr4:
-	.byte $00, $17, $12, $00
-	.byte $00, $16, $00, $00
-	.byte $00, $14, $00, $00
+	.byte $00, $16, $11, $00
+	.byte $00, $1A, $00, $00
+	.byte $00, $18, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKrzesloObr1:
-	.byte $00, $11, $18, $00
-	.byte $00, $00, $1A, $12
+	.byte $00, $14, $13, $00
+	.byte $00, $00, $1C, $11
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKrzesloObr2:
-	.byte $00, $00, $13, $00
-	.byte $00, $17, $19, $00
-	.byte $00, $14, $00, $00
+	.byte $00, $00, $12, $00
+	.byte $00, $16, $19, $00
+	.byte $00, $18, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKrzesloObr3:
-	.byte $00, $11, $18, $00
-	.byte $00, $00, $1A, $12
+	.byte $00, $14, $13, $00
+	.byte $00, $00, $1C, $11
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowKrzesloObr4:
-	.byte $00, $00, $13, $00
-	.byte $00, $17, $19, $00
-	.byte $00, $14, $00, $00
+	.byte $00, $00, $12, $00
+	.byte $00, $16, $19, $00
+	.byte $00, $18, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr1:
-	.byte $00, $00, $17, $12
-	.byte $00, $11, $19, $00
+	.byte $00, $00, $16, $11
+	.byte $00, $14, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr2:
-	.byte $00, $13, $00, $00
-	.byte $00, $1A, $18, $00
-	.byte $00, $00, $14, $00
+	.byte $00, $12, $00, $00
+	.byte $00, $1C, $13, $00
+	.byte $00, $00, $18, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr3:
-	.byte $00, $00, $17, $12
-	.byte $00, $11, $19, $00
+	.byte $00, $00, $16, $11
+	.byte $00, $14, $19, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowOdwroconeKrzesloObr4:
-	.byte $00, $13, $00, $00
-	.byte $00, $1A, $18, $00
-	.byte $00, $00, $14, $00
+	.byte $00, $12, $00, $00
+	.byte $00, $1C, $13, $00
+	.byte $00, $00, $18, $00
 	.byte $00, $00, $00, $00
 	
 DaneKlockowTObr1:
-	.byte $00, $11, $1B, $12
-	.byte $00, $00, $14, $00
+	.byte $00, $14, $17, $11
+	.byte $00, $00, $18, $00
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowTObr2:
-	.byte $00, $00, $13, $00
-	.byte $00, $11, $1C, $00
-	.byte $00, $00, $14, $00
+	.byte $00, $00, $12, $00
+	.byte $00, $14, $1B, $00
+	.byte $00, $00, $18, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowTObr3:
-	.byte $00, $00, $13, $00
-	.byte $00, $11, $1D, $12
+	.byte $00, $00, $12, $00
+	.byte $00, $14, $1D, $11
 	.byte $00, $00, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowTObr4:
-	.byte $00, $13, $00, $00
-	.byte $00, $1E, $12, $00
-	.byte $00, $14, $00, $00
+	.byte $00, $12, $00, $00
+	.byte $00, $1E, $11, $00
+	.byte $00, $18, $00, $00
 	.byte $00, $00, $00, $00
 
 DaneKlockowPalety:
@@ -6070,6 +5656,9 @@ RozbitaLiniaTemtrisNapis:
 ; =========================================================
 ; ====================== Dane Muzyki ======================
 ; =========================================================
+
+; magiczne przesunięcie bajtowe naprawiające muzykę
+.byte $00
 
 ; uniwersalne
 

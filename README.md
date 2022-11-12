@@ -59,7 +59,7 @@ Lista kodów zmieniających działanie gry
 ### Przydatne kody
 
 - `POGEIG` - Zatrzymuje samoczynne opadanie klocków
-- `IALONP` - Następny poziom co 5 linii (czasem nawet szybciej)
+- `IETPIT` - Następny poziom co 5 linii (czasem nawet szybciej)
 
 ### Kody rozwalające gre
 
@@ -92,6 +92,12 @@ Jeśli wiesz jak doprowadzić do jakiegoś błędu i chcesz pomóc naprawić Tem
 Dziękuję za pomoc :smile:!
 
 ## Lista zmian
+
+### Łatka 1.5.4
+
+Zmiany
+
+- optymalizacja fragmentu kodu odpowiedzialnego za podmianę sprite'ów po rozbiciu linii
 
 ### Łatka 1.5.3
 
