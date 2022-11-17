@@ -1,5 +1,7 @@
 # Temtris
 
+![Temtris](https://user-images.githubusercontent.com/57668948/202524793-cc0fe265-02d7-44fe-9474-41c7fee56a9a.png)
+
 Projekt gry Tetris w assemblerze cc65 dla konsoli Nintendo Entertainment System.
 
 > Uwaga!
